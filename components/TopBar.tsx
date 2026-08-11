@@ -22,6 +22,12 @@ export function TopBar() {
       </View>
 
       <View style={styles.right}>
+        {profile && profile.login_streak > 0 ? (
+          <View style={styles.streakPill}>
+            <Text style={styles.streakText}>🔥 {profile.login_streak}</Text>
+          </View>
+        ) : null}
+
         <View style={styles.levelPill}>
           <Text style={styles.levelText}>LVL {profile?.level ?? 1}</Text>
           <View style={styles.levelBarTrack}>
@@ -74,6 +80,15 @@ const styles = StyleSheet.create({
     paddingVertical: 6,
   },
   levelText: { color: colors.blue, fontWeight: '700', fontSize: fontSizes.xs },
+  streakPill: {
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 6,
+  },
+  streakText: { color: colors.gold, fontWeight: '700', fontSize: fontSizes.xs },
   levelBarTrack: {
     width: 46,
     height: 5,

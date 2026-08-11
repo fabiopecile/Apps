@@ -15,6 +15,8 @@ export type Profile = {
   dark_mode: boolean;
   notifications_enabled: boolean;
   language: string;
+  login_streak: number;
+  last_login_date: string | null;
   created_at: string;
 };
 
@@ -114,6 +116,36 @@ export type UserBadge = {
   earned_at: string;
 };
 
+export type DuelStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled';
+
+export type Duel = {
+  id: string;
+  challenger_id: string;
+  opponent_id: string;
+  matchday_id: string;
+  status: DuelStatus;
+  winner_id: string | null;
+  created_at: string;
+  responded_at: string | null;
+  completed_at: string | null;
+};
+
+export type DuelWithDetails = Duel & {
+  challenger: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+  opponent: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+  matchday: Matchday & { league: League };
+  challenger_points: number;
+  opponent_points: number;
+};
+
+export type DuelScore = {
+  duel_id: string;
+  challenger_id: string;
+  opponent_id: string;
+  challenger_points: number;
+  opponent_points: number;
+};
+
 type Table<Row, Insert> = {
   Row: Row;
   Insert: Insert;
@@ -150,8 +182,16 @@ export type Database = {
       messages: Table<Message, Partial<Message> & { conversation_id: string; sender_id: string; content: string }>;
       badges: Table<Badge, Partial<Badge>>;
       user_badges: Table<UserBadge, Partial<UserBadge> & { user_id: string; badge_id: string }>;
+      duels: Table<Duel, { challenger_id: string; opponent_id: string; matchday_id: string }>;
     };
-    Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Views: {
+      duel_scores: { Row: DuelScore; Relationships: [] };
+    };
+    Functions: {
+      claim_daily_login: {
+        Args: Record<string, never>;
+        Returns: { streak: number; reward_xp: number; reward_joker: number; already_claimed: boolean }[];
+      };
+    };
   };
 };
