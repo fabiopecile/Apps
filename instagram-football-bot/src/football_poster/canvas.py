@@ -64,6 +64,24 @@ def shadow_ellipse(base: Image.Image, box: tuple[int, int, int, int],
     return base
 
 
+def translucent_rounded_rect(base: Image.Image, box: tuple[float, float, float, float],
+                              color: str, alpha: int = 30, radius: int = 18) -> Image.Image:
+    """Zeichnet ein halbtransparentes, abgerundetes Rechteck korrekt ueber
+    Alpha-Compositing (im Gegensatz zu ImageDraw.rounded_rectangle mit
+    RGBA-Fill direkt auf dem Basisbild, was beim finalen RGB-Export nicht
+    mit dem Hintergrund verrechnet wird, sondern das Alpha stillschweigend
+    verwirft).
+    """
+    if base.mode != "RGBA":
+        base = base.convert("RGBA")
+    layer = Image.new("RGBA", base.size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(layer)
+    r, g, b = hex_to_rgb(color)
+    draw.rounded_rectangle(box, radius=radius, fill=(r, g, b, alpha))
+    base.alpha_composite(layer)
+    return base
+
+
 def center_text(draw: ImageDraw.ImageDraw, cx: float, y: float, text: str,
                  fnt: ImageFont.FreeTypeFont, fill) -> None:
     bbox = draw.textbbox((0, 0), text, font=fnt)

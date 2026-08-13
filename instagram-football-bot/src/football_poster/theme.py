@@ -19,3 +19,5 @@ class Theme:
 MATCH = Theme(grad_a="#0B0F1A", grad_b="#123B33", accent="#26E8A6")
 NEWS = Theme(grad_a="#160B12", grad_b="#3A1420", accent="#FF5C7A")
 TRANSFER = Theme(grad_a="#100B1F", grad_b="#241542", accent="#FFC94A")
+TABLE = Theme(grad_a="#0A1020", grad_b="#1B2E4E", accent="#4FA8FF")
+ALERT = Theme(grad_a="#1A0E0E", grad_b="#3D1414", accent="#FF5245", pill_fg="#1A0505")

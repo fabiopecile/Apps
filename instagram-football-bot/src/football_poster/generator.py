@@ -11,7 +11,7 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 from . import canvas, theme
-from .models import Match, NewsItem, Transfer
+from .models import Match, MatchStatus, NewsItem, TeamStanding, Transfer
 
 SIZE = 1080
 
@@ -110,6 +110,122 @@ def render_news_card(item: NewsItem, out_path: Path) -> Path:
 
     footer_font = canvas.font("DejaVuSans.ttf", 26)
     draw.text((60, SIZE - 70), item.published.strftime("%d.%m.%Y"), font=footer_font, fill=th.text_muted)
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.convert("RGB").save(out_path, "PNG")
+    return out_path
+
+
+def render_status_card(match: Match, out_path: Path) -> Path:
+    """Fuer abgesagte oder abgebrochene Spiele - wird bewusst genauso
+    zuverlaessig gepostet wie ein normales Ergebnis, nur mit eigenem
+    Warn-Design statt Endstand.
+    """
+    th = theme.ALERT
+    img = _base_image(th, [
+        ((SIZE // 2, SIZE // 2), 560, th.accent, 32),
+    ])
+    draw = ImageDraw.Draw(img)
+
+    label = "SPIEL ABGESAGT" if match.status == MatchStatus.CANCELLED else "SPIEL ABGEBROCHEN"
+    pill_font = canvas.font("DejaVuSans-Bold.ttf", 32)
+    canvas.pill(draw, SIZE // 2, 70, label, pill_font, th.pill_fg, th.accent)
+
+    league_font = canvas.font("DejaVuSans.ttf", 28)
+    canvas.center_text(draw, SIZE // 2, 158, match.league, league_font, th.text_muted)
+    day_font = canvas.font("DejaVuSans.ttf", 26)
+    canvas.center_text(draw, SIZE // 2, 196, f"Spieltag {match.matchday}", day_font, th.text_muted)
+
+    badge_y = 470
+    radius = 130
+    img = _badge(img, (300, badge_y), radius, match.home.short_name, match.home.color, th.text_main)
+    img = _badge(img, (SIZE - 300, badge_y), radius, match.away.short_name, match.away.color, th.text_main)
+    draw = ImageDraw.Draw(img)
+
+    vs_font = canvas.font("DejaVuSans-Bold.ttf", 46)
+    canvas.center_text(draw, SIZE // 2, badge_y - 26, "VS", vs_font, th.accent)
+
+    name_font = canvas.font("DejaVuSans-Bold.ttf", 34)
+    canvas.center_text(draw, 300, badge_y + radius + 26, match.home.name, name_font, th.text_main)
+    canvas.center_text(draw, SIZE - 300, badge_y + radius + 26, match.away.name, name_font, th.text_main)
+
+    y = badge_y + radius + 100
+    if match.status == MatchStatus.ABANDONED and match.home_score is not None:
+        score_font = canvas.font("DejaVuSans-Bold.ttf", 28)
+        canvas.center_text(
+            draw, SIZE // 2, y,
+            f"Stand bei Abbruch: {match.home_score}:{match.away_score}",
+            score_font, th.text_main,
+        )
+        y += 46
+
+    if match.note:
+        body_font = canvas.font("DejaVuSans.ttf", 28)
+        y += 14
+        for line in textwrap.wrap(match.note, width=40):
+            canvas.center_text(draw, SIZE // 2, y, line, body_font, th.text_muted)
+            y += 40
+
+    footer_font = canvas.font("DejaVuSans.ttf", 26)
+    footer = match.kickoff.strftime("%d.%m.%Y")
+    if match.venue:
+        footer += f"   ·   {match.venue}"
+    canvas.pill(draw, SIZE // 2, SIZE - 100, footer, footer_font, th.text_main, "#3A1D1D")
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
+    img.convert("RGB").save(out_path, "PNG")
+    return out_path
+
+
+def render_table_card(standings: list[TeamStanding], league: str, matchday: int, out_path: Path) -> Path:
+    th = theme.TABLE
+    img = _base_image(th, [
+        ((SIZE // 2, -40), 560, th.accent, 28),
+    ])
+    draw = ImageDraw.Draw(img)
+
+    pill_font = canvas.font("DejaVuSans-Bold.ttf", 30)
+    canvas.pill(draw, SIZE // 2, 56, league.upper(), pill_font, th.pill_fg, th.accent)
+
+    title_font = canvas.font("DejaVuSans-Bold.ttf", 38)
+    canvas.center_text(draw, SIZE // 2, 138, f"Tabelle nach Spieltag {matchday}", title_font, th.text_main)
+
+    col_rank, col_name, col_sp, col_diff, col_pkt = 70, 210, 760, 870, 985
+    header_font = canvas.font("DejaVuSans-Bold.ttf", 22)
+    header_y = 224
+    draw.text((col_name, header_y), "TEAM", font=header_font, fill=th.text_muted)
+    draw.text((col_sp, header_y), "SP", font=header_font, fill=th.text_muted)
+    draw.text((col_diff, header_y), "DIFF", font=header_font, fill=th.text_muted)
+    draw.text((col_pkt, header_y), "PKT", font=header_font, fill=th.text_muted)
+
+    row_h = 90
+    y0 = 264
+    name_font = canvas.font("DejaVuSans-Bold.ttf", 30)
+    rank_font = canvas.font("DejaVuSans-Bold.ttf", 30)
+    value_font = canvas.font("DejaVuSans.ttf", 26)
+    badge_font = canvas.font("DejaVuSans-Bold.ttf", 18)
+
+    for i, row in enumerate(standings):
+        ry = y0 + i * row_h
+        if i % 2 == 0:
+            img = canvas.translucent_rounded_rect(img, (40, ry, SIZE - 40, ry + row_h - 10), "#FFFFFF", alpha=14)
+            draw = ImageDraw.Draw(img)
+
+        canvas.center_text(draw, col_rank, ry + 22, str(row.position), rank_font, th.accent)
+
+        badge_r = 26
+        badge_cx, badge_cy = 150, ry + row_h // 2 - 5
+        draw.ellipse(
+            (badge_cx - badge_r, badge_cy - badge_r, badge_cx + badge_r, badge_cy + badge_r),
+            fill=row.team.color, outline=th.text_main, width=2,
+        )
+        canvas.center_text(draw, badge_cx, badge_cy - 12, row.team.short_name, badge_font, th.text_main)
+
+        draw.text((col_name, ry + 20), row.team.name, font=name_font, fill=th.text_main)
+        draw.text((col_sp, ry + 24), str(row.played), font=value_font, fill=th.text_muted)
+        diff = row.goal_diff
+        draw.text((col_diff, ry + 24), f"{'+' if diff > 0 else ''}{diff}", font=value_font, fill=th.text_muted)
+        draw.text((col_pkt, ry + 20), str(row.points), font=name_font, fill=th.accent)
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     img.convert("RGB").save(out_path, "PNG")
