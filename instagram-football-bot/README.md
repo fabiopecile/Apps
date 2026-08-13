@@ -1,16 +1,18 @@
 # Fußball-Liga Instagram-Poster (Prototyp)
 
-Generiert automatisch Instagram-taugliche Grafiken (1080×1080) für
-Spielergebnisse und News eines Fußball-Liga-Kanals, inklusive passender
-Caption-Texte. **Der eigentliche Upload zu Instagram ist in diesem
-Prototyp noch nicht enthalten** – dazu mehr unten unter "Nächste Schritte".
+Generiert automatisch moderne, Instagram-taugliche Grafiken (1080×1080,
+Farbverläufe + Glow-Akzente) für Spielergebnisse, News und Transfers eines
+Fußball-Liga-Kanals, inklusive passender Caption-Texte. **Der eigentliche
+Upload zu Instagram ist in diesem Prototyp noch nicht enthalten** – dazu
+mehr unten unter "Nächste Schritte".
 
 ## Was der Prototyp tut
 
-- Liest Match- und News-Daten (aktuell **Beispieldaten** in `sample_data.py`)
-- Zeichnet daraus mit Pillow zwei Grafik-Typen:
+- Liest Match-, News- und Transfer-Daten (aktuell **Beispieldaten** in `sample_data.py`)
+- Zeichnet daraus mit Pillow drei Grafik-Typen, jede mit eigenem Farbthema (`theme.py`):
   - **Ergebnis-Karte**: Teams, Endstand, Spieltag, Datum/Ort
   - **News-Karte**: Kategorie, Headline, Kurztext
+  - **Transfer-Karte**: Spieler, Position, abgebender/aufnehmender Verein, Ablöse
 - Erzeugt zu jeder Grafik eine passende Instagram-Caption (`.txt`) mit Hashtags
 - Schreibt alles nach `output/`
 
@@ -28,8 +30,10 @@ Ergebnisse landen in `output/` (z. B. `match_1_FAL_ADL.png` +
 
 ```
 src/football_poster/
-  models.py        Datenmodelle (Team, Match, NewsItem)
+  models.py        Datenmodelle (Team, Match, NewsItem, Transfer)
   sample_data.py    Beispieldaten – hier später durch echte API ersetzen
+  theme.py          Farbpaletten je Karten-Typ
+  canvas.py         Zeichen-Hilfsfunktionen (Verlauf, Glow, Pills)
   generator.py      Zeichnet die PNG-Grafiken
   captions.py       Erzeugt die Instagram-Bildtexte
   main.py           CLI, das alles verbindet

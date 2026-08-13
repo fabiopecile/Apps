@@ -9,9 +9,9 @@ Aufruf:
 
 from pathlib import Path
 
-from .captions import caption_for_match, caption_for_news
-from .generator import render_match_card, render_news_card
-from .sample_data import get_matches, get_news
+from .captions import caption_for_match, caption_for_news, caption_for_transfer
+from .generator import render_match_card, render_news_card, render_transfer_card
+from .sample_data import get_matches, get_news, get_transfers
 
 OUTPUT_DIR = Path(__file__).resolve().parents[2] / "output"
 
@@ -33,6 +33,13 @@ def run() -> None:
         caption_path = img_path.with_suffix(".txt")
         caption_path.write_text(caption_for_news(item), encoding="utf-8")
         print(f"[News]   {img_path.name}  +  {caption_path.name}")
+
+    for i, transfer in enumerate(get_transfers(), start=1):
+        img_path = OUTPUT_DIR / f"transfer_{i}_{transfer.from_club.short_name}_{transfer.to_club.short_name}.png"
+        render_transfer_card(transfer, img_path)
+        caption_path = img_path.with_suffix(".txt")
+        caption_path.write_text(caption_for_transfer(transfer), encoding="utf-8")
+        print(f"[Transfer] {img_path.name}  +  {caption_path.name}")
 
     print(f"\nFertig. Ergebnisse liegen in: {OUTPUT_DIR}")
 

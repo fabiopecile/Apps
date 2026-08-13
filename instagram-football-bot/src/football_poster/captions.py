@@ -3,7 +3,7 @@ Getrennt von der Bildgenerierung, weil die Caption spaeter direkt beim
 Upload (Graph API) mitgegeben wird und nicht ins Bild gehoert.
 """
 
-from .models import Match, NewsItem
+from .models import Match, NewsItem, Transfer
 
 
 def caption_for_match(match: Match) -> str:
@@ -27,5 +27,18 @@ def caption_for_news(item: NewsItem) -> str:
         item.body,
         "",
         f"#{item.league.replace(' ', '')} #Fussball #{item.category.replace(' ', '')}",
+    ]
+    return "\n".join(lines)
+
+
+def caption_for_transfer(transfer: Transfer) -> str:
+    fee_line = f" ({transfer.fee})" if transfer.fee else ""
+    lines = [
+        f"🔄 {transfer.player_name} wechselt zu {transfer.to_club.name}!",
+        f"{transfer.position} | {transfer.from_club.name} ➜ {transfer.to_club.name}",
+        f"{transfer.transfer_type}{fee_line}",
+        "",
+        f"#{transfer.league.replace(' ', '')} #Transfer #Fussball "
+        f"#{transfer.from_club.short_name} #{transfer.to_club.short_name}",
     ]
     return "\n".join(lines)

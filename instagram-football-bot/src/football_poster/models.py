@@ -28,3 +28,15 @@ class NewsItem:
     body: str
     category: str = "News"
     published: datetime = field(default_factory=datetime.now)
+
+
+@dataclass
+class Transfer:
+    league: str
+    player_name: str
+    position: str
+    from_club: Team
+    to_club: Team
+    transfer_type: str = "Ablöse"  # z.B. "Ablöse", "Leihe", "ablösefrei"
+    fee: str = ""  # z.B. "50.000 €", leer wenn nicht kommuniziert
+    date: datetime = field(default_factory=datetime.now)
