@@ -1,0 +1,66 @@
+"""Beispiel-/Mock-Daten.
+
+Hier werden aktuell feste Beispieldaten zurueckgegeben. Sobald eine echte
+Datenquelle angebunden wird (siehe README, Abschnitt "Naechste Schritte"),
+ersetzt eine Funktion mit derselben Signatur (-> list[Match] / list[NewsItem])
+einfach diese Mock-Implementierung - der Rest der App bleibt unveraendert.
+"""
+
+from datetime import datetime
+
+from .models import Match, NewsItem, Team
+
+LEAGUE_NAME = "Kreisliga A"
+
+_FALKEN = Team(name="SV Falken", short_name="FAL", color="#1E5B3A")
+_ADLER = Team(name="FC Adler", short_name="ADL", color="#B3251E")
+_WANDERER = Team(name="TuS Wanderer", short_name="WAN", color="#1F4E8C")
+_TITANEN = Team(name="SC Titanen", short_name="TIT", color="#8C6E1F")
+
+
+def get_matches() -> list[Match]:
+    return [
+        Match(
+            league=LEAGUE_NAME,
+            matchday=12,
+            home=_FALKEN,
+            away=_ADLER,
+            home_score=3,
+            away_score=1,
+            kickoff=datetime(2026, 8, 12, 15, 30),
+            venue="Waldstadion",
+        ),
+        Match(
+            league=LEAGUE_NAME,
+            matchday=12,
+            home=_WANDERER,
+            away=_TITANEN,
+            home_score=2,
+            away_score=2,
+            kickoff=datetime(2026, 8, 12, 18, 0),
+            venue="Am Sportplatz",
+        ),
+    ]
+
+
+def get_news() -> list[NewsItem]:
+    return [
+        NewsItem(
+            league=LEAGUE_NAME,
+            headline="SV Falken siegt souverän im Topspiel",
+            body=(
+                "Mit einem klaren 3:1 gegen den FC Adler setzt sich der "
+                "SV Falken an die Tabellenspitze der " + LEAGUE_NAME + "."
+            ),
+            category="Spielbericht",
+        ),
+        NewsItem(
+            league=LEAGUE_NAME,
+            headline="Nachtrag: Spieltag 14 wird verlegt",
+            body=(
+                "Aufgrund der Platzsperre am Sportplatz wird die Partie "
+                "TuS Wanderer gegen SC Titanen auf den 20. September verlegt."
+            ),
+            category="Verbandsmitteilung",
+        ),
+    ]
