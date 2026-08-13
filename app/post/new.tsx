@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, TextInput, StyleSheet, Image, Pressable, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, StyleSheet, Image, Pressable, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -57,49 +57,50 @@ export default function NewPostScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()}>
-            <Text style={styles.cancel}>Abbrechen</Text>
-          </Pressable>
-          <Text style={styles.title}>Neuer Beitrag</Text>
-          <View style={{ width: 70 }} />
-        </View>
-
-        <Pressable style={styles.imagePicker} onPress={pickImage}>
-          {imageUri ? (
-            <Image source={{ uri: imageUri }} style={styles.imagePreview} />
-          ) : (
-            <Text style={styles.imagePickerText}>📷 Foto auswählen</Text>
-          )}
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()}>
+          <Text style={styles.cancel}>Abbrechen</Text>
         </Pressable>
+        <Text style={styles.title}>Neuer Beitrag</Text>
+        <View style={{ width: 70 }} />
+      </View>
 
-        <TextInput
-          style={styles.captionInput}
-          placeholder="Was gibt's Neues vom Spiel?"
-          placeholderTextColor={colors.textFaint}
-          value={caption}
-          onChangeText={setCaption}
-          multiline
-        />
-        <TextInput
-          style={styles.locationInput}
-          placeholder="📍 Standort (optional)"
-          placeholderTextColor={colors.textFaint}
-          value={location}
-          onChangeText={setLocation}
-        />
+      <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+          <Pressable style={styles.imagePicker} onPress={pickImage}>
+            {imageUri ? (
+              <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+            ) : (
+              <Text style={styles.imagePickerText}>📷 Foto auswählen</Text>
+            )}
+          </Pressable>
 
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+          <TextInput
+            style={styles.captionInput}
+            placeholder="Was gibt's Neues vom Spiel?"
+            placeholderTextColor={colors.textFaint}
+            value={caption}
+            onChangeText={setCaption}
+            multiline
+          />
+          <TextInput
+            style={styles.locationInput}
+            placeholder="📍 Standort (optional)"
+            placeholderTextColor={colors.textFaint}
+            value={location}
+            onChangeText={setLocation}
+          />
 
-        <View style={styles.footer}>
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
           <PrimaryButton
             label="Posten (+50 XP)"
             onPress={handleSubmit}
             loading={submitting}
             disabled={!caption && !imageUri}
+            style={styles.submitButton}
           />
-        </View>
+        </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -117,9 +118,10 @@ const styles = StyleSheet.create({
   },
   cancel: { color: colors.textMuted, fontSize: fontSizes.md, width: 70 },
   title: { color: colors.white, fontWeight: '700', fontSize: fontSizes.md },
+  scrollContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   imagePicker: {
-    marginHorizontal: spacing.lg,
     aspectRatio: 4 / 5,
+    maxHeight: 360,
     borderRadius: radii.lg,
     borderWidth: 1,
     borderColor: colors.border,
@@ -132,7 +134,6 @@ const styles = StyleSheet.create({
   imagePreview: { width: '100%', height: '100%' },
   imagePickerText: { color: colors.textMuted, fontSize: fontSizes.md },
   captionInput: {
-    marginHorizontal: spacing.lg,
     backgroundColor: colors.surface,
     borderRadius: radii.md,
     borderWidth: 1,
@@ -144,14 +145,14 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   locationInput: {
-    marginHorizontal: spacing.lg,
     backgroundColor: colors.surface,
     borderRadius: radii.md,
     borderWidth: 1,
     borderColor: colors.border,
     color: colors.white,
     padding: spacing.md,
+    marginBottom: spacing.lg,
   },
-  error: { color: colors.danger, textAlign: 'center', marginTop: spacing.md },
-  footer: { padding: spacing.lg, marginTop: 'auto' },
+  error: { color: colors.danger, textAlign: 'center', marginBottom: spacing.md },
+  submitButton: { marginTop: spacing.sm },
 });
