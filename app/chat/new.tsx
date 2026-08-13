@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
+import { useFriendRequests } from '@/hooks/useFriendRequests';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
@@ -13,9 +14,11 @@ import type { Profile } from '@/lib/database.types';
 export default function NewConversationScreen() {
   const router = useRouter();
   const { session } = useAuth();
+  const { sendRequest } = useFriendRequests();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Profile[]>([]);
   const [creatingId, setCreatingId] = useState<string | null>(null);
+  const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
 
   const search = async (text: string) => {
     setQuery(text);
@@ -56,6 +59,11 @@ export default function NewConversationScreen() {
     router.replace(`/chat/${conversation.id}`);
   };
 
+  const handleSendRequest = async (userId: string) => {
+    const { error } = await sendRequest(userId);
+    if (!error) setRequestedIds((prev) => new Set(prev).add(userId));
+  };
+
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
@@ -79,10 +87,23 @@ export default function NewConversationScreen() {
         data={results}
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
-          <Pressable style={styles.row} onPress={() => startConversation(item)} disabled={creatingId === item.id}>
-            <Avatar uri={item.avatar_url} name={item.display_name ?? item.username} size={44} />
-            <Text style={styles.username}>{item.username}</Text>
-          </Pressable>
+          <View style={styles.row}>
+            <Pressable style={styles.rowMain} onPress={() => startConversation(item)} disabled={creatingId === item.id}>
+              <Avatar uri={item.avatar_url} name={item.display_name ?? item.username} size={44} />
+              <Text style={styles.username}>{item.username}</Text>
+            </Pressable>
+            <Pressable
+              style={styles.addFriendButton}
+              onPress={() => handleSendRequest(item.id)}
+              disabled={requestedIds.has(item.id)}
+            >
+              <Ionicons
+                name={requestedIds.has(item.id) ? 'checkmark' : 'person-add'}
+                size={16}
+                color={requestedIds.has(item.id) ? colors.success : colors.text}
+              />
+            </Pressable>
+          </View>
         )}
         ListEmptyComponent={
           query ? <EmptyState title="Keine Nutzer gefunden" /> : <EmptyState title="Suche nach Nutzernamen" />
@@ -113,6 +134,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     marginBottom: spacing.md,
   },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
+  rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   username: { color: colors.text, fontWeight: '600', fontSize: fontSizes.md },
+  addFriendButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

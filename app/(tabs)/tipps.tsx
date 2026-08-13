@@ -7,6 +7,7 @@ import { TopBar } from '@/components/TopBar';
 import { LeagueTabs } from '@/components/LeagueTabs';
 import { JokerIndicator } from '@/components/JokerIndicator';
 import { MatchTipCard } from '@/components/MatchTipCard';
+import { ConfettiBurst } from '@/components/ConfettiBurst';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useLeagues, useMatchday } from '@/hooks/useTipps';
@@ -17,6 +18,7 @@ import { colors, fontSizes, spacing } from '@/constants/theme';
 export default function TippsScreen() {
   const { leagues, loading: leaguesLoading } = useLeagues();
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
+  const [confettiTrigger, setConfettiTrigger] = useState(0);
   const router = useRouter();
   const { session } = useAuth();
   const { duels } = useDuels();
@@ -67,7 +69,12 @@ export default function TippsScreen() {
           data={matches}
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
-            <MatchTipCard match={item} jokersRemaining={jokersRemaining} onSubmit={(h, a, j) => submitTip(item.id, h, a, j)} />
+            <MatchTipCard
+              match={item}
+              jokersRemaining={jokersRemaining}
+              onSubmit={(h, a, j) => submitTip(item.id, h, a, j)}
+              onSuccess={() => setConfettiTrigger((t) => t + 1)}
+            />
           )}
           ListEmptyComponent={
             <EmptyState title="Kein Spieltag verfügbar" subtitle="Für diese Liga wurden noch keine Spiele angelegt." />
@@ -75,6 +82,8 @@ export default function TippsScreen() {
           contentContainerStyle={styles.listContent}
         />
       )}
+
+      <ConfettiBurst trigger={confettiTrigger} />
     </SafeAreaView>
   );
 }

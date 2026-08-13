@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { DuelWithDetails } from '@/lib/database.types';
+import type { DuelType, DuelWithDetails } from '@/lib/database.types';
+
+const DUEL_LABELS: Record<DuelType, string> = {
+  tips: '🎯 Tipp-Duell',
+  xp: '🏆 Punktewettkampf',
+  streak: '🔥 Streak-Battle',
+};
 
 export function useDuels() {
   const { session } = useAuth();
@@ -52,15 +58,57 @@ export function useDuels() {
     load();
   }, [load]);
 
-  const challenge = async (opponentId: string, matchdayId: string) => {
+  const challenge = async (opponentId: string, matchdayId: string, duelType: DuelType = 'tips') => {
     if (!session) return { error: 'not signed in' };
     const { error } = await supabase.from('duels').insert({
       challenger_id: session.user.id,
       opponent_id: opponentId,
       matchday_id: matchdayId,
+      duel_type: duelType,
     });
     if (!error) await load();
     return { error: error?.message ?? null };
+  };
+
+  /** Challenge sent from a chat thread: picks the next upcoming matchday automatically
+   * and posts a message that renders as a challenge card in that conversation. */
+  const challengeFromChat = async (opponentId: string, duelType: DuelType, conversationId: string) => {
+    if (!session) return { error: 'not signed in' };
+
+    const { data: matchdays, error: matchdayError } = await supabase
+      .from('matchdays')
+      .select('*')
+      .gt('deadline', new Date().toISOString())
+      .order('deadline', { ascending: true })
+      .limit(1);
+
+    if (matchdayError) return { error: matchdayError.message };
+    if (!matchdays?.length) return { error: 'Kein bevorstehender Spieltag verfügbar' };
+
+    const { data: duel, error: duelError } = await supabase
+      .from('duels')
+      .insert({
+        challenger_id: session.user.id,
+        opponent_id: opponentId,
+        matchday_id: matchdays[0].id,
+        duel_type: duelType,
+      })
+      .select()
+      .single();
+
+    if (duelError || !duel) return { error: duelError?.message ?? 'Duell konnte nicht erstellt werden' };
+
+    const { error: messageError } = await supabase.from('messages').insert({
+      conversation_id: conversationId,
+      sender_id: session.user.id,
+      content: DUEL_LABELS[duelType],
+      duel_id: duel.id,
+    });
+
+    if (messageError) return { error: messageError.message };
+
+    await load();
+    return { error: null };
   };
 
   const respond = async (duelId: string, accept: boolean) => {
@@ -78,5 +126,5 @@ export function useDuels() {
     return { error: error?.message ?? null };
   };
 
-  return { duels, loading, error, refresh: load, challenge, respond, cancel };
+  return { duels, loading, error, refresh: load, challenge, challengeFromChat, respond, cancel };
 }

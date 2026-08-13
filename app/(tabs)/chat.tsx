@@ -6,20 +6,32 @@ import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useConversations } from '@/hooks/useConversations';
+import { useFriendRequests } from '@/hooks/useFriendRequests';
 import { formatRelativeShort } from '@/lib/dates';
 import { colors, fontSizes, spacing } from '@/constants/theme';
 
 export default function ChatScreen() {
   const { conversations, loading } = useConversations();
+  const { incoming } = useFriendRequests();
   const router = useRouter();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.title}>Nachrichten</Text>
-        <Pressable onPress={() => router.push('/chat/new')} style={styles.newButton}>
-          <Ionicons name="person-add" size={20} color={colors.white} />
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable onPress={() => router.push('/friends/requests')} style={styles.newButton}>
+            <Ionicons name="people" size={20} color={colors.white} />
+            {incoming.length > 0 ? (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{incoming.length}</Text>
+              </View>
+            ) : null}
+          </Pressable>
+          <Pressable onPress={() => router.push('/chat/new')} style={styles.newButton}>
+            <Ionicons name="person-add" size={20} color={colors.white} />
+          </Pressable>
+        </View>
       </View>
 
       {loading ? (
@@ -64,6 +76,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '800' },
+  headerActions: { flexDirection: 'row', gap: spacing.sm },
   newButton: {
     width: 36,
     height: 36,
@@ -72,6 +85,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  badge: {
+    position: 'absolute',
+    top: -4,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: colors.red,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 3,
+  },
+  badgeText: { color: colors.white, fontSize: 10, fontWeight: '700' },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

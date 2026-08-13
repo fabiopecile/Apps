@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { League, Match, Matchday, Tip } from '@/lib/database.types';
+import type { JokerType, League, Match, Matchday, Tip } from '@/lib/database.types';
 
 export interface MatchWithTip extends Match {
   tip: Tip | null;
@@ -85,16 +85,23 @@ export function useMatchday(leagueId: string | null) {
     matchId: string,
     homeScore: number,
     awayScore: number,
-    isJoker: boolean
+    jokerType: JokerType | null
   ): Promise<{ error: string | null }> => {
     if (!session) return { error: 'not signed in' };
 
     const existing = matches.find((m) => m.id === matchId)?.tip;
+    const jokerChanged = (existing?.joker_type ?? null) !== jokerType;
 
     if (existing) {
       const { error: updateError } = await supabase
         .from('tips')
-        .update({ home_score: homeScore, away_score: awayScore, is_joker: isJoker, updated_at: new Date().toISOString() })
+        .update({
+          home_score: homeScore,
+          away_score: awayScore,
+          joker_type: jokerType,
+          is_joker: jokerType !== null,
+          updated_at: new Date().toISOString(),
+        })
         .eq('id', existing.id);
       if (updateError) return { error: updateError.message };
     } else {
@@ -103,13 +110,14 @@ export function useMatchday(leagueId: string | null) {
         match_id: matchId,
         home_score: homeScore,
         away_score: awayScore,
-        is_joker: isJoker,
+        joker_type: jokerType,
+        is_joker: jokerType !== null,
       });
       if (insertError) return { error: insertError.message };
     }
 
     await load();
-    if (isJoker && !existing) await refreshProfile();
+    if (jokerChanged) await refreshProfile();
     return { error: null };
   };
 

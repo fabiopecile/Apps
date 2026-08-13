@@ -43,7 +43,14 @@ export default function ProfilScreen() {
             <View style={styles.profileHeader}>
               <Avatar uri={profile.avatar_url} name={profile.display_name ?? profile.username} size={88} ringColor={colors.red} />
               <View style={styles.profileInfo}>
-                <Text style={styles.username}>{profile.username}</Text>
+                <View style={styles.usernameRow}>
+                  <Text style={styles.username}>{profile.username}</Text>
+                  {profile.equipped_title ? (
+                    <View style={styles.titleBadge}>
+                      <Text style={styles.titleBadgeText}>👑 {profile.equipped_title}</Text>
+                    </View>
+                  ) : null}
+                </View>
                 <View style={styles.levelRow}>
                   <View style={styles.levelPill}>
                     <Text style={styles.levelText}>LVL {profile.level}</Text>
@@ -63,6 +70,7 @@ export default function ProfilScreen() {
                 { value: String(profile.tips_count), label: 'Tipps' },
                 { value: `${quote}%`, label: 'Quote' },
                 { value: profile.points.toLocaleString('de-DE'), label: 'Punkte', accent: true },
+                { value: `🪙 ${profile.coins}`, label: 'Coins' },
               ]}
             />
 
@@ -153,7 +161,10 @@ const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
   profileHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, padding: spacing.lg },
   profileInfo: { flex: 1, gap: spacing.sm },
+  usernameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
   username: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800' },
+  titleBadge: { backgroundColor: colors.goldDark, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  titleBadgeText: { color: colors.gold, fontSize: fontSizes.xs, fontWeight: '700' },
   levelRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   levelPill: { backgroundColor: colors.surface, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 4, borderWidth: 1, borderColor: colors.borderStrong },
   levelText: { color: colors.blue, fontWeight: '700', fontSize: fontSizes.xs },

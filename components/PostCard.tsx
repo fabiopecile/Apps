@@ -1,15 +1,38 @@
-import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
+import { useRef, useState } from 'react';
+import { View, Text, Image, Pressable, Animated, StyleSheet } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { PostWithAuthor } from '@/lib/database.types';
+
+const DOUBLE_TAP_DELAY = 300;
 
 interface PostCardProps {
   post: PostWithAuthor;
   isOwnPost: boolean;
   onToggleLike: () => void;
+  onOpenComments: () => void;
 }
 
-export function PostCard({ post, isOwnPost, onToggleLike }: PostCardProps) {
+export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments }: PostCardProps) {
+  const lastTap = useRef(0);
+  const heartAnim = useRef(new Animated.Value(0)).current;
+  const [showHeart, setShowHeart] = useState(false);
+
+  const handleImagePress = () => {
+    const now = Date.now();
+    if (now - lastTap.current < DOUBLE_TAP_DELAY) {
+      if (!post.liked_by_me) onToggleLike();
+      setShowHeart(true);
+      heartAnim.setValue(0);
+      Animated.sequence([
+        Animated.spring(heartAnim, { toValue: 1, useNativeDriver: true, friction: 4 }),
+        Animated.delay(400),
+        Animated.timing(heartAnim, { toValue: 0, duration: 200, useNativeDriver: true }),
+      ]).start(() => setShowHeart(false));
+    }
+    lastTap.current = now;
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -29,13 +52,28 @@ export function PostCard({ post, isOwnPost, onToggleLike }: PostCardProps) {
         ) : null}
       </View>
 
-      {post.image_url ? (
-        <Image source={{ uri: post.image_url }} style={styles.image} />
-      ) : (
-        <View style={[styles.image, styles.imageFallback]}>
-          <Text style={styles.imageFallbackText}>⚽️</Text>
-        </View>
-      )}
+      <Pressable onPress={handleImagePress}>
+        {post.image_url ? (
+          <Image source={{ uri: post.image_url }} style={styles.image} />
+        ) : (
+          <View style={[styles.image, styles.imageFallback]}>
+            <Text style={styles.imageFallbackText}>⚽️</Text>
+          </View>
+        )}
+        {showHeart ? (
+          <Animated.Text
+            style={[
+              styles.doubleTapHeart,
+              {
+                opacity: heartAnim,
+                transform: [{ scale: heartAnim.interpolate({ inputRange: [0, 1], outputRange: [0.3, 1.3] }) }],
+              },
+            ]}
+          >
+            ❤️
+          </Animated.Text>
+        ) : null}
+      </Pressable>
 
       <View style={styles.actions}>
         <Pressable onPress={onToggleLike} style={styles.actionButton}>
@@ -43,6 +81,9 @@ export function PostCard({ post, isOwnPost, onToggleLike }: PostCardProps) {
             {post.liked_by_me ? '❤️' : '🤍'}
           </Text>
           <Text style={styles.actionCount}>{post.like_count}</Text>
+        </Pressable>
+        <Pressable onPress={onOpenComments} style={styles.actionButton}>
+          <Text style={styles.actionIcon}>💬</Text>
         </Pressable>
       </View>
 
@@ -52,6 +93,10 @@ export function PostCard({ post, isOwnPost, onToggleLike }: PostCardProps) {
           {post.caption}
         </Text>
       ) : null}
+
+      <Pressable onPress={onOpenComments}>
+        <Text style={styles.commentsLink}>Kommentare ansehen</Text>
+      </Pressable>
     </View>
   );
 }
@@ -79,7 +124,15 @@ const styles = StyleSheet.create({
   image: { width: '100%', aspectRatio: 4 / 5, backgroundColor: colors.surface },
   imageFallback: { alignItems: 'center', justifyContent: 'center' },
   imageFallbackText: { fontSize: 48 },
-  actions: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
+  doubleTapHeart: {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    marginTop: -50,
+    marginLeft: -50,
+    fontSize: 100,
+  },
+  actions: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: spacing.lg },
   actionButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   actionIcon: { fontSize: 22 },
   actionIconActive: {},
@@ -90,4 +143,5 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.xs,
   },
+  commentsLink: { color: colors.textFaint, fontSize: fontSizes.xs, paddingHorizontal: spacing.lg, paddingTop: spacing.xs },
 });

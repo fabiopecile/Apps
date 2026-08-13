@@ -2,35 +2,54 @@ import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { formatMatchTime } from '@/lib/dates';
+import { JokerTypeModal } from '@/components/JokerTypeModal';
 import type { MatchWithTip } from '@/hooks/useTipps';
+import type { JokerType } from '@/lib/database.types';
+
+const JOKER_LABELS: Record<JokerType, { emoji: string; label: string }> = {
+  risk: { emoji: '🎲', label: 'RISIKO' },
+  boost: { emoji: '⚡', label: 'BOOST' },
+  safe: { emoji: '🛡️', label: 'SICHER' },
+};
 
 interface MatchTipCardProps {
   match: MatchWithTip;
   jokersRemaining: number;
-  onSubmit: (homeScore: number, awayScore: number, isJoker: boolean) => Promise<{ error: string | null }>;
+  onSubmit: (homeScore: number, awayScore: number, jokerType: JokerType | null) => Promise<{ error: string | null }>;
+  onSuccess?: () => void;
 }
 
-export function MatchTipCard({ match, jokersRemaining, onSubmit }: MatchTipCardProps) {
+export function MatchTipCard({ match, jokersRemaining, onSubmit, onSuccess }: MatchTipCardProps) {
   const isLocked = new Date(match.kickoff).getTime() <= Date.now();
   const [homeScore, setHomeScore] = useState(match.tip?.home_score?.toString() ?? '');
   const [awayScore, setAwayScore] = useState(match.tip?.away_score?.toString() ?? '');
-  const [isJoker, setIsJoker] = useState(match.tip?.is_joker ?? false);
+  const [jokerType, setJokerType] = useState<JokerType | null>(match.tip?.joker_type ?? null);
+  const [jokerModalOpen, setJokerModalOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [justSubmitted, setJustSubmitted] = useState(false);
 
-  const canToggleJoker = !isLocked && (jokersRemaining > 0 || match.tip?.is_joker);
+  const canOpenJoker = !isLocked && (jokersRemaining > 0 || jokerType !== null);
   const canSubmit = !isLocked && homeScore !== '' && awayScore !== '' && !submitting;
 
   const handleSubmit = async () => {
     setSubmitting(true);
     setError(null);
-    const { error: submitError } = await onSubmit(Number(homeScore), Number(awayScore), isJoker);
+    const { error: submitError } = await onSubmit(Number(homeScore), Number(awayScore), jokerType);
     setSubmitting(false);
-    if (submitError) setError(submitError);
+    if (submitError) {
+      setError(submitError);
+      return;
+    }
+    setJustSubmitted(true);
+    onSuccess?.();
+    setTimeout(() => setJustSubmitted(false), 2500);
   };
 
+  const jokerLabel = jokerType ? JOKER_LABELS[jokerType] : null;
+
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, justSubmitted && styles.cardSuccess]}>
       <View style={styles.metaRow}>
         <View style={styles.timeBadge}>
           <Text style={styles.timeText}>{formatMatchTime(match.kickoff)}</Text>
@@ -42,11 +61,13 @@ export function MatchTipCard({ match, jokersRemaining, onSubmit }: MatchTipCardP
         ) : null}
 
         <Pressable
-          disabled={!canToggleJoker}
-          onPress={() => setIsJoker((v) => !v)}
-          style={[styles.jokerButton, isJoker && styles.jokerButtonActive, !canToggleJoker && styles.jokerButtonDisabled]}
+          disabled={!canOpenJoker}
+          onPress={() => setJokerModalOpen(true)}
+          style={[styles.jokerButton, jokerType && styles.jokerButtonActive, !canOpenJoker && styles.jokerButtonDisabled]}
         >
-          <Text style={[styles.jokerButtonText, isJoker && styles.jokerButtonTextActive]}>⚡ JOKER</Text>
+          <Text style={[styles.jokerButtonText, jokerType && styles.jokerButtonTextActive]}>
+            {jokerLabel ? `${jokerLabel.emoji} ${jokerLabel.label}` : '⚡ JOKER'}
+          </Text>
         </Pressable>
       </View>
 
@@ -58,7 +79,7 @@ export function MatchTipCard({ match, jokersRemaining, onSubmit }: MatchTipCardP
 
       <View style={styles.scoreRow}>
         <TextInput
-          style={[styles.scoreInput, isLocked && styles.scoreInputLocked]}
+          style={[styles.scoreInput, isLocked && styles.scoreInputLocked, justSubmitted && styles.scoreInputSuccess]}
           value={homeScore}
           onChangeText={(t) => setHomeScore(t.replace(/[^0-9]/g, '').slice(0, 2))}
           keyboardType="number-pad"
@@ -69,7 +90,7 @@ export function MatchTipCard({ match, jokersRemaining, onSubmit }: MatchTipCardP
         />
         <Text style={styles.colon}>:</Text>
         <TextInput
-          style={[styles.scoreInput, isLocked && styles.scoreInputLocked]}
+          style={[styles.scoreInput, isLocked && styles.scoreInputLocked, justSubmitted && styles.scoreInputSuccess]}
           value={awayScore}
           onChangeText={(t) => setAwayScore(t.replace(/[^0-9]/g, '').slice(0, 2))}
           keyboardType="number-pad"
@@ -98,10 +119,31 @@ export function MatchTipCard({ match, jokersRemaining, onSubmit }: MatchTipCardP
           </Text>
         </View>
       ) : (
-        <Pressable disabled={!canSubmit} onPress={handleSubmit} style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled]}>
-          <Text style={styles.submitText}>{match.tip ? 'Tipp ändern' : 'Tipp abgeben'} ✓</Text>
+        <Pressable
+          disabled={!canSubmit}
+          onPress={handleSubmit}
+          style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled, justSubmitted && styles.submitButtonSuccess]}
+        >
+          <Text style={styles.submitText}>
+            {justSubmitted ? 'Gespeichert!' : match.tip ? 'Tipp ändern' : 'Tipp abgeben'} ✓
+          </Text>
         </Pressable>
       )}
+
+      <JokerTypeModal
+        visible={jokerModalOpen}
+        jokersRemaining={jokersRemaining}
+        currentType={jokerType}
+        onClose={() => setJokerModalOpen(false)}
+        onConfirm={(type) => {
+          setJokerType(type);
+          setJokerModalOpen(false);
+        }}
+        onRemove={() => {
+          setJokerType(null);
+          setJokerModalOpen(false);
+        }}
+      />
     </View>
   );
 }
@@ -116,6 +158,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     marginBottom: spacing.lg,
   },
+  cardSuccess: { borderColor: colors.success },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
   timeBadge: {
     backgroundColor: colors.surface,
@@ -158,6 +201,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   scoreInputLocked: { opacity: 0.5 },
+  scoreInputSuccess: { borderColor: colors.success, backgroundColor: colors.success + '1A' },
   colon: { color: colors.textMuted, fontSize: fontSizes.xl, fontWeight: '700' },
   finalScore: { color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md, fontSize: fontSizes.sm },
   error: { color: colors.danger, textAlign: 'center', marginBottom: spacing.sm, fontSize: fontSizes.sm },
@@ -170,6 +214,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButtonDisabled: { opacity: 0.4 },
+  submitButtonSuccess: { backgroundColor: colors.success, borderColor: colors.success },
   submitText: { color: colors.white, fontWeight: '700', fontSize: fontSizes.md },
   lockedNotice: {
     backgroundColor: colors.surface,

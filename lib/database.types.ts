@@ -17,6 +17,10 @@ export type Profile = {
   language: string;
   login_streak: number;
   last_login_date: string | null;
+  coins: number;
+  booster_charges: number;
+  equipped_title: string | null;
+  last_wheel_spin_date: string | null;
   created_at: string;
 };
 
@@ -46,6 +50,8 @@ export type Match = {
   away_score: number | null;
 };
 
+export type JokerType = 'risk' | 'boost' | 'safe';
+
 export type Tip = {
   id: string;
   user_id: string;
@@ -53,6 +59,8 @@ export type Tip = {
   home_score: number;
   away_score: number;
   is_joker: boolean;
+  joker_type: JokerType | null;
+  booster_applied: boolean;
   points_earned: number | null;
   created_at: string;
   updated_at: string;
@@ -71,6 +79,18 @@ export type PostWithAuthor = Post & {
   profiles: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
   like_count: number;
   liked_by_me: boolean;
+};
+
+export type PostComment = {
+  id: string;
+  post_id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
+};
+
+export type PostCommentWithAuthor = PostComment & {
+  profiles: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
 };
 
 export type Story = {
@@ -99,6 +119,7 @@ export type Message = {
   conversation_id: string;
   sender_id: string;
   content: string;
+  duel_id: string | null;
   created_at: string;
 };
 
@@ -116,15 +137,25 @@ export type UserBadge = {
   earned_at: string;
 };
 
+export type UserTitle = {
+  user_id: string;
+  title: string;
+  earned_at: string;
+};
+
 export type DuelStatus = 'pending' | 'accepted' | 'declined' | 'completed' | 'cancelled';
+export type DuelType = 'tips' | 'xp' | 'streak';
 
 export type Duel = {
   id: string;
   challenger_id: string;
   opponent_id: string;
   matchday_id: string;
+  duel_type: DuelType;
   status: DuelStatus;
   winner_id: string | null;
+  challenger_xp_start: number | null;
+  opponent_xp_start: number | null;
   created_at: string;
   responded_at: string | null;
   completed_at: string | null;
@@ -146,6 +177,31 @@ export type DuelScore = {
   opponent_points: number;
 };
 
+export type FriendRequestStatus = 'pending' | 'accepted' | 'declined';
+
+export type FriendRequest = {
+  id: string;
+  sender_id: string;
+  recipient_id: string;
+  status: FriendRequestStatus;
+  created_at: string;
+  responded_at: string | null;
+};
+
+export type FriendRequestWithProfiles = FriendRequest & {
+  sender: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+  recipient: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+};
+
+export type WheelPrizeType = 'xp' | 'joker' | 'coins' | 'booster' | 'title';
+
+export type WheelSpinResult = {
+  prize_index: number;
+  prize_type: WheelPrizeType;
+  prize_label: string;
+  prize_value: number;
+};
+
 type Table<Row, Insert> = {
   Row: Row;
   Insert: Insert;
@@ -162,13 +218,13 @@ export type Database = {
       leagues: Table<League, Partial<League>>;
       matchdays: Table<Matchday, Partial<Matchday>>;
       matches: Table<Match, Partial<Match>>;
-      tips: Table<Tip, Partial<Tip> & { user_id: string; match_id: string; home_score: number; away_score: number }>;
+      tips: Table<
+        Tip,
+        Partial<Tip> & { user_id: string; match_id: string; home_score: number; away_score: number }
+      >;
       posts: Table<Post, Partial<Post> & { user_id: string }>;
       post_likes: Table<{ post_id: string; user_id: string; created_at: string }, { post_id: string; user_id: string }>;
-      post_comments: Table<
-        { id: string; post_id: string; user_id: string; content: string; created_at: string },
-        { post_id: string; user_id: string; content: string }
-      >;
+      post_comments: Table<PostComment, { post_id: string; user_id: string; content: string }>;
       follows: Table<
         { follower_id: string; following_id: string; created_at: string },
         { follower_id: string; following_id: string }
@@ -179,10 +235,18 @@ export type Database = {
         ConversationParticipant,
         Partial<ConversationParticipant> & { conversation_id: string; user_id: string }
       >;
-      messages: Table<Message, Partial<Message> & { conversation_id: string; sender_id: string; content: string }>;
+      messages: Table<
+        Message,
+        Partial<Message> & { conversation_id: string; sender_id: string; content: string }
+      >;
       badges: Table<Badge, Partial<Badge>>;
       user_badges: Table<UserBadge, Partial<UserBadge> & { user_id: string; badge_id: string }>;
-      duels: Table<Duel, { challenger_id: string; opponent_id: string; matchday_id: string }>;
+      user_titles: Table<UserTitle, { user_id: string; title: string }>;
+      duels: Table<
+        Duel,
+        Partial<Duel> & { challenger_id: string; opponent_id: string; matchday_id: string }
+      >;
+      friend_requests: Table<FriendRequest, { sender_id: string; recipient_id: string }>;
     };
     Views: {
       duel_scores: { Row: DuelScore; Relationships: [] };
@@ -191,6 +255,10 @@ export type Database = {
       claim_daily_login: {
         Args: Record<string, never>;
         Returns: { streak: number; reward_xp: number; reward_joker: number; already_claimed: boolean }[];
+      };
+      spin_wheel: {
+        Args: Record<string, never>;
+        Returns: WheelSpinResult[];
       };
     };
   };

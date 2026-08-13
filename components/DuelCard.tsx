@@ -1,7 +1,13 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
-import type { DuelWithDetails } from '@/lib/database.types';
+import type { DuelType, DuelWithDetails } from '@/lib/database.types';
+
+const DUEL_TYPE_LABEL: Record<DuelType, { emoji: string; title: string }> = {
+  tips: { emoji: '🎯', title: 'Tipp-Duell' },
+  xp: { emoji: '🏆', title: 'Punktewettkampf' },
+  streak: { emoji: '🔥', title: 'Streak-Battle' },
+};
 
 interface DuelCardProps {
   duel: DuelWithDetails;
@@ -31,9 +37,11 @@ export function DuelCard({ duel, currentUserId, onAccept, onDecline, onCancel }:
       <View style={styles.header}>
         <Avatar uri={opponentUser.avatar_url} name={opponentUser.username} size={44} />
         <View style={styles.headerText}>
-          <Text style={styles.username}>vs. {opponentUser.username}</Text>
+          <Text style={styles.username}>
+            {DUEL_TYPE_LABEL[duel.duel_type].emoji} vs. {opponentUser.username}
+          </Text>
           <Text style={styles.matchday}>
-            {duel.matchday.league.flag_emoji} Spieltag {duel.matchday.number}
+            {DUEL_TYPE_LABEL[duel.duel_type].title} · {duel.matchday.league.flag_emoji} Spieltag {duel.matchday.number}
           </Text>
         </View>
         {result ? (
@@ -43,7 +51,7 @@ export function DuelCard({ duel, currentUserId, onAccept, onDecline, onCancel }:
         ) : null}
       </View>
 
-      {duel.status === 'accepted' || duel.status === 'completed' ? (
+      {duel.duel_type === 'tips' && (duel.status === 'accepted' || duel.status === 'completed') ? (
         <View style={styles.scoreRow}>
           <Text style={styles.scoreValue}>{myPoints}</Text>
           <Text style={styles.scoreLabel}>Du</Text>
@@ -51,6 +59,10 @@ export function DuelCard({ duel, currentUserId, onAccept, onDecline, onCancel }:
           <Text style={styles.scoreLabel}>{opponentUser.username}</Text>
           <Text style={styles.scoreValue}>{theirPoints}</Text>
         </View>
+      ) : null}
+
+      {duel.duel_type !== 'tips' && duel.status === 'accepted' ? (
+        <Text style={styles.liveNotice}>Läuft bis Spieltag-Ende</Text>
       ) : null}
 
       {duel.status === 'pending' && !isChallenger ? (
@@ -110,4 +122,5 @@ const styles = StyleSheet.create({
   waitingText: { color: colors.textMuted, fontSize: fontSizes.sm },
   cancelText: { color: colors.danger, fontSize: fontSizes.sm, fontWeight: '600' },
   declinedText: { color: colors.textFaint, fontSize: fontSizes.sm, marginTop: spacing.md, textAlign: 'center' },
+  liveNotice: { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: spacing.lg, textAlign: 'center' },
 });

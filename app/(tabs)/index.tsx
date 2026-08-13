@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { View, FlatList, StyleSheet, RefreshControl } from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -5,6 +6,8 @@ import { TopBar } from '@/components/TopBar';
 import { PostCard } from '@/components/PostCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StoryAvatar } from '@/components/StoryAvatar';
+import { StoryViewer } from '@/components/StoryViewer';
+import { CommentsSheet } from '@/components/CommentsSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { usePosts } from '@/hooks/usePosts';
@@ -17,6 +20,8 @@ export default function FeedScreen() {
   const { stories } = useStories();
   const { profile, session } = useAuth();
   const router = useRouter();
+  const [storyIndex, setStoryIndex] = useState<number | null>(null);
+  const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
 
   if (loading) return <LoadingScreen />;
 
@@ -46,14 +51,24 @@ export default function FeedScreen() {
                   onPress={() => router.push('/post/new')}
                 />
               }
-              renderItem={({ item }) => (
-                <StoryAvatar name={item.profiles.username} uri={item.profiles.avatar_url} hasUnseen />
+              renderItem={({ item, index }) => (
+                <StoryAvatar
+                  name={item.profiles.username}
+                  uri={item.profiles.avatar_url}
+                  hasUnseen
+                  onPress={() => setStoryIndex(index)}
+                />
               )}
             />
           </View>
         }
         renderItem={({ item }) => (
-          <PostCard post={item} isOwnPost={item.user_id === session?.user.id} onToggleLike={() => toggleLike(item)} />
+          <PostCard
+            post={item}
+            isOwnPost={item.user_id === session?.user.id}
+            onToggleLike={() => toggleLike(item)}
+            onOpenComments={() => setCommentsPostId(item.id)}
+          />
         )}
         ListEmptyComponent={
           <EmptyState
@@ -63,6 +78,12 @@ export default function FeedScreen() {
         }
         contentContainerStyle={styles.listContent}
       />
+
+      {storyIndex !== null ? (
+        <StoryViewer stories={stories} startIndex={storyIndex} onClose={() => setStoryIndex(null)} />
+      ) : null}
+
+      <CommentsSheet postId={commentsPostId} onClose={() => setCommentsPostId(null)} />
     </SafeAreaView>
   );
 }

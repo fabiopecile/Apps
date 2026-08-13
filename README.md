@@ -4,19 +4,21 @@ A Bundesliga-style **Tippspiel × Social Media** app: predict match scores, earn
 
 ## Features
 
-- ⚽️ **Tipps** — predict scores per matchday, use a Joker to double points, tips lock automatically at kickoff and are scored automatically when results are entered.
+- ⚽️ **Tipps** — predict scores per matchday; pick one of three Jokers (Risiko/Boost/Sicher) to change how that tip scores. Tips lock at kickoff and are scored automatically when results are entered.
 - 🔥 **Login-Streak** — opening the app on consecutive days builds a streak; every 7 days in a row grants **+100 XP and +1 Joker**.
-- ⚔️ **Freunde-Duelle** — challenge a friend head-to-head for a matchday; whoever scores more points from their tips wins **+30 XP**, tracked live as results come in.
-- 📸 **Feed** — Instagram-style posts with stories, likes and follows; posting earns **+50 XP** and levels you up.
-- 💬 **Chat** — 1:1 conversations with realtime message delivery.
+- 🎡 **Tägliches Glücksrad** — one free spin per day for XP, a Joker, Coins, a Booster (doubles your next tip's points), or an exclusive Titel.
+- ⚔️ **Duelle** — challenge a friend to a Tipp-Duell, Punktewettkampf (XP) or Streak-Battle for a matchday, either from the Duelle tab or directly as a card in a chat; winner gets **+30 XP**.
+- 📸 **Feed** — Instagram-style posts with stories (full-screen viewer), double-tap-to-like, comments, and follows; posting earns **+50 XP** and levels you up.
+- 💬 **Chat** — 1:1 conversations with realtime messages and inline challenge cards.
+- 🤝 **Freundschaftsanfragen** — send/accept friend requests; accepting makes you mutual "Freunde" for the Ranking tab.
 - 🏆 **Ranking** — overall and friends-only leaderboards with a podium for the top 3.
-- 👤 **Profil** — stats (tips, hit quote, points), badges, settings (dark mode, notifications, language), and your own posts.
+- 👤 **Profil** — stats, coins, equipped title, badges, settings (dark mode, notifications, language), and your own posts.
 
 ## Tech stack
 
 - [Expo](https://expo.dev) (SDK 57) + [Expo Router](https://docs.expo.dev/router/introduction/) for navigation
 - [Supabase](https://supabase.com) for Postgres, Auth, Realtime and Storage
-- TypeScript, React Native `StyleSheet` (no UI kit dependency)
+- TypeScript, React Native `StyleSheet` (no UI kit dependency), `react-native-svg` for the wheel
 
 ## 1. Set up Supabase
 
@@ -26,9 +28,10 @@ A Bundesliga-style **Tippspiel × Social Media** app: predict match scores, earn
    - `0002_seed.sql` — demo leagues/matches/badges so the app isn't empty
    - `0003_storage.sql` — the `post-images` storage bucket + policies
    - `0004_streaks_and_duels.sql` — login-streak columns/RPC, the `duels` table + `duel_scores` view, and the extended scoring trigger that settles duels
+   - `0005_wheel_joker_types_duel_types_friends.sql` — 3 joker types + booster, the Glücksrad (`spin_wheel` RPC), coins/titles, xp/streak duel types, chat-linked duels, and friend requests
 3. In **Project Settings → API**, copy the **Project URL** and **anon public key**.
 
-> Already ran `0001`–`0003` on an existing project? You only need to run `0004_streaks_and_duels.sql` — it's additive and safe to apply on top.
+> Already on an older project? Each migration is additive — just run whichever ones you haven't applied yet, in order.
 
 ## 2. Configure the app
 
@@ -58,30 +61,33 @@ Sign up with an email/password in the app — a profile row is created automatic
 app/                  Expo Router routes (file-based)
   (auth)/              login, signup
   (tabs)/              Feed, Tipps, Chat, Ranking, Profil
-  chat/[id].tsx         conversation screen
-  chat/new.tsx          start a new conversation
+  chat/[id].tsx         conversation screen (incl. challenge cards)
+  chat/new.tsx           start a conversation / send a friend request
   post/new.tsx           create a post (+50 XP)
   duels/index.tsx        your duels (invites, active, history)
-  duels/new.tsx           challenge a friend
-components/           reusable UI pieces
-hooks/                 Supabase data hooks (posts, tips, ranking, chat, duels, streak, ...)
+  duels/new.tsx           challenge a friend to a Tipp-Duell
+  friends/requests.tsx    incoming friend requests
+components/           reusable UI pieces (wheel, joker picker, story viewer, comments, confetti, ...)
+hooks/                 Supabase data hooks (posts, tips, ranking, chat, duels, streak, wheel, friends, ...)
 contexts/AuthContext.tsx  session + profile state
-lib/                   Supabase client, generated-style types, storage upload
-constants/             theme (colors/spacing) and game constants
+lib/                   Supabase client, generated-style types, storage upload, wheel geometry
+constants/             theme (colors/spacing), game constants, wheel prize table
 supabase/migrations/   SQL schema, seed data, storage policies
 ```
 
 ## Game rules implemented in SQL
 
 - Posting a beitrag → `+50 XP`, leveling up every `1000 XP` (`handle_new_post`).
-- Jokers double the points earned for that tip (`handle_new_tip`); start at 3, topped up by streak rewards.
-- Scoring, once a match's result is entered (`status = 'finished'`):
-  - exact score → 5 points
-  - correct tendency (win/draw/loss) → 3 points
-  - otherwise → 0 points
-  - doubled if the tip was a Joker
-- Tips are only visible to their author until the match kicks off, then they're revealed to everyone (classic Tippspiel fairness rule).
-- **Login-Streak** (`claim_daily_login` RPC, called once per app open): the streak increases by 1 for a login the day after the last one, resets to 1 on a gap, and every 7th day grants `+100 XP` and `+1 Joker`.
-- **Duelle**: one player challenges another for a specific matchday (`duels` table); the opponent accepts/declines. While `accepted`, each side's live score is the sum of their `tips.points_earned` for that matchday's matches (via the `duel_scores` view). Once every match in the matchday is `finished`, the scoring trigger settles the duel, sets `winner_id`, and pays the winner `+30 XP`.
+- **Jokers** (start at 3, topped up by streak rewards and the wheel) — pick one per tip:
+  - 🎲 Risiko: correct tip's points multiplied by a random 0.5×–1.5×
+  - ⚡ Boost: correct tip's points ×2
+  - 🛡️ Sicher: a wrong tip still scores 1 point instead of 0
+- **Booster** (won on the wheel): doubles whatever the *next* tip you place scores, consumed automatically on that tip.
+- Base scoring, once a match's result is entered (`status = 'finished'`): exact score → 5 points, correct tendency → 3 points, otherwise 0 — before Joker/Booster multipliers.
+- Tips are only visible to their author until the match kicks off, then revealed to everyone (classic Tippspiel fairness rule).
+- **Login-Streak** (`claim_daily_login` RPC, called once per app open): +1 for a login the day after the last one, resets to 1 on a gap, every 7th day grants `+100 XP` and `+1 Joker`.
+- **Glücksrad** (`spin_wheel` RPC, once per UTC day): server picks one of 12 prizes (XP, Joker, Coins, Booster, or a Titel) and applies it atomically — the client's wheel animation just lands on whichever index the server returns, so it can't be gamed.
+- **Duelle**: challenge a friend (from the Duelle tab or a chat) to one of three types for a matchday — `tips` (who scores more from their tips), `xp` (who gains more XP during the duel), or `streak` (who has the longer login streak). The opponent accepts/declines; once every match in that matchday is `finished`, the scoring trigger settles the duel, sets `winner_id`, and pays the winner `+30 XP`.
+- **Freundschaftsanfragen**: accepting a request inserts mutual `follows` rows in both directions, which is what the Ranking tab's "Freunde" scope reads from.
 
 To advance a matchday for testing, update a match's `status`, `home_score` and `away_score` in the Supabase table editor — the trigger scores every tip for that match automatically, and also settles any duels tied to that matchday once it's fully finished.

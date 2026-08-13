@@ -1,13 +1,21 @@
+import { useState } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
+import { WheelModal } from '@/components/WheelModal';
+import { PrizePopup } from '@/components/PrizePopup';
 import { useAuth } from '@/contexts/AuthContext';
+import { useWheel } from '@/hooks/useWheel';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { XP_PER_LEVEL } from '@/constants/game';
+import type { WheelSpinResult } from '@/lib/database.types';
 
 export function TopBar() {
   const { profile } = useAuth();
+  const { canSpin } = useWheel();
   const router = useRouter();
+  const [wheelOpen, setWheelOpen] = useState(false);
+  const [prize, setPrize] = useState<WheelSpinResult | null>(null);
 
   const xpInLevel = (profile?.xp ?? 0) % XP_PER_LEVEL;
   const progress = Math.min(1, xpInLevel / XP_PER_LEVEL);
@@ -35,15 +43,25 @@ export function TopBar() {
           </View>
         </View>
 
-        <Pressable style={styles.giftButton}>
+        <Pressable style={styles.giftButton} onPress={() => setWheelOpen(true)}>
           <Text style={styles.giftEmoji}>🎁</Text>
-          <View style={styles.badgeDot} />
+          {canSpin ? <View style={styles.badgeDot} /> : null}
         </Pressable>
 
         <Pressable onPress={() => router.push('/(tabs)/profil')}>
           <Avatar uri={profile?.avatar_url} name={profile?.display_name ?? profile?.username} size={40} />
         </Pressable>
       </View>
+
+      <WheelModal
+        visible={wheelOpen}
+        onClose={() => setWheelOpen(false)}
+        onWon={(result) => {
+          setWheelOpen(false);
+          setPrize(result);
+        }}
+      />
+      <PrizePopup result={prize} onClose={() => setPrize(null)} />
     </View>
   );
 }
