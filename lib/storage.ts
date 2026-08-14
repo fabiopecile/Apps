@@ -1,12 +1,26 @@
+import { Platform } from 'react-native';
 import { File } from 'expo-file-system';
 import { supabase } from '@/lib/supabase';
 
 const BUCKET = 'post-images';
 
 export async function uploadImage(localUri: string, userId: string): Promise<string> {
-  const file = new File(localUri);
-  const arrayBuffer = await file.arrayBuffer();
-  const extension = file.extension || '.jpg';
+  let arrayBuffer: ArrayBuffer;
+  let extension: string;
+
+  if (Platform.OS === 'web') {
+    // expo-file-system's File/Directory API targets native file:// paths; on
+    // web the image picker returns a blob: URL, so read it via fetch instead.
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    arrayBuffer = await blob.arrayBuffer();
+    extension = `.${blob.type.split('/')[1] ?? 'jpg'}`;
+  } else {
+    const file = new File(localUri);
+    arrayBuffer = await file.arrayBuffer();
+    extension = file.extension || '.jpg';
+  }
+
   const path = `${userId}/${Date.now()}${extension}`;
 
   const { error } = await supabase.storage.from(BUCKET).upload(path, arrayBuffer, {
