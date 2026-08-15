@@ -48,6 +48,7 @@ export type Match = {
   status: MatchStatus;
   home_score: number | null;
   away_score: number | null;
+  external_id: string | null;
 };
 
 export type JokerType = 'risk' | 'boost' | 'safe';

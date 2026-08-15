@@ -29,6 +29,7 @@ A Bundesliga-style **Tippspiel × Social Media** app: predict match scores, earn
    - `0003_storage.sql` — the `post-images` storage bucket + policies
    - `0004_streaks_and_duels.sql` — login-streak columns/RPC, the `duels` table + `duel_scores` view, and the extended scoring trigger that settles duels
    - `0005_wheel_joker_types_duel_types_friends.sql` — 3 joker types + booster, the Glücksrad (`spin_wheel` RPC), coins/titles, xp/streak duel types, chat-linked duels, and friend requests
+   - `0006_match_external_ids.sql` — a unique `external_id` column on `matches`, needed by the optional football-data.org sync below
 3. In **Project Settings → API**, copy the **Project URL** and **anon public key**.
 
 > Already on an older project? Each migration is additive — just run whichever ones you haven't applied yet, in order.
@@ -55,6 +56,26 @@ npm run start   # then press i (iOS), a (Android) or w (web)
 
 Sign up with an email/password in the app — a profile row is created automatically. If your Supabase project has email confirmation enabled, confirm via the email link before logging in.
 
+## 4. (Optional) Real fixtures via football-data.org
+
+By default the Bundesliga matchday in Tipps is whatever's in `0002_seed.sql` (fake demo matches). To pull real fixtures/results for Bundesliga, Premier League and La Liga automatically, deploy the included Supabase Edge Function `supabase/functions/sync-football-data`. It fetches the current matchday from [football-data.org](https://www.football-data.org)'s free tier and upserts it into `matchdays`/`matches` — your existing scoring trigger takes it from there.
+
+1. **Get a free API token**: sign up at [football-data.org/client/register](https://www.football-data.org/client/register), copy the token from the confirmation email.
+2. **Get a Supabase Personal Access Token**: Supabase dashboard → your account avatar (top right) → **Access Tokens** → generate one, copy it.
+3. **Find your project ref**: Supabase dashboard → **Project Settings → General** → **Reference ID**.
+4. In the Codespace/terminal, from the project root:
+   ```bash
+   export SUPABASE_ACCESS_TOKEN=your-personal-access-token
+   npx supabase link --project-ref your-project-ref
+   npx supabase secrets set FOOTBALL_DATA_API_TOKEN=your-football-data-token
+   npx supabase functions deploy sync-football-data --no-verify-jwt
+   ```
+5. **Schedule it**: Supabase dashboard → **Database → Cron Jobs** → new cron job → type "Edge Function" (or "HTTP Request" pointing at `https://your-project-ref.supabase.co/functions/v1/sync-football-data` if your dashboard doesn't have the Edge Function type) → pick `sync-football-data` → schedule `0 * * * *` (hourly) → save.
+
+To test it once by hand before scheduling: `npx supabase functions invoke sync-football-data`.
+
+Only Bundesliga/Premier League/La Liga are wired up (matching the `leagues` table); add more by extending the `COMPETITIONS` map at the top of `supabase/functions/sync-football-data/index.ts` and inserting a matching row into `leagues`.
+
 ## Project structure
 
 ```
@@ -73,6 +94,7 @@ contexts/AuthContext.tsx  session + profile state
 lib/                   Supabase client, generated-style types, storage upload, wheel geometry
 constants/             theme (colors/spacing), game constants, wheel prize table
 supabase/migrations/   SQL schema, seed data, storage policies
+supabase/functions/    sync-football-data — optional real-fixtures sync (Edge Function)
 ```
 
 ## Game rules implemented in SQL
