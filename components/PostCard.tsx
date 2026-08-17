@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
-import { View, Text, Image, Pressable, Animated, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, Animated, Alert, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { PostWithAuthor } from '@/lib/database.types';
@@ -11,9 +12,10 @@ interface PostCardProps {
   isOwnPost: boolean;
   onToggleLike: () => void;
   onOpenComments: () => void;
+  onDelete: () => void;
 }
 
-export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments }: PostCardProps) {
+export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments, onDelete }: PostCardProps) {
   const lastTap = useRef(0);
   const heartAnim = useRef(new Animated.Value(0)).current;
   const [showHeart, setShowHeart] = useState(false);
@@ -33,6 +35,13 @@ export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments }: Post
     lastTap.current = now;
   };
 
+  const handleDelete = () => {
+    Alert.alert('Beitrag löschen?', 'Dieser Beitrag wird endgültig gelöscht.', [
+      { text: 'Abbrechen', style: 'cancel' },
+      { text: 'Löschen', style: 'destructive', onPress: onDelete },
+    ]);
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.header}>
@@ -49,7 +58,11 @@ export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments }: Post
           <Pressable style={styles.followButton}>
             <Text style={styles.followText}>Folgen</Text>
           </Pressable>
-        ) : null}
+        ) : (
+          <Pressable onPress={handleDelete} hitSlop={8}>
+            <Ionicons name="trash-outline" size={20} color={colors.textMuted} />
+          </Pressable>
+        )}
       </View>
 
       <Pressable onPress={handleImagePress}>

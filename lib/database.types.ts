@@ -98,6 +98,7 @@ export type Story = {
   id: string;
   user_id: string;
   media_url: string;
+  location: string | null;
   created_at: string;
   expires_at: string;
 };

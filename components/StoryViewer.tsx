@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal, View, Text, Image, Pressable, Animated, StyleSheet } from 'react-native';
+import { Modal, View, Text, Image, Pressable, Animated, Alert, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
-import { colors, spacing } from '@/constants/theme';
+import { colors, radii, spacing } from '@/constants/theme';
 import type { StoryWithAuthor } from '@/hooks/useStories';
 
 const STORY_DURATION = 5000;
@@ -10,10 +10,12 @@ const STORY_DURATION = 5000;
 interface StoryViewerProps {
   stories: StoryWithAuthor[];
   startIndex: number;
+  currentUserId?: string;
   onClose: () => void;
+  onDelete: (storyId: string) => void;
 }
 
-export function StoryViewer({ stories, startIndex, onClose }: StoryViewerProps) {
+export function StoryViewer({ stories, startIndex, currentUserId, onClose, onDelete }: StoryViewerProps) {
   const [index, setIndex] = useState(startIndex);
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -53,6 +55,23 @@ export function StoryViewer({ stories, startIndex, onClose }: StoryViewerProps) 
   const story = stories[index];
   if (!story) return null;
 
+  const isOwnStory = story.user_id === currentUserId;
+
+  const handleDelete = () => {
+    Alert.alert('Story löschen?', 'Diese Story wird endgültig gelöscht.', [
+      { text: 'Abbrechen', style: 'cancel' },
+      {
+        text: 'Löschen',
+        style: 'destructive',
+        onPress: () => {
+          onDelete(story.id);
+          if (stories.length <= 1) onClose();
+          else goNext();
+        },
+      },
+    ]);
+  };
+
   return (
     <Modal visible transparent={false} animationType="fade" onRequestClose={onClose}>
       <View style={styles.container}>
@@ -79,12 +98,24 @@ export function StoryViewer({ stories, startIndex, onClose }: StoryViewerProps) 
         <View style={styles.header}>
           <Avatar uri={story.profiles.avatar_url} name={story.profiles.username} size={36} />
           <Text style={styles.username}>{story.profiles.username}</Text>
-          <Pressable onPress={onClose} style={styles.closeButton}>
+          {isOwnStory ? (
+            <Pressable onPress={handleDelete} style={styles.deleteButton} hitSlop={8}>
+              <Ionicons name="trash" size={20} color={colors.white} />
+            </Pressable>
+          ) : null}
+          <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
             <Ionicons name="close" size={26} color={colors.white} />
           </Pressable>
         </View>
 
         <Image source={{ uri: story.media_url }} style={styles.image} resizeMode="contain" />
+
+        {story.location ? (
+          <View style={styles.locationBadge}>
+            <Ionicons name="location" size={14} color={colors.white} />
+            <Text style={styles.locationBadgeText}>{story.location}</Text>
+          </View>
+        ) : null}
 
         <Pressable style={styles.tapLeft} onPress={goPrevious} />
         <Pressable style={styles.tapRight} onPress={goNext} />
@@ -100,8 +131,23 @@ const styles = StyleSheet.create({
   progressFill: { height: '100%', backgroundColor: colors.white },
   header: { position: 'absolute', top: 72, left: spacing.lg, right: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, zIndex: 20 },
   username: { flex: 1, color: colors.white, fontWeight: '700' },
+  deleteButton: { padding: spacing.xs },
   closeButton: { padding: spacing.xs },
   image: { flex: 1, width: '100%', backgroundColor: colors.black },
+  locationBadge: {
+    position: 'absolute',
+    bottom: spacing.xl,
+    left: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    zIndex: 15,
+  },
+  locationBadgeText: { color: colors.white, fontWeight: '700', fontSize: 13 },
   tapLeft: { position: 'absolute', top: 0, bottom: 0, left: 0, width: '50%' },
   tapRight: { position: 'absolute', top: 0, bottom: 0, right: 0, width: '50%' },
 });

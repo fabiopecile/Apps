@@ -70,17 +70,16 @@ export function usePosts() {
     });
     if (insertError) return { error: insertError.message };
 
-    // A post with a photo also shows up as the author's story circle.
-    if (input.image_url) {
-      await supabase.from('stories').insert({
-        user_id: session.user.id,
-        media_url: input.image_url,
-      });
-    }
-
     await load();
     return { error: null };
   };
 
-  return { posts, loading, error, refresh: load, toggleLike, createPost };
+  const deletePost = async (postId: string) => {
+    setPosts((prev) => prev.filter((p) => p.id !== postId));
+    const { error } = await supabase.from('posts').delete().eq('id', postId);
+    if (error) await load();
+    return { error: error?.message ?? null };
+  };
+
+  return { posts, loading, error, refresh: load, toggleLike, createPost, deletePost };
 }

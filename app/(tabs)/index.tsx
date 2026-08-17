@@ -16,8 +16,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import { colors, spacing } from '@/constants/theme';
 
 export default function FeedScreen() {
-  const { posts, loading, refresh, toggleLike } = usePosts();
-  const { stories, refresh: refreshStories } = useStories();
+  const { posts, loading, refresh, toggleLike, deletePost } = usePosts();
+  const { stories, groups, refresh: refreshStories, deleteStory } = useStories();
   const { profile, session } = useAuth();
   const router = useRouter();
   const [storyIndex, setStoryIndex] = useState<number | null>(null);
@@ -47,8 +47,8 @@ export default function FeedScreen() {
               <PrimaryButton label="+ Beitrag hinzufügen (+50 XP)" onPress={() => router.push('/post/new')} />
             </View>
             <FlatList
-              data={stories}
-              keyExtractor={(item) => item.id}
+              data={groups}
+              keyExtractor={(item) => item.profile.id}
               horizontal
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.storiesRow}
@@ -57,15 +57,15 @@ export default function FeedScreen() {
                   name="Deine Story"
                   uri={profile?.avatar_url}
                   isAddButton
-                  onPress={() => router.push('/post/new')}
+                  onPress={() => router.push('/story/new')}
                 />
               }
-              renderItem={({ item, index }) => (
+              renderItem={({ item }) => (
                 <StoryAvatar
-                  name={item.profiles.username}
-                  uri={item.profiles.avatar_url}
+                  name={item.profile.username}
+                  uri={item.profile.avatar_url}
                   hasUnseen
-                  onPress={() => setStoryIndex(index)}
+                  onPress={() => setStoryIndex(stories.findIndex((s) => s.id === item.stories[0].id))}
                 />
               )}
             />
@@ -77,6 +77,7 @@ export default function FeedScreen() {
             isOwnPost={item.user_id === session?.user.id}
             onToggleLike={() => toggleLike(item)}
             onOpenComments={() => setCommentsPostId(item.id)}
+            onDelete={() => deletePost(item.id)}
           />
         )}
         ListEmptyComponent={
@@ -89,7 +90,13 @@ export default function FeedScreen() {
       />
 
       {storyIndex !== null ? (
-        <StoryViewer stories={stories} startIndex={storyIndex} onClose={() => setStoryIndex(null)} />
+        <StoryViewer
+          stories={stories}
+          startIndex={storyIndex}
+          currentUserId={session?.user.id}
+          onClose={() => setStoryIndex(null)}
+          onDelete={(storyId) => deleteStory(storyId)}
+        />
       ) : null}
 
       <CommentsSheet postId={commentsPostId} onClose={() => setCommentsPostId(null)} />
