@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, FlatList, StyleSheet, RefreshControl } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopBar } from '@/components/TopBar';
 import { PostCard } from '@/components/PostCard';
@@ -17,11 +17,20 @@ import { colors, spacing } from '@/constants/theme';
 
 export default function FeedScreen() {
   const { posts, loading, refresh, toggleLike } = usePosts();
-  const { stories } = useStories();
+  const { stories, refresh: refreshStories } = useStories();
   const { profile, session } = useAuth();
   const router = useRouter();
   const [storyIndex, setStoryIndex] = useState<number | null>(null);
   const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
+
+  // Returning from "Neuer Beitrag" (or switching back to this tab) doesn't
+  // remount this screen, so re-fetch on focus to pick up what was just posted.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+      refreshStories();
+    }, [refresh, refreshStories])
+  );
 
   if (loading) return <LoadingScreen />;
 

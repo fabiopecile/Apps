@@ -68,8 +68,18 @@ export function usePosts() {
       location: input.location ?? null,
       image_url: input.image_url ?? null,
     });
-    if (!insertError) await load();
-    return { error: insertError?.message ?? null };
+    if (insertError) return { error: insertError.message };
+
+    // A post with a photo also shows up as the author's story circle.
+    if (input.image_url) {
+      await supabase.from('stories').insert({
+        user_id: session.user.id,
+        media_url: input.image_url,
+      });
+    }
+
+    await load();
+    return { error: null };
   };
 
   return { posts, loading, error, refresh: load, toggleLike, createPost };
