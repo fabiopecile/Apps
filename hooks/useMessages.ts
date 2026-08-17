@@ -29,8 +29,12 @@ export function useMessages(conversationId: string) {
   useEffect(() => {
     load();
 
+    // Unique per effect run (not just per conversation) so a channel from a
+    // still-in-flight cleanup (React Strict Mode's double-invoke, a quick
+    // session refresh re-triggering this effect, etc.) can never collide
+    // with this one under the same topic.
     const channel = supabase
-      .channel(`messages:${conversationId}`)
+      .channel(`messages:${conversationId}:${Date.now()}:${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },

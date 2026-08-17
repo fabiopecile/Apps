@@ -44,8 +44,11 @@ export function useChatDuels(messages: Message[]) {
   }, [messages, fetchDuels]);
 
   useEffect(() => {
+    // Unique per mount so a still-cleaning-up channel from a previous mount
+    // (React Strict Mode's double-invoke, fast remounts, etc.) can never
+    // collide with this one under the same topic.
     const channel = supabase
-      .channel('chat-duel-updates')
+      .channel(`chat-duel-updates:${Date.now()}:${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'duels' }, (payload) => {
         const id = (payload.new as { id: string }).id;
         if (knownIds.current.has(id)) fetchDuels([id]);

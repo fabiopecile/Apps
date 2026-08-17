@@ -31,11 +31,15 @@ export function useFriendRequests() {
     load();
 
     if (!session) return;
+    const userId = session.user.id;
+    // Unique per effect run (not just per user) so a channel from a still-
+    // in-flight cleanup (e.g. React Strict Mode's double-invoke, or a quick
+    // session refresh) can never collide with this one under the same topic.
     const channel = supabase
-      .channel(`friend-requests:${session.user.id}`)
+      .channel(`friend-requests:${userId}:${Date.now()}:${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'friend_requests', filter: `recipient_id=eq.${session.user.id}` },
+        { event: '*', schema: 'public', table: 'friend_requests', filter: `recipient_id=eq.${userId}` },
         () => load()
       )
       .subscribe();
@@ -43,7 +47,7 @@ export function useFriendRequests() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [load, session]);
+  }, [load, session?.user.id]);
 
   const sendRequest = async (recipientId: string) => {
     if (!session) return { error: 'not signed in' };
