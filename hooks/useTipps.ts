@@ -40,9 +40,7 @@ export function useMatchday(leagueId: string | null) {
     const { data: matchdays, error: mdError } = await supabase
       .from('matchdays')
       .select('*')
-      .eq('league_id', leagueId)
-      .order('number', { ascending: false })
-      .limit(1);
+      .eq('league_id', leagueId);
 
     if (mdError || !matchdays?.length) {
       setMatchday(null);
@@ -52,7 +50,18 @@ export function useMatchday(leagueId: string | null) {
       return;
     }
 
-    const currentMatchday = matchdays[0] as Matchday;
+    // Pick the matchday closest to "now" instead of the highest number —
+    // real fixtures don't always play in strict round order (rescheduled
+    // games for clubs in European competitions, etc.), so relying on the
+    // round number alone can leave a still-open earlier round hidden.
+    const now = Date.now();
+    const upcoming = (matchdays as Matchday[])
+      .filter((m) => new Date(m.deadline).getTime() >= now)
+      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
+    const currentMatchday =
+      upcoming[0] ??
+      (matchdays as Matchday[]).sort((a, b) => new Date(b.deadline).getTime() - new Date(a.deadline).getTime())[0];
+
     setMatchday(currentMatchday);
 
     const { data: matchRows, error: matchError } = await supabase
