@@ -13,6 +13,7 @@ import { useOwnPosts } from '@/hooks/useOwnPosts';
 import { useBadges } from '@/hooks/useBadges';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/lib/supabase';
+import { registerForPushNotifications, clearPushToken } from '@/lib/notifications';
 import type { Language } from '@/lib/i18n';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { XP_PER_LEVEL } from '@/constants/game';
@@ -36,6 +37,12 @@ export default function ProfilScreen() {
   const updateSetting = async (patch: Partial<{ dark_mode: boolean; notifications_enabled: boolean; language: Language }>) => {
     await supabase.from('profiles').update(patch).eq('id', profile.id);
     await refreshProfile();
+  };
+
+  const handleNotificationsToggle = async (enabled: boolean) => {
+    await updateSetting({ notifications_enabled: enabled });
+    if (enabled) await registerForPushNotifications(profile.id);
+    else await clearPushToken(profile.id);
   };
 
   return (
@@ -95,7 +102,7 @@ export default function ProfilScreen() {
                 icon="🔔"
                 label={t('profil.notifications')}
                 value={profile.notifications_enabled}
-                onValueChange={(v) => updateSetting({ notifications_enabled: v })}
+                onValueChange={handleNotificationsToggle}
               />
               <SettingsRow icon="🛡️" label={t('profil.privacy')} chevron onPress={() => router.push('/privacy')} />
             </View>

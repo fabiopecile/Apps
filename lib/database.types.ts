@@ -16,6 +16,8 @@ export type Profile = {
   notifications_enabled: boolean;
   language: string;
   referral_code: string;
+  push_token: string | null;
+  push_token_updated_at: string | null;
   login_streak: number;
   last_login_date: string | null;
   coins: number;
@@ -205,6 +207,14 @@ export type Referral = {
   created_at: string;
 };
 
+export type NotificationLog = {
+  id: string;
+  user_id: string;
+  type: string;
+  ref_key: string;
+  sent_at: string;
+};
+
 export type WheelSpinResult = {
   prize_index: number;
   prize_type: WheelPrizeType;
@@ -258,6 +268,7 @@ export type Database = {
       >;
       friend_requests: Table<FriendRequest, { sender_id: string; recipient_id: string }>;
       referrals: Table<Referral, { referrer_id: string; referred_id: string }>;
+      notification_log: Table<NotificationLog, { user_id: string; type: string; ref_key: string }>;
     };
     Views: {
       duel_scores: { Row: DuelScore; Relationships: [] };

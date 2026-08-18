@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState, type PropsWithChildren } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
+import { registerForPushNotifications } from '@/lib/notifications';
 import type { Profile } from '@/lib/database.types';
 
 interface AuthContextValue {
@@ -28,6 +29,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
   const loadProfile = async (userId: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).single();
     setProfile((data as Profile) ?? null);
+    if ((data as Profile | null)?.notifications_enabled) {
+      registerForPushNotifications(userId).catch(() => {});
+    }
   };
 
   useEffect(() => {
