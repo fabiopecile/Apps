@@ -1,7 +1,8 @@
 import { useRef, useState } from 'react';
-import { View, Text, Image, Pressable, Animated, Alert, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, Animated, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
+import { confirmDestructive } from '@/lib/confirm';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { PostWithAuthor } from '@/lib/database.types';
 
@@ -36,10 +37,7 @@ export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments, onDele
   };
 
   const handleDelete = () => {
-    Alert.alert('Beitrag löschen?', 'Dieser Beitrag wird endgültig gelöscht.', [
-      { text: 'Abbrechen', style: 'cancel' },
-      { text: 'Löschen', style: 'destructive', onPress: onDelete },
-    ]);
+    confirmDestructive('Beitrag löschen?', 'Dieser Beitrag wird endgültig gelöscht.', 'Löschen', onDelete);
   };
 
   return (

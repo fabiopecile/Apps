@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
-import { Modal, View, Text, Image, Pressable, Animated, Alert, StyleSheet } from 'react-native';
+import { Modal, View, Text, Image, Pressable, Animated, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
+import { confirmDestructive } from '@/lib/confirm';
 import { colors, radii, spacing } from '@/constants/theme';
 import type { StoryWithAuthor } from '@/hooks/useStories';
 
@@ -58,18 +59,11 @@ export function StoryViewer({ stories, startIndex, currentUserId, onClose, onDel
   const isOwnStory = story.user_id === currentUserId;
 
   const handleDelete = () => {
-    Alert.alert('Story löschen?', 'Diese Story wird endgültig gelöscht.', [
-      { text: 'Abbrechen', style: 'cancel' },
-      {
-        text: 'Löschen',
-        style: 'destructive',
-        onPress: () => {
-          onDelete(story.id);
-          if (stories.length <= 1) onClose();
-          else goNext();
-        },
-      },
-    ]);
+    confirmDestructive('Story löschen?', 'Diese Story wird endgültig gelöscht.', 'Löschen', () => {
+      onDelete(story.id);
+      if (stories.length <= 1) onClose();
+      else goNext();
+    });
   };
 
   return (
