@@ -105,6 +105,9 @@ export default function ProfilScreen() {
                 onValueChange={handleNotificationsToggle}
               />
               <SettingsRow icon="🛡️" label={t('profil.privacy')} chevron onPress={() => router.push('/privacy')} />
+              {profile.is_admin ? (
+                <SettingsRow icon="⚙️" label="Admin" chevron onPress={() => router.push('/admin')} />
+              ) : null}
             </View>
 
             <View style={styles.tabs}>

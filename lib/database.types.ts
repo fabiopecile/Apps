@@ -18,6 +18,7 @@ export type Profile = {
   referral_code: string;
   push_token: string | null;
   push_token_updated_at: string | null;
+  is_admin: boolean;
   login_streak: number;
   last_login_date: string | null;
   coins: number;
