@@ -34,7 +34,7 @@ export default function ProfilScreen() {
   const quote = profile.tips_count > 0 ? Math.round((profile.correct_tips_count / profile.tips_count) * 100) : 0;
   const xpInLevel = profile.xp % XP_PER_LEVEL;
 
-  const updateSetting = async (patch: Partial<{ dark_mode: boolean; notifications_enabled: boolean; language: Language }>) => {
+  const updateSetting = async (patch: Partial<{ notifications_enabled: boolean; language: Language }>) => {
     await supabase.from('profiles').update(patch).eq('id', profile.id);
     await refreshProfile();
   };
@@ -90,7 +90,6 @@ export default function ProfilScreen() {
             <InviteFriendsCard referralCode={profile.referral_code} />
 
             <View style={styles.settings}>
-              <SettingsRow icon="🌙" label={t('profil.darkMode')} value={profile.dark_mode} onValueChange={(v) => updateSetting({ dark_mode: v })} />
               <SettingsRow
                 icon="🌐"
                 label={t('profil.language')}
