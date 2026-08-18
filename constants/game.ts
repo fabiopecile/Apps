@@ -1,4 +1,5 @@
 export const XP_PER_LEVEL = 1000;
+export const LEVEL_UP_REWARD_JOKERS = 1;
 export const XP_PER_POST = 50;
 export const STARTING_JOKERS = 3;
 export const POINTS_EXACT_SCORE = 5;

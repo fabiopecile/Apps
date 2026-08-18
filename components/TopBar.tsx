@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { WheelModal } from '@/components/WheelModal';
 import { PrizePopup } from '@/components/PrizePopup';
+import { LevelProgressModal } from '@/components/LevelProgressModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWheel } from '@/hooks/useWheel';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
@@ -16,6 +17,7 @@ export function TopBar() {
   const router = useRouter();
   const [wheelOpen, setWheelOpen] = useState(false);
   const [prize, setPrize] = useState<WheelSpinResult | null>(null);
+  const [levelInfoOpen, setLevelInfoOpen] = useState(false);
 
   const xpInLevel = (profile?.xp ?? 0) % XP_PER_LEVEL;
   const progress = Math.min(1, xpInLevel / XP_PER_LEVEL);
@@ -36,12 +38,12 @@ export function TopBar() {
           </View>
         ) : null}
 
-        <View style={styles.levelPill}>
+        <Pressable style={styles.levelPill} onPress={() => setLevelInfoOpen(true)}>
           <Text style={styles.levelText}>LVL {profile?.level ?? 1}</Text>
           <View style={styles.levelBarTrack}>
             <View style={[styles.levelBarFill, { width: `${progress * 100}%` }]} />
           </View>
-        </View>
+        </Pressable>
 
         <Pressable style={styles.giftButton} onPress={() => setWheelOpen(true)}>
           <Text style={styles.giftEmoji}>🎁</Text>
@@ -62,6 +64,12 @@ export function TopBar() {
         }}
       />
       <PrizePopup result={prize} onClose={() => setPrize(null)} />
+      <LevelProgressModal
+        visible={levelInfoOpen}
+        level={profile?.level ?? 1}
+        xp={profile?.xp ?? 0}
+        onClose={() => setLevelInfoOpen(false)}
+      />
     </View>
   );
 }
