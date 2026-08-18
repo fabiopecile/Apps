@@ -9,7 +9,12 @@ interface AuthContextValue {
   loading: boolean;
   refreshProfile: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, username: string) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    username: string,
+    referralCode?: string
+  ) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
 }
 
@@ -59,11 +64,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         return { error: error?.message ?? null };
       },
-      signUp: async (email, password, username) => {
+      signUp: async (email, password, username, referralCode) => {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username } },
+          options: { data: { username, referral_code: referralCode?.trim() || undefined } },
         });
         return { error: error?.message ?? null };
       },

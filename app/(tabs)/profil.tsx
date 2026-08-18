@@ -6,10 +6,14 @@ import { Avatar } from '@/components/Avatar';
 import { StatRow } from '@/components/StatPill';
 import { SettingsRow } from '@/components/SettingsRow';
 import { EmptyState } from '@/components/EmptyState';
+import { InviteFriendsCard } from '@/components/InviteFriendsCard';
+import { LanguagePickerModal } from '@/components/LanguagePickerModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOwnPosts } from '@/hooks/useOwnPosts';
 import { useBadges } from '@/hooks/useBadges';
+import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/lib/supabase';
+import type { Language } from '@/lib/i18n';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { XP_PER_LEVEL } from '@/constants/game';
 
@@ -17,8 +21,10 @@ type ProfileTab = 'beitraege' | 'statistik' | 'badges';
 
 export default function ProfilScreen() {
   const { profile, session, signOut, refreshProfile } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [tab, setTab] = useState<ProfileTab>('beitraege');
+  const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
   const { posts } = useOwnPosts(session?.user.id);
   const { allBadges, earnedIds } = useBadges(session?.user.id);
 
@@ -27,7 +33,7 @@ export default function ProfilScreen() {
   const quote = profile.tips_count > 0 ? Math.round((profile.correct_tips_count / profile.tips_count) * 100) : 0;
   const xpInLevel = profile.xp % XP_PER_LEVEL;
 
-  const updateSetting = async (patch: Partial<{ dark_mode: boolean; notifications_enabled: boolean }>) => {
+  const updateSetting = async (patch: Partial<{ dark_mode: boolean; notifications_enabled: boolean; language: Language }>) => {
     await supabase.from('profiles').update(patch).eq('id', profile.id);
     await refreshProfile();
   };
@@ -67,38 +73,46 @@ export default function ProfilScreen() {
 
             <StatRow
               stats={[
-                { value: String(profile.tips_count), label: 'Tipps' },
-                { value: `${quote}%`, label: 'Quote' },
-                { value: profile.points.toLocaleString('de-DE'), label: 'Punkte', accent: true },
-                { value: `🪙 ${profile.coins}`, label: 'Coins' },
+                { value: String(profile.tips_count), label: t('profil.statTipps') },
+                { value: `${quote}%`, label: t('profil.statQuote') },
+                { value: profile.points.toLocaleString('de-DE'), label: t('profil.statPoints'), accent: true },
+                { value: `🪙 ${profile.coins}`, label: t('profil.statCoins') },
               ]}
             />
 
+            <InviteFriendsCard referralCode={profile.referral_code} />
+
             <View style={styles.settings}>
-              <SettingsRow icon="🌙" label="Dark Mode" value={profile.dark_mode} onValueChange={(v) => updateSetting({ dark_mode: v })} />
-              <SettingsRow icon="🌐" label="Sprache" trailingText={profile.language.toUpperCase()} chevron />
+              <SettingsRow icon="🌙" label={t('profil.darkMode')} value={profile.dark_mode} onValueChange={(v) => updateSetting({ dark_mode: v })} />
+              <SettingsRow
+                icon="🌐"
+                label={t('profil.language')}
+                trailingText={profile.language.toUpperCase()}
+                chevron
+                onPress={() => setLanguagePickerOpen(true)}
+              />
               <SettingsRow
                 icon="🔔"
-                label="Benachrichtigungen"
+                label={t('profil.notifications')}
                 value={profile.notifications_enabled}
                 onValueChange={(v) => updateSetting({ notifications_enabled: v })}
               />
-              <SettingsRow icon="🛡️" label="Datenschutz" chevron onPress={() => {}} />
+              <SettingsRow icon="🛡️" label={t('profil.privacy')} chevron onPress={() => router.push('/privacy')} />
             </View>
 
             <View style={styles.tabs}>
-              <TabButton label="BEITRÄGE" active={tab === 'beitraege'} onPress={() => setTab('beitraege')} />
-              <TabButton label="STATISTIK" active={tab === 'statistik'} onPress={() => setTab('statistik')} />
-              <TabButton label="BADGES" active={tab === 'badges'} onPress={() => setTab('badges')} />
+              <TabButton label={t('profil.tabPosts')} active={tab === 'beitraege'} onPress={() => setTab('beitraege')} />
+              <TabButton label={t('profil.tabStats')} active={tab === 'statistik'} onPress={() => setTab('statistik')} />
+              <TabButton label={t('profil.tabBadges')} active={tab === 'badges'} onPress={() => setTab('badges')} />
             </View>
 
             {tab === 'statistik' ? (
               <View style={styles.statsDetail}>
-                <StatDetailRow label="Tipps abgegeben" value={String(profile.tips_count)} />
-                <StatDetailRow label="Richtige Tipps" value={String(profile.correct_tips_count)} />
-                <StatDetailRow label="Trefferquote" value={`${quote}%`} />
-                <StatDetailRow label="Gesamtpunkte" value={profile.points.toLocaleString('de-DE')} />
-                <StatDetailRow label="Level" value={String(profile.level)} />
+                <StatDetailRow label={t('profil.tippsAbgegeben')} value={String(profile.tips_count)} />
+                <StatDetailRow label={t('profil.richtigeTipps')} value={String(profile.correct_tips_count)} />
+                <StatDetailRow label={t('profil.trefferquote')} value={`${quote}%`} />
+                <StatDetailRow label={t('profil.gesamtpunkte')} value={profile.points.toLocaleString('de-DE')} />
+                <StatDetailRow label={t('profil.level')} value={String(profile.level)} />
               </View>
             ) : null}
 
@@ -113,7 +127,7 @@ export default function ProfilScreen() {
                     </View>
                   );
                 })}
-                {allBadges.length === 0 ? <EmptyState title="Noch keine Badges verfügbar" /> : null}
+                {allBadges.length === 0 ? <EmptyState title={t('profil.noBadges')} /> : null}
               </View>
             ) : null}
           </View>
@@ -127,12 +141,19 @@ export default function ProfilScreen() {
             </View>
           )
         }
-        ListEmptyComponent={tab === 'beitraege' ? <EmptyState title="Noch keine Beiträge" /> : null}
+        ListEmptyComponent={tab === 'beitraege' ? <EmptyState title={t('profil.noPosts')} /> : null}
         ListFooterComponent={
           <Pressable style={styles.signOut} onPress={signOut}>
-            <Text style={styles.signOutText}>Abmelden</Text>
+            <Text style={styles.signOutText}>{t('profil.signOut')}</Text>
           </Pressable>
         }
+      />
+
+      <LanguagePickerModal
+        visible={languagePickerOpen}
+        current={profile.language}
+        onSelect={(language) => updateSetting({ language })}
+        onClose={() => setLanguagePickerOpen(false)}
       />
     </SafeAreaView>
   );

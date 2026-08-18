@@ -15,6 +15,7 @@ export type Profile = {
   dark_mode: boolean;
   notifications_enabled: boolean;
   language: string;
+  referral_code: string;
   login_streak: number;
   last_login_date: string | null;
   coins: number;
@@ -197,6 +198,13 @@ export type FriendRequestWithProfiles = FriendRequest & {
 
 export type WheelPrizeType = 'xp' | 'joker' | 'coins' | 'booster' | 'title';
 
+export type Referral = {
+  id: string;
+  referrer_id: string;
+  referred_id: string;
+  created_at: string;
+};
+
 export type WheelSpinResult = {
   prize_index: number;
   prize_type: WheelPrizeType;
@@ -249,6 +257,7 @@ export type Database = {
         Partial<Duel> & { challenger_id: string; opponent_id: string; matchday_id: string }
       >;
       friend_requests: Table<FriendRequest, { sender_id: string; recipient_id: string }>;
+      referrals: Table<Referral, { referrer_id: string; referred_id: string }>;
     };
     Views: {
       duel_scores: { Row: DuelScore; Relationships: [] };

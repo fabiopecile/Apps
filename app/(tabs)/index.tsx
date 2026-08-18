@@ -13,12 +13,14 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { usePosts } from '@/hooks/usePosts';
 import { useStories } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTranslation } from '@/hooks/useTranslation';
 import { colors, spacing } from '@/constants/theme';
 
 export default function FeedScreen() {
   const { posts, loading, refresh, toggleLike, deletePost } = usePosts();
   const { stories, groups, refresh: refreshStories, deleteStory } = useStories();
   const { profile, session } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [storyIndex, setStoryIndex] = useState<number | null>(null);
   const [commentsPostId, setCommentsPostId] = useState<string | null>(null);
@@ -44,7 +46,7 @@ export default function FeedScreen() {
         ListHeaderComponent={
           <View>
             <View style={styles.ctaWrap}>
-              <PrimaryButton label="+ Beitrag hinzufügen (+50 XP)" onPress={() => router.push('/post/new')} />
+              <PrimaryButton label={t('feed.addPost')} onPress={() => router.push('/post/new')} />
             </View>
             <FlatList
               data={groups}
@@ -81,10 +83,7 @@ export default function FeedScreen() {
           />
         )}
         ListEmptyComponent={
-          <EmptyState
-            title="Noch keine Beiträge"
-            subtitle="Sei der Erste und teile einen Beitrag aus dem Stadion – dafür gibt's +50 XP."
-          />
+          <EmptyState title={t('feed.emptyTitle')} subtitle={t('feed.emptySubtitle')} />
         }
         contentContainerStyle={styles.listContent}
       />

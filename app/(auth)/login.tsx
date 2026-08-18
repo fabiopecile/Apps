@@ -5,9 +5,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { isSupabaseConfigured } from '@/lib/supabase';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function LoginScreen() {
   const { session, signIn } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -33,7 +35,7 @@ export default function LoginScreen() {
           TEAM<Text style={styles.logoAccent}>UP</Text>
           <Text style={styles.logoAccent}>11</Text>
         </Text>
-        <Text style={styles.tagline}>Tippen. Posten. Gewinnen.</Text>
+        <Text style={styles.tagline}>{t('auth.loginTagline')}</Text>
 
         {!isSupabaseConfigured ? (
           <Text style={styles.warning}>
@@ -44,7 +46,7 @@ export default function LoginScreen() {
         <View style={styles.form}>
           <TextInput
             style={styles.input}
-            placeholder="E-Mail"
+            placeholder={t('auth.email')}
             placeholderTextColor={colors.textFaint}
             autoCapitalize="none"
             keyboardType="email-address"
@@ -53,19 +55,19 @@ export default function LoginScreen() {
           />
           <TextInput
             style={styles.input}
-            placeholder="Passwort"
+            placeholder={t('auth.password')}
             placeholderTextColor={colors.textFaint}
             secureTextEntry
             value={password}
             onChangeText={setPassword}
           />
           {error ? <Text style={styles.error}>{error}</Text> : null}
-          <PrimaryButton label="Log In" onPress={handleSubmit} loading={loading} disabled={!email || !password} />
+          <PrimaryButton label={t('auth.login')} onPress={handleSubmit} loading={loading} disabled={!email || !password} />
         </View>
 
         <Link href="/(auth)/signup" style={styles.link}>
           <Text style={styles.linkText}>
-            Noch kein Konto? <Text style={styles.linkAccent}>Sign Up</Text>
+            {t('auth.noAccount')} <Text style={styles.linkAccent}>{t('auth.signup')}</Text>
           </Text>
         </Link>
       </ScrollView>

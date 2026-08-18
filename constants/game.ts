@@ -8,3 +8,5 @@ export const STREAK_MILESTONE_DAYS = 7;
 export const STREAK_REWARD_XP = 100;
 export const STREAK_REWARD_JOKER = 1;
 export const DUEL_WIN_XP = 30;
+export const REFERRAL_REWARD_XP = 100;
+export const REFERRAL_REWARD_JOKER = 1;

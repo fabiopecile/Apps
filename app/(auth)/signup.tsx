@@ -4,13 +4,16 @@ import { Link, useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function SignupScreen() {
   const { session, signUp } = useAuth();
+  const { t } = useTranslation();
   const router = useRouter();
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [referralCode, setReferralCode] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [confirmationSent, setConfirmationSent] = useState(false);
@@ -22,7 +25,7 @@ export default function SignupScreen() {
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
-    const { error: signUpError } = await signUp(email.trim(), password, username.trim());
+    const { error: signUpError } = await signUp(email.trim(), password, username.trim(), referralCode.trim());
     setLoading(false);
     if (signUpError) {
       setError(signUpError);
@@ -38,17 +41,15 @@ export default function SignupScreen() {
           TEAM<Text style={styles.logoAccent}>UP</Text>
           <Text style={styles.logoAccent}>11</Text>
         </Text>
-        <Text style={styles.tagline}>Erstelle dein Konto</Text>
+        <Text style={styles.tagline}>{t('auth.signupTagline')}</Text>
 
         {confirmationSent ? (
-          <Text style={styles.info}>
-            Fast geschafft! Bestätige deine E-Mail-Adresse, um dich einzuloggen.
-          </Text>
+          <Text style={styles.info}>{t('auth.confirmEmail')}</Text>
         ) : (
           <View style={styles.form}>
             <TextInput
               style={styles.input}
-              placeholder="Benutzername"
+              placeholder={t('auth.username')}
               placeholderTextColor={colors.textFaint}
               autoCapitalize="none"
               value={username}
@@ -56,7 +57,7 @@ export default function SignupScreen() {
             />
             <TextInput
               style={styles.input}
-              placeholder="E-Mail"
+              placeholder={t('auth.email')}
               placeholderTextColor={colors.textFaint}
               autoCapitalize="none"
               keyboardType="email-address"
@@ -65,15 +66,23 @@ export default function SignupScreen() {
             />
             <TextInput
               style={styles.input}
-              placeholder="Passwort (min. 6 Zeichen)"
+              placeholder={t('auth.passwordHint')}
               placeholderTextColor={colors.textFaint}
               secureTextEntry
               value={password}
               onChangeText={setPassword}
             />
+            <TextInput
+              style={styles.input}
+              placeholder={t('auth.referralCode')}
+              placeholderTextColor={colors.textFaint}
+              autoCapitalize="characters"
+              value={referralCode}
+              onChangeText={setReferralCode}
+            />
             {error ? <Text style={styles.error}>{error}</Text> : null}
             <PrimaryButton
-              label="Sign Up"
+              label={t('auth.signup')}
               variant="red"
               onPress={handleSubmit}
               loading={loading}
@@ -84,7 +93,7 @@ export default function SignupScreen() {
 
         <Link href="/(auth)/login" style={styles.link}>
           <Text style={styles.linkText}>
-            Schon ein Konto? <Text style={styles.linkAccent}>Log In</Text>
+            {t('auth.hasAccount')} <Text style={styles.linkAccent}>{t('auth.login')}</Text>
           </Text>
         </Link>
       </ScrollView>
