@@ -73,17 +73,25 @@ async function sendTipReminders(supabase: SupabaseClient) {
 }
 
 async function sendWheelReminders(supabase: SupabaseClient) {
-  const today = new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const currentHour = now.getUTCHours();
 
   const { data: candidates } = await supabase
     .from('profiles')
-    .select('id, push_token')
+    .select('id, push_token, reminder_hour_utc')
     .not('push_token', 'is', null)
     .eq('notifications_enabled', true)
     .or(`last_wheel_spin_date.is.null,last_wheel_spin_date.lt.${today}`);
 
   let sent = 0;
   for (const user of candidates ?? []) {
+    // Everyone gets 18:00 UTC by default; Pro users can pick their own hour
+    // (profiles.reminder_hour_utc) via Profil. This function now needs to be
+    // scheduled hourly so each user's chosen hour actually gets checked.
+    const hour = (user.reminder_hour_utc as number | null) ?? 18;
+    if (hour !== currentHour) continue;
+
     const { error: logError } = await supabase
       .from('notification_log')
       .insert({ user_id: user.id, type: 'wheel_reminder', ref_key: today });

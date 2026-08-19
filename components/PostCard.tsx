@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { View, Text, Image, Pressable, Animated, StyleSheet } from 'react-native';
+import { View, Text, Image, Pressable, Animated, ScrollView, StyleSheet, type NativeSyntheticEvent, type NativeScrollEvent, type LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { confirmDestructive } from '@/lib/confirm';
@@ -20,6 +20,10 @@ export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments, onDele
   const lastTap = useRef(0);
   const heartAnim = useRef(new Animated.Value(0)).current;
   const [showHeart, setShowHeart] = useState(false);
+  const [imageWidth, setImageWidth] = useState(0);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+  const images = post.image_urls && post.image_urls.length > 1 ? post.image_urls : post.image_url ? [post.image_url] : [];
 
   const handleImagePress = () => {
     const now = Date.now();
@@ -63,14 +67,34 @@ export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments, onDele
         )}
       </View>
 
-      <Pressable onPress={handleImagePress}>
-        {post.image_url ? (
-          <Image source={{ uri: post.image_url }} style={styles.image} />
+      <View onLayout={(e: LayoutChangeEvent) => setImageWidth(e.nativeEvent.layout.width)}>
+        {images.length > 1 ? (
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onMomentumScrollEnd={(e: NativeSyntheticEvent<NativeScrollEvent>) => {
+              if (imageWidth > 0) setActiveImageIndex(Math.round(e.nativeEvent.contentOffset.x / imageWidth));
+            }}
+          >
+            {images.map((uri) => (
+              <Pressable key={uri} onPress={handleImagePress} style={{ width: imageWidth || undefined }}>
+                <Image source={{ uri }} style={styles.image} />
+              </Pressable>
+            ))}
+          </ScrollView>
         ) : (
-          <View style={[styles.image, styles.imageFallback]}>
-            <Text style={styles.imageFallbackText}>⚽️</Text>
-          </View>
+          <Pressable onPress={handleImagePress}>
+            {images[0] ? (
+              <Image source={{ uri: images[0] }} style={styles.image} />
+            ) : (
+              <View style={[styles.image, styles.imageFallback]}>
+                <Text style={styles.imageFallbackText}>⚽️</Text>
+              </View>
+            )}
+          </Pressable>
         )}
+
         {showHeart ? (
           <Animated.Text
             style={[
@@ -84,7 +108,15 @@ export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments, onDele
             ❤️
           </Animated.Text>
         ) : null}
-      </Pressable>
+
+        {images.length > 1 ? (
+          <View style={styles.dotsRow}>
+            {images.map((uri, i) => (
+              <View key={uri} style={[styles.dot, i === activeImageIndex && styles.dotActive]} />
+            ))}
+          </View>
+        ) : null}
+      </View>
 
       <View style={styles.actions}>
         <Pressable onPress={onToggleLike} style={styles.actionButton}>
@@ -143,6 +175,17 @@ const styles = StyleSheet.create({
     marginLeft: -50,
     fontSize: 100,
   },
+  dotsRow: {
+    position: 'absolute',
+    bottom: spacing.sm,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 4,
+  },
+  dot: { width: 6, height: 6, borderRadius: 3, backgroundColor: 'rgba(255,255,255,0.4)' },
+  dotActive: { backgroundColor: colors.white },
   actions: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: spacing.lg },
   actionButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   actionIcon: { fontSize: 22 },

@@ -9,15 +9,19 @@ import { useAuth } from '@/contexts/AuthContext';
 import { uploadImage } from '@/lib/storage';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 
+const MAX_PRO_PHOTOS = 5;
+
 export default function NewPostScreen() {
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const { createPost } = usePosts();
-  const [imageUri, setImageUri] = useState<string | null>(null);
+  const [imageUris, setImageUris] = useState<string[]>([]);
   const [caption, setCaption] = useState('');
   const [location, setLocation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  const isPro = !!profile?.is_pro;
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -25,10 +29,12 @@ export default function NewPostScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       quality: 0.8,
-      aspect: [4, 5],
-      allowsEditing: true,
+      aspect: isPro ? undefined : [4, 5],
+      allowsEditing: !isPro,
+      allowsMultipleSelection: isPro,
+      selectionLimit: isPro ? MAX_PRO_PHOTOS : 1,
     });
-    if (!result.canceled) setImageUri(result.assets[0].uri);
+    if (!result.canceled) setImageUris(result.assets.map((a) => a.uri).slice(0, MAX_PRO_PHOTOS));
   };
 
   const handleSubmit = async () => {
@@ -37,11 +43,12 @@ export default function NewPostScreen() {
     setError(null);
 
     try {
-      const uploadedUrl = imageUri ? await uploadImage(imageUri, session.user.id) : undefined;
+      const uploadedUrls = await Promise.all(imageUris.map((uri) => uploadImage(uri, session.user.id)));
       const { error: submitError } = await createPost({
         caption,
         location: location || undefined,
-        image_url: uploadedUrl,
+        image_url: uploadedUrls[0],
+        image_urls: uploadedUrls,
       });
       if (submitError) {
         setError(submitError);
@@ -55,7 +62,7 @@ export default function NewPostScreen() {
     }
   };
 
-  const canSubmit = (!!caption.trim() || !!imageUri) && !submitting;
+  const canSubmit = (!!caption.trim() || imageUris.length > 0) && !submitting;
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -69,15 +76,25 @@ export default function NewPostScreen() {
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Pressable style={styles.imagePicker} onPress={pickImage}>
-            {imageUri ? (
-              <Image source={{ uri: imageUri }} style={styles.imagePreview} />
+            {imageUris.length > 0 ? (
+              <Image source={{ uri: imageUris[0] }} style={styles.imagePreview} />
             ) : (
               <>
                 <Ionicons name="camera" size={40} color={colors.textFaint} style={styles.cameraIcon} />
-                <Text style={styles.imagePickerText}>Foto auswählen oder aufnehmen</Text>
+                <Text style={styles.imagePickerText}>
+                  {isPro ? `Fotos auswählen (bis zu ${MAX_PRO_PHOTOS})` : 'Foto auswählen oder aufnehmen'}
+                </Text>
               </>
             )}
           </Pressable>
+
+          {imageUris.length > 1 ? (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbRow}>
+              {imageUris.map((uri) => (
+                <Image key={uri} source={{ uri }} style={styles.thumb} />
+              ))}
+            </ScrollView>
+          ) : null}
 
           <Text style={styles.label}>BESCHREIBUNG</Text>
           <TextInput
@@ -156,6 +173,8 @@ const styles = StyleSheet.create({
   },
   cameraIcon: { marginBottom: spacing.sm },
   imagePreview: { width: '100%', height: '100%' },
+  thumbRow: { marginTop: -spacing.md, marginBottom: spacing.lg },
+  thumb: { width: 56, height: 56, borderRadius: radii.md, marginRight: spacing.sm },
   imagePickerText: { color: colors.textMuted, fontSize: fontSizes.sm },
   label: {
     color: colors.textFaint,

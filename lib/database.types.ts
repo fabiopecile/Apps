@@ -19,6 +19,10 @@ export type Profile = {
   push_token: string | null;
   push_token_updated_at: string | null;
   is_admin: boolean;
+  is_pro: boolean;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  reminder_hour_utc: number | null;
   login_streak: number;
   last_login_date: string | null;
   coins: number;
@@ -75,6 +79,7 @@ export type Post = {
   id: string;
   user_id: string;
   image_url: string | null;
+  image_urls: string[] | null;
   caption: string | null;
   location: string | null;
   created_at: string;
@@ -103,8 +108,23 @@ export type Story = {
   user_id: string;
   media_url: string;
   location: string | null;
+  is_highlight: boolean;
   created_at: string;
   expires_at: string;
+};
+
+export type PrivateLeague = {
+  id: string;
+  name: string;
+  code: string;
+  created_by: string;
+  created_at: string;
+};
+
+export type PrivateLeagueMember = {
+  league_id: string;
+  user_id: string;
+  joined_at: string;
 };
 
 export type Conversation = {
@@ -270,6 +290,8 @@ export type Database = {
       friend_requests: Table<FriendRequest, { sender_id: string; recipient_id: string }>;
       referrals: Table<Referral, { referrer_id: string; referred_id: string }>;
       notification_log: Table<NotificationLog, { user_id: string; type: string; ref_key: string }>;
+      private_leagues: Table<PrivateLeague, { name: string; code: string; created_by: string }>;
+      private_league_members: Table<PrivateLeagueMember, { league_id: string; user_id: string }>;
     };
     Views: {
       duel_scores: { Row: DuelScore; Relationships: [] };
@@ -282,6 +304,14 @@ export type Database = {
       spin_wheel: {
         Args: Record<string, never>;
         Returns: WheelSpinResult[];
+      };
+      create_private_league: {
+        Args: { p_name: string };
+        Returns: PrivateLeague;
+      };
+      join_private_league: {
+        Args: { p_code: string };
+        Returns: PrivateLeague;
       };
     };
   };

@@ -18,7 +18,7 @@ import { colors, spacing } from '@/constants/theme';
 
 export default function FeedScreen() {
   const { posts, loading, refresh, toggleLike, deletePost } = usePosts();
-  const { stories, groups, refresh: refreshStories, deleteStory } = useStories();
+  const { stories, groups, refresh: refreshStories, deleteStory, saveHighlight } = useStories();
   const { profile, session } = useAuth();
   const { t } = useTranslation();
   const router = useRouter();
@@ -93,8 +93,10 @@ export default function FeedScreen() {
           stories={stories}
           startIndex={storyIndex}
           currentUserId={session?.user.id}
+          isPro={profile?.is_pro}
           onClose={() => setStoryIndex(null)}
           onDelete={(storyId) => deleteStory(storyId)}
+          onSaveHighlight={(storyId) => saveHighlight(storyId)}
         />
       ) : null}
 

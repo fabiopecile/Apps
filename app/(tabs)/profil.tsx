@@ -8,12 +8,15 @@ import { SettingsRow } from '@/components/SettingsRow';
 import { EmptyState } from '@/components/EmptyState';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { LanguagePickerModal } from '@/components/LanguagePickerModal';
+import { ProCard } from '@/components/ProCard';
+import { ReminderHourModal } from '@/components/ReminderHourModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOwnPosts } from '@/hooks/useOwnPosts';
 import { useBadges } from '@/hooks/useBadges';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/lib/supabase';
 import { registerForPushNotifications, clearPushToken } from '@/lib/notifications';
+import { exportStatsPdf } from '@/lib/statsExport';
 import type { Language } from '@/lib/i18n';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { XP_PER_LEVEL } from '@/constants/game';
@@ -26,6 +29,8 @@ export default function ProfilScreen() {
   const router = useRouter();
   const [tab, setTab] = useState<ProfileTab>('beitraege');
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
+  const [reminderHourOpen, setReminderHourOpen] = useState(false);
+  const [exportingPdf, setExportingPdf] = useState(false);
   const { posts } = useOwnPosts(session?.user.id);
   const { allBadges, earnedIds } = useBadges(session?.user.id);
 
@@ -37,6 +42,17 @@ export default function ProfilScreen() {
   const updateSetting = async (patch: Partial<{ notifications_enabled: boolean; language: Language }>) => {
     await supabase.from('profiles').update(patch).eq('id', profile.id);
     await refreshProfile();
+  };
+
+  const handleReminderHourSelect = async (utcHour: number) => {
+    await supabase.from('profiles').update({ reminder_hour_utc: utcHour }).eq('id', profile.id);
+    await refreshProfile();
+  };
+
+  const handleExportPdf = async () => {
+    setExportingPdf(true);
+    await exportStatsPdf(profile, quote);
+    setExportingPdf(false);
   };
 
   const handleNotificationsToggle = async (enabled: boolean) => {
@@ -54,10 +70,20 @@ export default function ProfilScreen() {
         ListHeaderComponent={
           <View>
             <View style={styles.profileHeader}>
-              <Avatar uri={profile.avatar_url} name={profile.display_name ?? profile.username} size={88} ringColor={colors.red} />
+              <Avatar
+                uri={profile.avatar_url}
+                name={profile.display_name ?? profile.username}
+                size={88}
+                ringColor={profile.is_pro ? colors.gold : colors.red}
+              />
               <View style={styles.profileInfo}>
                 <View style={styles.usernameRow}>
                   <Text style={styles.username}>{profile.username}</Text>
+                  {profile.is_pro ? (
+                    <View style={styles.proBadge}>
+                      <Text style={styles.proBadgeText}>PRO</Text>
+                    </View>
+                  ) : null}
                   {profile.equipped_title ? (
                     <View style={styles.titleBadge}>
                       <Text style={styles.titleBadgeText}>👑 {profile.equipped_title}</Text>
@@ -87,7 +113,28 @@ export default function ProfilScreen() {
               ]}
             />
 
+            <ProCard isPro={profile.is_pro} />
+
             <InviteFriendsCard referralCode={profile.referral_code} />
+
+            {profile.is_pro ? (
+              <View style={styles.settings}>
+                <SettingsRow icon="🏆" label="Private Ligen" chevron onPress={() => router.push('/leagues')} />
+                <SettingsRow
+                  icon="⏰"
+                  label="Erinnerungszeit"
+                  trailingText={`${profile.reminder_hour_utc ?? 18}:00 UTC`}
+                  chevron
+                  onPress={() => setReminderHourOpen(true)}
+                />
+                <SettingsRow
+                  icon="📄"
+                  label={exportingPdf ? 'Wird erstellt...' : 'Statistik exportieren'}
+                  chevron
+                  onPress={handleExportPdf}
+                />
+              </View>
+            ) : null}
 
             <View style={styles.settings}>
               <SettingsRow
@@ -164,6 +211,12 @@ export default function ProfilScreen() {
         onSelect={(language) => updateSetting({ language })}
         onClose={() => setLanguagePickerOpen(false)}
       />
+      <ReminderHourModal
+        visible={reminderHourOpen}
+        currentUtcHour={profile.reminder_hour_utc}
+        onSelect={handleReminderHourSelect}
+        onClose={() => setReminderHourOpen(false)}
+      />
     </SafeAreaView>
   );
 }
@@ -193,6 +246,8 @@ const styles = StyleSheet.create({
   profileInfo: { flex: 1, gap: spacing.sm },
   usernameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
   username: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800' },
+  proBadge: { backgroundColor: colors.gold, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  proBadgeText: { color: colors.black, fontSize: fontSizes.xs, fontWeight: '900' },
   titleBadge: { backgroundColor: colors.goldDark, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
   titleBadgeText: { color: colors.gold, fontSize: fontSizes.xs, fontWeight: '700' },
   levelRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },

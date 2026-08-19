@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { formatMatchTime } from '@/lib/dates';
 import { JokerTypeModal } from '@/components/JokerTypeModal';
+import { supabase } from '@/lib/supabase';
 import type { MatchWithTip } from '@/hooks/useTipps';
 import type { JokerType } from '@/lib/database.types';
 
@@ -15,11 +17,12 @@ const JOKER_LABELS: Record<JokerType, { emoji: string; label: string }> = {
 interface MatchTipCardProps {
   match: MatchWithTip;
   jokersRemaining: number;
+  isPro?: boolean;
   onSubmit: (homeScore: number, awayScore: number, jokerType: JokerType | null) => Promise<{ error: string | null }>;
   onSuccess?: () => void;
 }
 
-export function MatchTipCard({ match, jokersRemaining, onSubmit, onSuccess }: MatchTipCardProps) {
+export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSuccess }: MatchTipCardProps) {
   const isLocked = new Date(match.kickoff).getTime() <= Date.now();
   const [homeScore, setHomeScore] = useState(match.tip?.home_score?.toString() ?? '');
   const [awayScore, setAwayScore] = useState(match.tip?.away_score?.toString() ?? '');
@@ -28,6 +31,28 @@ export function MatchTipCard({ match, jokersRemaining, onSubmit, onSuccess }: Ma
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [justSubmitted, setJustSubmitted] = useState(false);
+  const [stats, setStats] = useState<{ home: string; away: string } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
+
+  const handleToggleStats = async () => {
+    if (statsOpen) {
+      setStatsOpen(false);
+      return;
+    }
+    setStatsOpen(true);
+    if (stats || statsLoading) return;
+    setStatsLoading(true);
+    const [homeRes, awayRes] = await Promise.all([
+      supabase.functions.invoke('team-stats', { body: { team: match.home_team } }),
+      supabase.functions.invoke('team-stats', { body: { team: match.away_team } }),
+    ]);
+    setStats({
+      home: homeRes.data?.summary ?? 'Keine Daten verfügbar.',
+      away: awayRes.data?.summary ?? 'Keine Daten verfügbar.',
+    });
+    setStatsLoading(false);
+  };
 
   const canOpenJoker = !isLocked && (jokersRemaining > 0 || jokerType !== null);
   const canSubmit = !isLocked && homeScore !== '' && awayScore !== '' && !submitting;
@@ -76,6 +101,32 @@ export function MatchTipCard({ match, jokersRemaining, onSubmit, onSuccess }: Ma
         <Text style={styles.vs}>vs</Text>
         <Text style={[styles.teamName, styles.teamNameRight]}>{match.away_team}</Text>
       </View>
+
+      {isPro ? (
+        <Pressable style={styles.statsToggle} onPress={handleToggleStats}>
+          <Ionicons name="sparkles" size={14} color={colors.gold} />
+          <Text style={styles.statsToggleText}>KI-Statistik</Text>
+        </Pressable>
+      ) : null}
+
+      {statsOpen ? (
+        <View style={styles.statsBox}>
+          {statsLoading ? (
+            <Text style={styles.statsText}>Lädt...</Text>
+          ) : (
+            <>
+              <Text style={styles.statsText}>
+                <Text style={styles.statsTeam}>{match.home_team}: </Text>
+                {stats?.home}
+              </Text>
+              <Text style={[styles.statsText, { marginTop: spacing.xs }]}>
+                <Text style={styles.statsTeam}>{match.away_team}: </Text>
+                {stats?.away}
+              </Text>
+            </>
+          )}
+        </View>
+      ) : null}
 
       <View style={styles.scoreRow}>
         <TextInput
@@ -187,6 +238,22 @@ const styles = StyleSheet.create({
   teamName: { flex: 1, color: colors.white, fontSize: fontSizes.xl, fontWeight: '800' },
   teamNameRight: { textAlign: 'right' },
   vs: { color: colors.textFaint, fontSize: fontSizes.sm, marginHorizontal: spacing.sm },
+  statsToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  statsToggleText: { color: colors.gold, fontWeight: '700', fontSize: fontSizes.xs },
+  statsBox: {
+    backgroundColor: colors.goldDark,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  statsText: { color: colors.text, fontSize: fontSizes.xs, lineHeight: 18 },
+  statsTeam: { fontWeight: '700', color: colors.gold },
   scoreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md, marginBottom: spacing.lg },
   scoreInput: {
     width: 72,

@@ -27,6 +27,7 @@ export function usePosts() {
       id: row.id,
       user_id: row.user_id,
       image_url: row.image_url,
+      image_urls: row.image_urls,
       caption: row.caption,
       location: row.location,
       created_at: row.created_at,
@@ -60,13 +61,14 @@ export function usePosts() {
     }
   };
 
-  const createPost = async (input: { caption: string; location?: string; image_url?: string }) => {
+  const createPost = async (input: { caption: string; location?: string; image_url?: string; image_urls?: string[] }) => {
     if (!session) return { error: 'not signed in' };
     const { error: insertError } = await supabase.from('posts').insert({
       user_id: session.user.id,
       caption: input.caption,
       location: input.location ?? null,
       image_url: input.image_url ?? null,
+      image_urls: input.image_urls && input.image_urls.length > 1 ? input.image_urls : null,
     });
     if (insertError) return { error: insertError.message };
 

@@ -65,5 +65,16 @@ export function useStories() {
     return { error: error?.message ?? null };
   };
 
-  return { stories, groups, loading, refresh: load, createStory, deleteStory };
+  const saveHighlight = async (storyId: string) => {
+    const farFuture = new Date();
+    farFuture.setFullYear(farFuture.getFullYear() + 100);
+    const { error } = await supabase
+      .from('stories')
+      .update({ is_highlight: true, expires_at: farFuture.toISOString() })
+      .eq('id', storyId);
+    if (!error) await load();
+    return { error: error?.message ?? null };
+  };
+
+  return { stories, groups, loading, refresh: load, createStory, deleteStory, saveHighlight };
 }

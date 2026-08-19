@@ -12,11 +12,13 @@ interface StoryViewerProps {
   stories: StoryWithAuthor[];
   startIndex: number;
   currentUserId?: string;
+  isPro?: boolean;
   onClose: () => void;
   onDelete: (storyId: string) => void;
+  onSaveHighlight: (storyId: string) => void;
 }
 
-export function StoryViewer({ stories, startIndex, currentUserId, onClose, onDelete }: StoryViewerProps) {
+export function StoryViewer({ stories, startIndex, currentUserId, isPro, onClose, onDelete, onSaveHighlight }: StoryViewerProps) {
   const [index, setIndex] = useState(startIndex);
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -92,6 +94,11 @@ export function StoryViewer({ stories, startIndex, currentUserId, onClose, onDel
         <View style={styles.header}>
           <Avatar uri={story.profiles.avatar_url} name={story.profiles.username} size={36} />
           <Text style={styles.username}>{story.profiles.username}</Text>
+          {isOwnStory && isPro && !story.is_highlight ? (
+            <Pressable onPress={() => onSaveHighlight(story.id)} style={styles.deleteButton} hitSlop={8}>
+              <Ionicons name="star-outline" size={20} color={colors.gold} />
+            </Pressable>
+          ) : null}
           {isOwnStory ? (
             <Pressable onPress={handleDelete} style={styles.deleteButton} hitSlop={8}>
               <Ionicons name="trash" size={20} color={colors.white} />

@@ -20,7 +20,7 @@ export default function TippsScreen() {
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const router = useRouter();
-  const { session } = useAuth();
+  const { session, profile } = useAuth();
   const { duels } = useDuels();
 
   useEffect(() => {
@@ -72,6 +72,7 @@ export default function TippsScreen() {
             <MatchTipCard
               match={item}
               jokersRemaining={jokersRemaining}
+              isPro={profile?.is_pro}
               onSubmit={(h, a, j) => submitTip(item.id, h, a, j)}
               onSuccess={() => setConfettiTrigger((t) => t + 1)}
             />
