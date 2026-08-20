@@ -9,6 +9,7 @@
 // Requires secret ANTHROPIC_API_KEY (same one used by moderate-post).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
 const ANTHROPIC_MODEL = 'claude-haiku-4-5-20251001';
 
@@ -24,6 +25,8 @@ function summarizeResults(team: string, matches: { home_team: string; away_team:
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const anthropicKey = Deno.env.get('ANTHROPIC_API_KEY');
@@ -31,19 +34,24 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !serviceRoleKey || !anthropicKey) {
     return new Response(JSON.stringify({ error: 'Missing required secrets' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
   const jwt = (req.headers.get('Authorization') ?? '').replace('Bearer ', '');
-  if (!jwt) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  if (!jwt) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
   if (userError || !userData.user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -51,7 +59,7 @@ Deno.serve(async (req) => {
   if (!caller?.is_pro) {
     return new Response(JSON.stringify({ error: 'Nur für Pro-Nutzer' }), {
       status: 403,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -59,7 +67,7 @@ Deno.serve(async (req) => {
   if (!team) {
     return new Response(JSON.stringify({ error: 'Missing team' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -73,7 +81,7 @@ Deno.serve(async (req) => {
 
   if (!matches || matches.length === 0) {
     return new Response(JSON.stringify({ summary: `Keine vergangenen Ergebnisse für ${team} gefunden.` }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -103,11 +111,11 @@ Deno.serve(async (req) => {
     const summary = data.content?.[0]?.text?.trim() ?? resultLines.join(', ');
 
     return new Response(JSON.stringify({ summary, results: resultLines }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err) {
     return new Response(JSON.stringify({ summary: resultLines.join(', '), results: resultLines }), {
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });

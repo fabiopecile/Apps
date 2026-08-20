@@ -6,8 +6,11 @@
 // Requires secrets: STRIPE_SECRET_KEY, APP_URL
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   const stripeSecretKey = Deno.env.get('STRIPE_SECRET_KEY');
@@ -16,19 +19,24 @@ Deno.serve(async (req) => {
   if (!supabaseUrl || !serviceRoleKey || !stripeSecretKey || !appUrl) {
     return new Response(JSON.stringify({ error: 'Missing required secrets' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
   const jwt = (req.headers.get('Authorization') ?? '').replace('Bearer ', '');
-  if (!jwt) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  if (!jwt) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
   const { data: userData, error: userError } = await supabase.auth.getUser(jwt);
   if (userError || !userData.user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -41,7 +49,7 @@ Deno.serve(async (req) => {
   if (!profile?.stripe_customer_id) {
     return new Response(JSON.stringify({ error: 'Kein aktives Abo gefunden' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -57,11 +65,13 @@ Deno.serve(async (req) => {
     const data = await res.json();
     if (!res.ok) throw new Error(data.error?.message ?? `Stripe API ${res.status}`);
 
-    return new Response(JSON.stringify({ url: data.url }), { headers: { 'Content-Type': 'application/json' } });
+    return new Response(JSON.stringify({ url: data.url }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
   } catch (err) {
     return new Response(JSON.stringify({ error: err instanceof Error ? err.message : String(err) }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 });

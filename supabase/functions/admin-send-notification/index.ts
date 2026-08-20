@@ -10,6 +10,7 @@
 // the Edge Functions runtime.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+import { corsHeaders } from '../_shared/cors.ts';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
@@ -28,17 +29,24 @@ async function sendPushMessages(messages: { to: string; title: string; body: str
 }
 
 Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
+
   const supabaseUrl = Deno.env.get('SUPABASE_URL');
   const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
   if (!supabaseUrl || !serviceRoleKey) {
     return new Response(JSON.stringify({ error: 'Missing SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY' }), {
       status: 500,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
   const jwt = (req.headers.get('Authorization') ?? '').replace('Bearer ', '');
-  if (!jwt) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+  if (!jwt) {
+    return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
 
   const supabase = createClient(supabaseUrl, serviceRoleKey);
 
@@ -46,7 +54,7 @@ Deno.serve(async (req) => {
   if (userError || !userData.user) {
     return new Response(JSON.stringify({ error: 'Unauthorized' }), {
       status: 401,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -59,7 +67,7 @@ Deno.serve(async (req) => {
   if (!callerProfile?.is_admin) {
     return new Response(JSON.stringify({ error: 'Forbidden' }), {
       status: 403,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -67,7 +75,7 @@ Deno.serve(async (req) => {
   if (!title || !body) {
     return new Response(JSON.stringify({ error: 'Missing title/body' }), {
       status: 400,
-      headers: { 'Content-Type': 'application/json' },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
@@ -82,5 +90,7 @@ Deno.serve(async (req) => {
 
   const sent = await sendPushMessages(messages);
 
-  return new Response(JSON.stringify({ ok: true, sent }), { headers: { 'Content-Type': 'application/json' } });
+  return new Response(JSON.stringify({ ok: true, sent }), {
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
 });
