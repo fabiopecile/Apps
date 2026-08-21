@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import { View, Text, Image, Pressable, Animated, ScrollView, StyleSheet, type NativeSyntheticEvent, type NativeScrollEvent, type LayoutChangeEvent } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
+import { CountUp } from '@/components/CountUp';
 import { confirmDestructive } from '@/lib/confirm';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { PostWithAuthor } from '@/lib/database.types';
@@ -31,16 +32,33 @@ export function PostCard({
 }: PostCardProps) {
   const lastTap = useRef(0);
   const heartAnim = useRef(new Animated.Value(0)).current;
+  const likeScale = useRef(new Animated.Value(1)).current;
   const [showHeart, setShowHeart] = useState(false);
   const [imageWidth, setImageWidth] = useState(0);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const images = post.image_urls && post.image_urls.length > 1 ? post.image_urls : post.image_url ? [post.image_url] : [];
 
+  const popLikeIcon = () => {
+    likeScale.setValue(1);
+    Animated.sequence([
+      Animated.spring(likeScale, { toValue: 1.35, useNativeDriver: true, speed: 50, bounciness: 16 }),
+      Animated.spring(likeScale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 10 }),
+    ]).start();
+  };
+
+  const handleLikePress = () => {
+    popLikeIcon();
+    onToggleLike();
+  };
+
   const handleImagePress = () => {
     const now = Date.now();
     if (now - lastTap.current < DOUBLE_TAP_DELAY) {
-      if (!post.liked_by_me) onToggleLike();
+      if (!post.liked_by_me) {
+        onToggleLike();
+        popLikeIcon();
+      }
       setShowHeart(true);
       heartAnim.setValue(0);
       Animated.sequence([
@@ -143,13 +161,13 @@ export function PostCard({
       </View>
 
       <View style={styles.actions}>
-        <Pressable onPress={onToggleLike} style={styles.actionButton}>
-          <Text style={[styles.actionIcon, post.liked_by_me && styles.actionIconActive]}>
+        <Pressable onPress={handleLikePress} style={styles.actionButton} hitSlop={6}>
+          <Animated.Text style={[styles.actionIcon, { transform: [{ scale: likeScale }] }]}>
             {post.liked_by_me ? '❤️' : '🤍'}
-          </Text>
-          <Text style={styles.actionCount}>{post.like_count}</Text>
+          </Animated.Text>
+          <CountUp value={post.like_count} style={styles.actionCount} duration={350} />
         </Pressable>
-        <Pressable onPress={onOpenComments} style={styles.actionButton}>
+        <Pressable onPress={onOpenComments} style={styles.actionButton} hitSlop={6}>
           <Text style={styles.actionIcon}>💬</Text>
         </Pressable>
       </View>

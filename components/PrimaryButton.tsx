@@ -1,4 +1,5 @@
-import { Pressable, Text, StyleSheet, type StyleProp, type ViewStyle, ActivityIndicator } from 'react-native';
+import { Text, StyleSheet, type StyleProp, type ViewStyle, ActivityIndicator } from 'react-native';
+import { AnimatedPressable } from '@/components/AnimatedPressable';
 import { colors, radii, shadows, spacing, fontSizes } from '@/constants/theme';
 
 interface PrimaryButtonProps {
@@ -14,17 +15,17 @@ export function PrimaryButton({ label, onPress, variant = 'blue', disabled, load
   const isOutline = variant === 'outline';
 
   return (
-    <Pressable
+    <AnimatedPressable
       disabled={disabled || loading}
       onPress={onPress}
-      style={({ pressed }) => [
+      scaleTo={0.96}
+      style={[
         styles.base,
         variant === 'blue' && styles.blue,
         variant === 'red' && styles.red,
         isOutline && styles.outline,
         !isOutline && shadows.blueButton,
         (disabled || loading) && styles.disabled,
-        pressed && !disabled && !loading && styles.pressed,
         style,
       ]}
     >
@@ -33,7 +34,7 @@ export function PrimaryButton({ label, onPress, variant = 'blue', disabled, load
       ) : (
         <Text style={[styles.label, isOutline && styles.outlineLabel]}>{label}</Text>
       )}
-    </Pressable>
+    </AnimatedPressable>
   );
 }
 
@@ -61,9 +62,6 @@ const styles = StyleSheet.create({
   },
   disabled: {
     opacity: 0.5,
-  },
-  pressed: {
-    opacity: 0.85,
   },
   label: {
     color: colors.white,

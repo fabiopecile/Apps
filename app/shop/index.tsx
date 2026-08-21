@@ -6,6 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '@/contexts/AuthContext';
 import { useShop } from '@/hooks/useShop';
 import { Avatar } from '@/components/Avatar';
+import { PopIn } from '@/components/PopIn';
+import { CountUp } from '@/components/CountUp';
+import { SuccessStamp } from '@/components/SuccessStamp';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { ShopItem } from '@/lib/database.types';
 
@@ -15,6 +18,7 @@ export default function ShopScreen() {
   const { items, ownedKeys, loading, buyItem, equipItem } = useShop();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [purchaseStamp, setPurchaseStamp] = useState(0);
 
   if (!profile) return null;
 
@@ -28,6 +32,7 @@ export default function ShopScreen() {
     const { error: actionError } = owned ? await equipItem(item.key) : await buyItem(item.key);
     setBusyKey(null);
     if (actionError) setError(actionError);
+    else if (!owned) setPurchaseStamp((t) => t + 1);
   };
 
   const frames = items.filter((i) => i.kind === 'frame');
@@ -35,10 +40,12 @@ export default function ShopScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <SuccessStamp trigger={purchaseStamp} label="Gekauft!" />
+
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Shop</Text>
-          <Text style={styles.coins}>🪙 {profile.coins} Coins</Text>
+          <CountUp value={profile.coins} style={styles.coins} format={(n) => `🪙 ${n} Coins`} />
         </View>
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="close" size={24} color={colors.textMuted} />
@@ -54,35 +61,37 @@ export default function ShopScreen() {
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
             <Text style={styles.sectionTitle}>Rahmen</Text>
-            {frames.map((item) => (
-              <ShopRow
-                key={item.key}
-                item={item}
-                owned={ownedKeys.has(item.key)}
-                equipped={isEquipped(item)}
-                canAfford={profile.coins >= item.price}
-                busy={busyKey === item.key}
-                onAction={() => handleAction(item)}
-                preview={<Avatar uri={profile.avatar_url} name={profile.username} size={40} ringColor={item.value} />}
-              />
+            {frames.map((item, i) => (
+              <PopIn key={item.key} variant="slide" delay={i * 55}>
+                <ShopRow
+                  item={item}
+                  owned={ownedKeys.has(item.key)}
+                  equipped={isEquipped(item)}
+                  canAfford={profile.coins >= item.price}
+                  busy={busyKey === item.key}
+                  onAction={() => handleAction(item)}
+                  preview={<Avatar uri={profile.avatar_url} name={profile.username} size={40} ringColor={item.value} />}
+                />
+              </PopIn>
             ))}
 
             <Text style={styles.sectionTitle}>Titel</Text>
-            {titles.map((item) => (
-              <ShopRow
-                key={item.key}
-                item={item}
-                owned={ownedKeys.has(item.key)}
-                equipped={isEquipped(item)}
-                canAfford={profile.coins >= item.price}
-                busy={busyKey === item.key}
-                onAction={() => handleAction(item)}
-                preview={
-                  <View style={styles.titlePreview}>
-                    <Text style={styles.titlePreviewText}>👑 {item.value}</Text>
-                  </View>
-                }
-              />
+            {titles.map((item, i) => (
+              <PopIn key={item.key} variant="slide" delay={(frames.length + i) * 55}>
+                <ShopRow
+                  item={item}
+                  owned={ownedKeys.has(item.key)}
+                  equipped={isEquipped(item)}
+                  canAfford={profile.coins >= item.price}
+                  busy={busyKey === item.key}
+                  onAction={() => handleAction(item)}
+                  preview={
+                    <View style={styles.titlePreview}>
+                      <Text style={styles.titlePreviewText}>👑 {item.value}</Text>
+                    </View>
+                  }
+                />
+              </PopIn>
             ))}
 
             {!loading && items.length === 0 ? <Text style={styles.error}>Shop ist gerade leer.</Text> : null}

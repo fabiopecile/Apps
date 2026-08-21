@@ -7,6 +7,7 @@ import { PostCard } from '@/components/PostCard';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { StoryAvatar } from '@/components/StoryAvatar';
 import { StoryViewer } from '@/components/StoryViewer';
+import { PopIn } from '@/components/PopIn';
 import { CommentsSheet } from '@/components/CommentsSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
@@ -66,29 +67,33 @@ export default function FeedScreen() {
                   onPress={() => router.push('/story/new')}
                 />
               }
-              renderItem={({ item }) => (
-                <StoryAvatar
-                  name={item.profile.username}
-                  uri={item.profile.avatar_url}
-                  frameColor={item.profile.equipped_frame_color}
-                  hasUnseen
-                  onPress={() => setStoryIndex(stories.findIndex((s) => s.id === item.stories[0].id))}
-                />
+              renderItem={({ item, index }) => (
+                <PopIn delay={index * 60}>
+                  <StoryAvatar
+                    name={item.profile.username}
+                    uri={item.profile.avatar_url}
+                    frameColor={item.profile.equipped_frame_color}
+                    hasUnseen
+                    onPress={() => setStoryIndex(stories.findIndex((s) => s.id === item.stories[0].id))}
+                  />
+                </PopIn>
               )}
             />
           </View>
         }
-        renderItem={({ item }) => (
-          <PostCard
-            post={item}
-            isOwnPost={item.user_id === session?.user.id}
-            isFollowing={isFollowing(item.user_id)}
-            onToggleLike={() => toggleLike(item)}
-            onOpenComments={() => setCommentsPostId(item.id)}
-            onDelete={() => deletePost(item.id)}
-            onToggleFollow={() => toggleFollow(item.user_id)}
-            onOpenProfile={() => router.push(`/user/${item.user_id}`)}
-          />
+        renderItem={({ item, index }) => (
+          <PopIn variant="slide" delay={Math.min(index, 6) * 70}>
+            <PostCard
+              post={item}
+              isOwnPost={item.user_id === session?.user.id}
+              isFollowing={isFollowing(item.user_id)}
+              onToggleLike={() => toggleLike(item)}
+              onOpenComments={() => setCommentsPostId(item.id)}
+              onDelete={() => deletePost(item.id)}
+              onToggleFollow={() => toggleFollow(item.user_id)}
+              onOpenProfile={() => router.push(`/user/${item.user_id}`)}
+            />
+          </PopIn>
         )}
         ListEmptyComponent={
           <EmptyState title={t('feed.emptyTitle')} subtitle={t('feed.emptySubtitle')} />

@@ -1,5 +1,8 @@
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { AnimatedBar } from '@/components/AnimatedBar';
+import { CountUp } from '@/components/CountUp';
+import { PopIn } from '@/components/PopIn';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { XP_PER_LEVEL, LEVEL_UP_REWARD_JOKERS } from '@/constants/game';
 
@@ -19,21 +22,23 @@ export function LevelProgressModal({ visible, level, xp, onClose }: LevelProgres
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={styles.card}>
+        <PopIn style={styles.card}>
           <Text style={styles.badge}>LVL {level}</Text>
           <Text style={styles.title}>Noch {xpMissing} XP bis Level {level + 1}</Text>
 
-          <View style={styles.barTrack}>
-            <View style={[styles.barFill, { width: `${progress * 100}%` }]} />
-          </View>
-          <Text style={styles.xpText}>{xpInLevel} / {XP_PER_LEVEL} XP</Text>
+          <AnimatedBar progress={progress} color={colors.blue} trackStyle={styles.barTrack} />
+          <CountUp
+            value={xpInLevel}
+            style={styles.xpText}
+            format={(n) => `${n} / ${XP_PER_LEVEL} XP`}
+          />
 
           <View style={styles.rewardPill}>
             <Text style={styles.rewardText}>⚡ Nächste Belohnung: +{LEVEL_UP_REWARD_JOKERS} Joker</Text>
           </View>
 
           <PrimaryButton label="Alles klar" onPress={onClose} style={styles.button} />
-        </View>
+        </PopIn>
       </View>
     </Modal>
   );
@@ -65,7 +70,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.surfaceAlt,
     overflow: 'hidden',
   },
-  barFill: { height: '100%', backgroundColor: colors.blue, borderRadius: radii.pill },
   xpText: { color: colors.textMuted, fontSize: fontSizes.xs, marginTop: spacing.xs, marginBottom: spacing.lg },
   rewardPill: {
     backgroundColor: colors.goldDark,

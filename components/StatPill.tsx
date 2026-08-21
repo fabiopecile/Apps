@@ -1,14 +1,15 @@
 import { View, Text, StyleSheet } from 'react-native';
+import { PopIn } from '@/components/PopIn';
 import { colors, fontSizes, spacing } from '@/constants/theme';
 
 export function StatRow({ stats }: { stats: { value: string; label: string; accent?: boolean }[] }) {
   return (
     <View style={styles.container}>
       {stats.map((stat, i) => (
-        <View key={stat.label} style={[styles.item, i < stats.length - 1 && styles.divider]}>
+        <PopIn key={stat.label} delay={i * 70} style={[styles.item, i < stats.length - 1 && styles.divider]}>
           <Text style={[styles.value, stat.accent && styles.valueAccent]}>{stat.value}</Text>
           <Text style={styles.label}>{stat.label.toUpperCase()}</Text>
-        </View>
+        </PopIn>
       ))}
     </View>
   );
@@ -24,7 +25,7 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing.lg,
     paddingVertical: spacing.lg,
   },
-  item: { flex: 1, alignItems: 'center', gap: 4 },
+  item: { flex: 1, alignItems: 'center', gap: 4, justifyContent: 'center' },
   divider: { borderRightWidth: StyleSheet.hairlineWidth, borderRightColor: colors.border },
   value: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800' },
   valueAccent: { color: colors.red },

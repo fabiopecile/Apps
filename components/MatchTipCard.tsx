@@ -1,9 +1,10 @@
-import { useState } from 'react';
-import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, Pressable, Animated, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { formatMatchTime } from '@/lib/dates';
 import { JokerTypeModal } from '@/components/JokerTypeModal';
+import { SuccessStamp } from '@/components/SuccessStamp';
 import { supabase } from '@/lib/supabase';
 import type { MatchWithTip } from '@/hooks/useTipps';
 import type { JokerType } from '@/lib/database.types';
@@ -34,6 +35,28 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
   const [stats, setStats] = useState<{ home: string; away: string } | null>(null);
   const [statsLoading, setStatsLoading] = useState(false);
   const [statsOpen, setStatsOpen] = useState(false);
+  const [stampTrigger, setStampTrigger] = useState(0);
+
+  const cardScale = useRef(new Animated.Value(1)).current;
+  const homeBump = useRef(new Animated.Value(1)).current;
+  const awayBump = useRef(new Animated.Value(1)).current;
+  const statsHeight = useRef(new Animated.Value(0)).current;
+
+  const bump = (value: Animated.Value) => {
+    value.setValue(1);
+    Animated.sequence([
+      Animated.spring(value, { toValue: 1.18, useNativeDriver: true, speed: 50, bounciness: 12 }),
+      Animated.spring(value, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 8 }),
+    ]).start();
+  };
+
+  useEffect(() => {
+    Animated.timing(statsHeight, {
+      toValue: statsOpen ? 1 : 0,
+      duration: 240,
+      useNativeDriver: true,
+    }).start();
+  }, [statsOpen, statsHeight]);
 
   const handleToggleStats = async () => {
     if (statsOpen) {
@@ -67,6 +90,11 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
       return;
     }
     setJustSubmitted(true);
+    setStampTrigger((t) => t + 1);
+    Animated.sequence([
+      Animated.spring(cardScale, { toValue: 1.03, useNativeDriver: true, speed: 50, bounciness: 14 }),
+      Animated.spring(cardScale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 8 }),
+    ]).start();
     onSuccess?.();
     setTimeout(() => setJustSubmitted(false), 2500);
   };
@@ -74,7 +102,10 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
   const jokerLabel = jokerType ? JOKER_LABELS[jokerType] : null;
 
   return (
-    <View style={[styles.card, justSubmitted && styles.cardSuccess]}>
+    <Animated.View
+      style={[styles.card, justSubmitted && styles.cardSuccess, { transform: [{ scale: cardScale }] }]}
+    >
+      <SuccessStamp trigger={stampTrigger} label="Tipp gespeichert" />
       <View style={styles.metaRow}>
         <View style={styles.timeBadge}>
           <Text style={styles.timeText}>{formatMatchTime(match.kickoff)}</Text>
@@ -110,7 +141,15 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
       ) : null}
 
       {statsOpen ? (
-        <View style={styles.statsBox}>
+        <Animated.View
+          style={[
+            styles.statsBox,
+            {
+              opacity: statsHeight,
+              transform: [{ translateY: statsHeight.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
+            },
+          ]}
+        >
           {statsLoading ? (
             <Text style={styles.statsText}>Lädt...</Text>
           ) : (
@@ -125,31 +164,43 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
               </Text>
             </>
           )}
-        </View>
+        </Animated.View>
       ) : null}
 
       <View style={styles.scoreRow}>
-        <TextInput
-          style={[styles.scoreInput, isLocked && styles.scoreInputLocked, justSubmitted && styles.scoreInputSuccess]}
-          value={homeScore}
-          onChangeText={(t) => setHomeScore(t.replace(/[^0-9]/g, '').slice(0, 2))}
-          keyboardType="number-pad"
-          maxLength={2}
-          placeholder="–"
-          placeholderTextColor={colors.textFaint}
-          editable={!isLocked}
-        />
+        <Animated.View style={{ transform: [{ scale: homeBump }] }}>
+          <TextInput
+            style={[styles.scoreInput, isLocked && styles.scoreInputLocked, justSubmitted && styles.scoreInputSuccess]}
+            value={homeScore}
+            onChangeText={(t) => {
+              const next = t.replace(/[^0-9]/g, '').slice(0, 2);
+              if (next !== homeScore) bump(homeBump);
+              setHomeScore(next);
+            }}
+            keyboardType="number-pad"
+            maxLength={2}
+            placeholder="–"
+            placeholderTextColor={colors.textFaint}
+            editable={!isLocked}
+          />
+        </Animated.View>
         <Text style={styles.colon}>:</Text>
-        <TextInput
-          style={[styles.scoreInput, isLocked && styles.scoreInputLocked, justSubmitted && styles.scoreInputSuccess]}
-          value={awayScore}
-          onChangeText={(t) => setAwayScore(t.replace(/[^0-9]/g, '').slice(0, 2))}
-          keyboardType="number-pad"
-          maxLength={2}
-          placeholder="–"
-          placeholderTextColor={colors.textFaint}
-          editable={!isLocked}
-        />
+        <Animated.View style={{ transform: [{ scale: awayBump }] }}>
+          <TextInput
+            style={[styles.scoreInput, isLocked && styles.scoreInputLocked, justSubmitted && styles.scoreInputSuccess]}
+            value={awayScore}
+            onChangeText={(t) => {
+              const next = t.replace(/[^0-9]/g, '').slice(0, 2);
+              if (next !== awayScore) bump(awayBump);
+              setAwayScore(next);
+            }}
+            keyboardType="number-pad"
+            maxLength={2}
+            placeholder="–"
+            placeholderTextColor={colors.textFaint}
+            editable={!isLocked}
+          />
+        </Animated.View>
       </View>
 
       {match.status === 'finished' && match.home_score !== null && match.away_score !== null ? (
@@ -195,7 +246,7 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
           setJokerModalOpen(false);
         }}
       />
-    </View>
+    </Animated.View>
   );
 }
 

@@ -1,15 +1,31 @@
-import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { useEffect, useRef } from 'react';
+import { Modal, View, Text, Pressable, Animated, StyleSheet } from 'react-native';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import { PopIn } from '@/components/PopIn';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { StreakReward } from '@/hooks/useDailyLogin';
 
 export function StreakRewardModal({ reward, onClose }: { reward: StreakReward | null; onClose: () => void }) {
+  const flicker = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (!reward) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(flicker, { toValue: 1.15, duration: 480, useNativeDriver: true }),
+        Animated.timing(flicker, { toValue: 0.95, duration: 480, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [reward, flicker]);
+
   return (
     <Modal visible={!!reward} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
-        <View style={styles.card}>
-          <Text style={styles.flame}>🔥</Text>
+        <PopIn style={styles.card}>
+          <Animated.Text style={[styles.flame, { transform: [{ scale: flicker }] }]}>🔥</Animated.Text>
           <Text style={styles.title}>{reward?.streak}-Tage-Streak!</Text>
           <Text style={styles.subtitle}>Du bist {reward?.streak} Tage in Folge dabei.</Text>
 
@@ -27,7 +43,7 @@ export function StreakRewardModal({ reward, onClose }: { reward: StreakReward | 
           </View>
 
           <PrimaryButton label="Nice!" onPress={onClose} style={styles.button} />
-        </View>
+        </PopIn>
       </View>
     </Modal>
   );

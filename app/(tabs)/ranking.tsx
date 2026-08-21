@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopBar } from '@/components/TopBar';
 import { LeaderboardPodium } from '@/components/LeaderboardPodium';
 import { LeaderboardRow } from '@/components/LeaderboardRow';
+import { PopIn } from '@/components/PopIn';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useRanking } from '@/hooks/useRanking';
@@ -55,12 +56,14 @@ export default function RankingScreen() {
             <LeaderboardPodium top3={top3} currentUserId={session?.user.id} onSelect={openProfile} />
           }
           renderItem={({ item, index }) => (
-            <LeaderboardRow
-              profile={item}
-              rank={index + 4}
-              isMe={item.id === session?.user.id}
-              onPress={() => openProfile(item.id)}
-            />
+            <PopIn variant="slide" delay={Math.min(index, 8) * 45}>
+              <LeaderboardRow
+                profile={item}
+                rank={index + 4}
+                isMe={item.id === session?.user.id}
+                onPress={() => openProfile(item.id)}
+              />
+            </PopIn>
           )}
           contentContainerStyle={styles.listContent}
         />

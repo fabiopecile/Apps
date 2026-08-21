@@ -1,10 +1,12 @@
-import { useState } from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Avatar } from '@/components/Avatar';
 import { WheelModal } from '@/components/WheelModal';
 import { PrizePopup } from '@/components/PrizePopup';
 import { LevelProgressModal } from '@/components/LevelProgressModal';
+import { LevelUpCelebration } from '@/components/LevelUpCelebration';
+import { AnimatedBar } from '@/components/AnimatedBar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useWheel } from '@/hooks/useWheel';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
@@ -18,9 +20,40 @@ export function TopBar() {
   const [wheelOpen, setWheelOpen] = useState(false);
   const [prize, setPrize] = useState<WheelSpinResult | null>(null);
   const [levelInfoOpen, setLevelInfoOpen] = useState(false);
+  const [celebratedLevel, setCelebratedLevel] = useState<number | null>(null);
 
   const xpInLevel = (profile?.xp ?? 0) % XP_PER_LEVEL;
   const progress = Math.min(1, xpInLevel / XP_PER_LEVEL);
+
+  // Fires the confetti + badge whenever the level actually goes up, no matter
+  // which action caused it (post XP, streak, duel win, wheel prize, referral).
+  const previousLevel = useRef<number | null>(null);
+  const giftPulse = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    const level = profile?.level;
+    if (level == null) return;
+    if (previousLevel.current !== null && level > previousLevel.current) {
+      setCelebratedLevel(level);
+    }
+    previousLevel.current = level;
+  }, [profile?.level]);
+
+  // A gentle heartbeat on the gift button while a free spin is waiting.
+  useEffect(() => {
+    if (!canSpin) {
+      giftPulse.setValue(1);
+      return;
+    }
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(giftPulse, { toValue: 1.14, duration: 620, useNativeDriver: true }),
+        Animated.timing(giftPulse, { toValue: 1, duration: 620, useNativeDriver: true }),
+      ])
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [canSpin, giftPulse]);
 
   return (
     <View style={styles.container}>
@@ -40,14 +73,14 @@ export function TopBar() {
 
         <Pressable style={styles.levelPill} onPress={() => setLevelInfoOpen(true)}>
           <Text style={styles.levelText}>LVL {profile?.level ?? 1}</Text>
-          <View style={styles.levelBarTrack}>
-            <View style={[styles.levelBarFill, { width: `${progress * 100}%` }]} />
-          </View>
+          <AnimatedBar progress={progress} color={colors.blue} trackStyle={styles.levelBarTrack} />
         </Pressable>
 
-        <Pressable style={styles.giftButton} onPress={() => setWheelOpen(true)}>
-          <Text style={styles.giftEmoji}>🎁</Text>
-          {canSpin ? <View style={styles.badgeDot} /> : null}
+        <Pressable onPress={() => setWheelOpen(true)}>
+          <Animated.View style={[styles.giftButton, { transform: [{ scale: giftPulse }] }]}>
+            <Text style={styles.giftEmoji}>🎁</Text>
+            {canSpin ? <View style={styles.badgeDot} /> : null}
+          </Animated.View>
         </Pressable>
 
         <Pressable onPress={() => router.push('/(tabs)/profil')}>
@@ -75,6 +108,7 @@ export function TopBar() {
         xp={profile?.xp ?? 0}
         onClose={() => setLevelInfoOpen(false)}
       />
+      <LevelUpCelebration level={celebratedLevel} onClose={() => setCelebratedLevel(null)} />
     </View>
   );
 }
@@ -126,11 +160,6 @@ const styles = StyleSheet.create({
     borderRadius: radii.pill,
     backgroundColor: colors.surfaceAlt,
     overflow: 'hidden',
-  },
-  levelBarFill: {
-    height: '100%',
-    backgroundColor: colors.blue,
-    borderRadius: radii.pill,
   },
   giftButton: {
     width: 36,
