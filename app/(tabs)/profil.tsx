@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { View, Text, Image, FlatList, Pressable, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/Avatar';
 import { StatRow } from '@/components/StatPill';
@@ -31,8 +31,17 @@ export default function ProfilScreen() {
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
   const [reminderHourOpen, setReminderHourOpen] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
-  const { posts } = useOwnPosts(session?.user.id);
+  const { posts, refresh: refreshPosts } = useOwnPosts(session?.user.id);
   const { allBadges, earnedIds } = useBadges(session?.user.id);
+
+  // Coming back from "Neuer Beitrag" or the Shop doesn't remount this screen,
+  // so re-fetch on focus to show what just changed.
+  useFocusEffect(
+    useCallback(() => {
+      refreshPosts();
+      refreshProfile();
+    }, [refreshPosts, refreshProfile])
+  );
 
   if (!profile) return null;
 

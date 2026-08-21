@@ -1,11 +1,19 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { Profile } from '@/lib/database.types';
 
 const ORDER = [1, 0, 2]; // render 2nd, 1st, 3rd like a podium
 
-export function LeaderboardPodium({ top3, currentUserId }: { top3: Profile[]; currentUserId?: string }) {
+export function LeaderboardPodium({
+  top3,
+  currentUserId,
+  onSelect,
+}: {
+  top3: Profile[];
+  currentUserId?: string;
+  onSelect?: (userId: string) => void;
+}) {
   return (
     <View style={styles.row}>
       {ORDER.map((idx) => {
@@ -14,7 +22,11 @@ export function LeaderboardPodium({ top3, currentUserId }: { top3: Profile[]; cu
         const rank = idx + 1;
         const isMe = profile.id === currentUserId;
         return (
-          <View key={profile.id} style={[styles.slot, rank === 1 && styles.slotFirst]}>
+          <Pressable
+            key={profile.id}
+            style={[styles.slot, rank === 1 && styles.slotFirst]}
+            onPress={() => onSelect?.(profile.id)}
+          >
             {rank === 1 ? <Text style={styles.crown}>👑</Text> : null}
             <Avatar
               uri={profile.avatar_url}
@@ -29,7 +41,7 @@ export function LeaderboardPodium({ top3, currentUserId }: { top3: Profile[]; cu
               {isMe ? 'DU' : profile.username}
             </Text>
             <Text style={styles.points}>{profile.points.toLocaleString('de-DE')}</Text>
-          </View>
+          </Pressable>
         );
       })}
     </View>

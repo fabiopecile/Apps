@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
@@ -8,12 +9,20 @@ import { LoadingScreen } from '@/components/LoadingScreen';
 import { useConversations } from '@/hooks/useConversations';
 import { useFriendRequests } from '@/hooks/useFriendRequests';
 import { formatRelativeShort } from '@/lib/dates';
-import { colors, fontSizes, spacing } from '@/constants/theme';
+import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 
 export default function ChatScreen() {
-  const { conversations, loading } = useConversations();
+  const { conversations, loading, refresh } = useConversations();
   const { incoming } = useFriendRequests();
   const router = useRouter();
+
+  // A chat started from someone's profile won't be in this list yet when the
+  // user swipes back to the tab, so re-fetch whenever it regains focus.
+  useFocusEffect(
+    useCallback(() => {
+      refresh();
+    }, [refresh])
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -61,7 +70,16 @@ export default function ChatScreen() {
             </Pressable>
           )}
           ListEmptyComponent={
-            <EmptyState title="Keine Chats" subtitle="Starte eine Unterhaltung über das Symbol oben rechts." />
+            <View>
+              <EmptyState
+                title="Noch keine Chats"
+                subtitle="Schreibe jemandem – such nach dem Nutzernamen oder tippe im Feed auf ein Profil."
+              />
+              <Pressable style={styles.startChatButton} onPress={() => router.push('/chat/new')}>
+                <Ionicons name="create-outline" size={18} color={colors.white} />
+                <Text style={styles.startChatText}>Chat starten</Text>
+              </Pressable>
+            </View>
           }
         />
       )}
@@ -118,4 +136,16 @@ const styles = StyleSheet.create({
   rowMeta: { alignItems: 'flex-end', gap: spacing.xs },
   time: { color: colors.textFaint, fontSize: fontSizes.xs },
   unreadDot: { width: 9, height: 9, borderRadius: 5, backgroundColor: colors.red },
+  startChatButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.red,
+    borderRadius: radii.lg,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+  },
+  startChatText: { color: colors.white, fontWeight: '700', fontSize: fontSizes.sm },
 });

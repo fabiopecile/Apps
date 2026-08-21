@@ -60,13 +60,19 @@ export default function ConversationScreen() {
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={26} color={colors.white} />
         </Pressable>
-        <Avatar
-          uri={partner?.avatar_url}
-          name={partner?.username}
-          size={32}
-          ringColor={partner?.equipped_frame_color ?? undefined}
-        />
-        <Text style={styles.title}>{partner?.username ?? 'Chat'}</Text>
+        <Pressable
+          style={styles.partnerTap}
+          onPress={() => partner && router.push(`/user/${partner.id}`)}
+          disabled={!partner}
+        >
+          <Avatar
+            uri={partner?.avatar_url}
+            name={partner?.username}
+            size={32}
+            ringColor={partner?.equipped_frame_color ?? undefined}
+          />
+          <Text style={styles.title}>{partner?.username ?? 'Chat'}</Text>
+        </Pressable>
         <Pressable style={styles.challengeButton} onPress={() => setChallengeModalOpen(true)}>
           <Ionicons name="trophy" size={14} color={colors.white} />
           <Text style={styles.challengeButtonText}>Challenge</Text>
@@ -146,6 +152,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
+  partnerTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   title: { flex: 1, color: colors.white, fontWeight: '700', fontSize: fontSizes.md },
   challengeButton: {
     flexDirection: 'row',

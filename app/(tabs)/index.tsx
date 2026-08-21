@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { usePosts } from '@/hooks/usePosts';
 import { useStories } from '@/hooks/useStories';
+import { useFollows } from '@/hooks/useFollows';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { colors, spacing } from '@/constants/theme';
@@ -19,6 +20,7 @@ import { colors, spacing } from '@/constants/theme';
 export default function FeedScreen() {
   const { posts, loading, refresh, toggleLike, deletePost } = usePosts();
   const { stories, groups, refresh: refreshStories, deleteStory, saveHighlight } = useStories();
+  const { isFollowing, toggleFollow, refresh: refreshFollows } = useFollows();
   const { profile, session } = useAuth();
   const { t } = useTranslation();
   const router = useRouter();
@@ -31,7 +33,8 @@ export default function FeedScreen() {
     useCallback(() => {
       refresh();
       refreshStories();
-    }, [refresh, refreshStories])
+      refreshFollows();
+    }, [refresh, refreshStories, refreshFollows])
   );
 
   if (loading) return <LoadingScreen />;
@@ -79,9 +82,12 @@ export default function FeedScreen() {
           <PostCard
             post={item}
             isOwnPost={item.user_id === session?.user.id}
+            isFollowing={isFollowing(item.user_id)}
             onToggleLike={() => toggleLike(item)}
             onOpenComments={() => setCommentsPostId(item.id)}
             onDelete={() => deletePost(item.id)}
+            onToggleFollow={() => toggleFollow(item.user_id)}
+            onOpenProfile={() => router.push(`/user/${item.user_id}`)}
           />
         )}
         ListEmptyComponent={
@@ -99,10 +105,15 @@ export default function FeedScreen() {
           onClose={() => setStoryIndex(null)}
           onDelete={(storyId) => deleteStory(storyId)}
           onSaveHighlight={(storyId) => saveHighlight(storyId)}
+          onOpenProfile={(userId) => router.push(`/user/${userId}`)}
         />
       ) : null}
 
-      <CommentsSheet postId={commentsPostId} onClose={() => setCommentsPostId(null)} />
+      <CommentsSheet
+        postId={commentsPostId}
+        onClose={() => setCommentsPostId(null)}
+        onOpenProfile={(userId) => router.push(`/user/${userId}`)}
+      />
     </SafeAreaView>
   );
 }

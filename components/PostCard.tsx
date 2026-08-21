@@ -11,12 +11,24 @@ const DOUBLE_TAP_DELAY = 300;
 interface PostCardProps {
   post: PostWithAuthor;
   isOwnPost: boolean;
+  isFollowing: boolean;
   onToggleLike: () => void;
   onOpenComments: () => void;
   onDelete: () => void;
+  onToggleFollow: () => void;
+  onOpenProfile: () => void;
 }
 
-export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments, onDelete }: PostCardProps) {
+export function PostCard({
+  post,
+  isOwnPost,
+  isFollowing,
+  onToggleLike,
+  onOpenComments,
+  onDelete,
+  onToggleFollow,
+  onOpenProfile,
+}: PostCardProps) {
   const lastTap = useRef(0);
   const heartAnim = useRef(new Animated.Value(0)).current;
   const [showHeart, setShowHeart] = useState(false);
@@ -47,23 +59,30 @@ export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments, onDele
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Avatar
-          uri={post.profiles?.avatar_url}
-          name={post.profiles?.username}
-          size={40}
-          ringColor={post.profiles?.equipped_frame_color ?? colors.blue}
-        />
-        <View style={styles.headerText}>
-          <Text style={styles.username}>{post.profiles?.username ?? 'unknown'}</Text>
-          {post.location ? (
-            <Text style={styles.location} numberOfLines={1}>
-              📍 {post.location}
-            </Text>
-          ) : null}
-        </View>
+        <Pressable style={styles.authorTap} onPress={onOpenProfile}>
+          <Avatar
+            uri={post.profiles?.avatar_url}
+            name={post.profiles?.username}
+            size={40}
+            ringColor={post.profiles?.equipped_frame_color ?? colors.blue}
+          />
+          <View style={styles.headerText}>
+            <Text style={styles.username}>{post.profiles?.username ?? 'unknown'}</Text>
+            {post.location ? (
+              <Text style={styles.location} numberOfLines={1}>
+                📍 {post.location}
+              </Text>
+            ) : null}
+          </View>
+        </Pressable>
         {!isOwnPost ? (
-          <Pressable style={styles.followButton}>
-            <Text style={styles.followText}>Folgen</Text>
+          <Pressable
+            style={[styles.followButton, isFollowing && styles.followingButton]}
+            onPress={onToggleFollow}
+          >
+            <Text style={[styles.followText, isFollowing && styles.followingText]}>
+              {isFollowing ? 'Gefolgt' : 'Folgen'}
+            </Text>
           </Pressable>
         ) : (
           <Pressable onPress={handleDelete} hitSlop={8}>
@@ -158,17 +177,21 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.sm,
     gap: spacing.sm,
   },
+  authorTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerText: { flex: 1 },
   username: { color: colors.text, fontWeight: '700', fontSize: fontSizes.md },
   location: { color: colors.textMuted, fontSize: fontSizes.xs, marginTop: 2 },
   followButton: {
     borderWidth: 1,
-    borderColor: colors.borderStrong,
+    borderColor: colors.red,
+    backgroundColor: colors.red,
     borderRadius: radii.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: 6,
   },
-  followText: { color: colors.text, fontSize: fontSizes.xs, fontWeight: '600' },
+  followingButton: { backgroundColor: 'transparent', borderColor: colors.borderStrong },
+  followText: { color: colors.white, fontSize: fontSizes.xs, fontWeight: '700' },
+  followingText: { color: colors.textMuted },
   image: { width: '100%', aspectRatio: 4 / 5, backgroundColor: colors.surface },
   imageFallback: { alignItems: 'center', justifyContent: 'center' },
   imageFallbackText: { fontSize: 48 },

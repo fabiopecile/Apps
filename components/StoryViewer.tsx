@@ -16,9 +16,19 @@ interface StoryViewerProps {
   onClose: () => void;
   onDelete: (storyId: string) => void;
   onSaveHighlight: (storyId: string) => void;
+  onOpenProfile: (userId: string) => void;
 }
 
-export function StoryViewer({ stories, startIndex, currentUserId, isPro, onClose, onDelete, onSaveHighlight }: StoryViewerProps) {
+export function StoryViewer({
+  stories,
+  startIndex,
+  currentUserId,
+  isPro,
+  onClose,
+  onDelete,
+  onSaveHighlight,
+  onOpenProfile,
+}: StoryViewerProps) {
   const [index, setIndex] = useState(startIndex);
   const progress = useRef(new Animated.Value(0)).current;
 
@@ -92,13 +102,21 @@ export function StoryViewer({ stories, startIndex, currentUserId, isPro, onClose
         </View>
 
         <View style={styles.header}>
-          <Avatar
-            uri={story.profiles.avatar_url}
-            name={story.profiles.username}
-            size={36}
-            ringColor={story.profiles.equipped_frame_color ?? undefined}
-          />
-          <Text style={styles.username}>{story.profiles.username}</Text>
+          <Pressable
+            style={styles.authorTap}
+            onPress={() => {
+              onClose();
+              onOpenProfile(story.user_id);
+            }}
+          >
+            <Avatar
+              uri={story.profiles.avatar_url}
+              name={story.profiles.username}
+              size={36}
+              ringColor={story.profiles.equipped_frame_color ?? undefined}
+            />
+            <Text style={styles.username}>{story.profiles.username}</Text>
+          </Pressable>
           {isOwnStory && isPro && !story.is_highlight ? (
             <Pressable onPress={() => onSaveHighlight(story.id)} style={styles.deleteButton} hitSlop={8}>
               <Ionicons name="star-outline" size={20} color={colors.gold} />
@@ -136,7 +154,8 @@ const styles = StyleSheet.create({
   progressTrack: { flex: 1, height: 3, backgroundColor: 'rgba(255,255,255,0.3)', borderRadius: 3, overflow: 'hidden' },
   progressFill: { height: '100%', backgroundColor: colors.white },
   header: { position: 'absolute', top: 72, left: spacing.lg, right: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, zIndex: 20 },
-  username: { flex: 1, color: colors.white, fontWeight: '700' },
+  authorTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  username: { color: colors.white, fontWeight: '700' },
   deleteButton: { padding: spacing.xs },
   closeButton: { padding: spacing.xs },
   image: { flex: 1, width: '100%', backgroundColor: colors.black },

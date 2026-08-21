@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '@/lib/supabase';
+import { openConversationWith } from '@/lib/chat';
 import { useAuth } from '@/contexts/AuthContext';
 import { useFriendRequests } from '@/hooks/useFriendRequests';
 import { Avatar } from '@/components/Avatar';
@@ -19,6 +20,7 @@ export default function NewConversationScreen() {
   const [results, setResults] = useState<Profile[]>([]);
   const [creatingId, setCreatingId] = useState<string | null>(null);
   const [requestedIds, setRequestedIds] = useState<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   const search = async (text: string) => {
     setQuery(text);
@@ -38,30 +40,22 @@ export default function NewConversationScreen() {
   const startConversation = async (otherUser: Profile) => {
     if (!session) return;
     setCreatingId(otherUser.id);
+    setError(null);
 
-    const { data: conversation, error: convError } = await supabase
-      .from('conversations')
-      .insert({ is_group: false })
-      .select()
-      .single();
+    const { conversationId, error: chatError } = await openConversationWith(session.user.id, otherUser.id);
+    setCreatingId(null);
 
-    if (convError || !conversation) {
-      setCreatingId(null);
+    if (chatError || !conversationId) {
+      setError(chatError ?? 'Chat konnte nicht geöffnet werden');
       return;
     }
-
-    await supabase.from('conversation_participants').insert([
-      { conversation_id: conversation.id, user_id: session.user.id },
-      { conversation_id: conversation.id, user_id: otherUser.id },
-    ]);
-
-    setCreatingId(null);
-    router.replace(`/chat/${conversation.id}`);
+    router.replace(`/chat/${conversationId}`);
   };
 
   const handleSendRequest = async (userId: string) => {
-    const { error } = await sendRequest(userId);
-    if (!error) setRequestedIds((prev) => new Set(prev).add(userId));
+    const { error: requestError } = await sendRequest(userId);
+    if (!requestError) setRequestedIds((prev) => new Set(prev).add(userId));
+    else setError(requestError);
   };
 
   return (
@@ -83,6 +77,8 @@ export default function NewConversationScreen() {
         autoCapitalize="none"
       />
 
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
       <FlatList
         data={results}
         keyExtractor={(item) => item.id}
@@ -95,7 +91,10 @@ export default function NewConversationScreen() {
                 size={44}
                 ringColor={item.equipped_frame_color ?? undefined}
               />
-              <Text style={styles.username}>{item.username}</Text>
+              <View style={styles.rowText}>
+                <Text style={styles.username}>{item.username}</Text>
+                <Text style={styles.hint}>{creatingId === item.id ? 'Öffnet Chat...' : 'Tippen zum Schreiben'}</Text>
+              </View>
             </Pressable>
             <Pressable
               style={styles.addFriendButton}
@@ -111,7 +110,14 @@ export default function NewConversationScreen() {
           </View>
         )}
         ListEmptyComponent={
-          query ? <EmptyState title="Keine Nutzer gefunden" /> : <EmptyState title="Suche nach Nutzernamen" />
+          query ? (
+            <EmptyState title="Keine Nutzer gefunden" />
+          ) : (
+            <EmptyState
+              title="Wen möchtest du anschreiben?"
+              subtitle="Suche oben nach einem Nutzernamen und tippe auf die Person, um den Chat zu öffnen."
+            />
+          )
         }
       />
     </SafeAreaView>
@@ -141,7 +147,10 @@ const styles = StyleSheet.create({
   },
   row: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: spacing.lg, paddingVertical: spacing.md },
   rowMain: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  rowText: { flex: 1 },
   username: { color: colors.text, fontWeight: '600', fontSize: fontSizes.md },
+  hint: { color: colors.textFaint, fontSize: fontSizes.xs, marginTop: 2 },
+  error: { color: colors.danger, fontSize: fontSizes.sm, textAlign: 'center', marginBottom: spacing.sm },
   addFriendButton: {
     width: 36,
     height: 36,

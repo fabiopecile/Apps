@@ -1,11 +1,21 @@
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { Profile } from '@/lib/database.types';
 
-export function LeaderboardRow({ profile, rank, isMe }: { profile: Profile; rank: number; isMe: boolean }) {
+export function LeaderboardRow({
+  profile,
+  rank,
+  isMe,
+  onPress,
+}: {
+  profile: Profile;
+  rank: number;
+  isMe: boolean;
+  onPress?: () => void;
+}) {
   return (
-    <View style={[styles.row, isMe && styles.rowMe]}>
+    <Pressable style={[styles.row, isMe && styles.rowMe]} onPress={onPress}>
       <Text style={styles.rank}>{rank}</Text>
       <Avatar
         uri={profile.avatar_url}
@@ -17,7 +27,7 @@ export function LeaderboardRow({ profile, rank, isMe }: { profile: Profile; rank
         {isMe ? 'DU' : profile.username}
       </Text>
       <Text style={styles.points}>{profile.points.toLocaleString('de-DE')}</Text>
-    </View>
+    </Pressable>
   );
 }
 

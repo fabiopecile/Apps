@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { View, Text, FlatList, Pressable, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { TopBar } from '@/components/TopBar';
 import { LeaderboardPodium } from '@/components/LeaderboardPodium';
@@ -16,6 +17,12 @@ export default function RankingScreen() {
   const [scope, setScope] = useState<Scope>('gesamt');
   const { ranking, loading } = useRanking(scope);
   const { session } = useAuth();
+  const router = useRouter();
+
+  const openProfile = (userId: string) => {
+    if (userId === session?.user.id) router.push('/(tabs)/profil');
+    else router.push(`/user/${userId}`);
+  };
 
   const top3 = ranking.slice(0, 3);
   const rest = ranking.slice(3);
@@ -44,9 +51,16 @@ export default function RankingScreen() {
         <FlatList
           data={rest}
           keyExtractor={(item) => item.id}
-          ListHeaderComponent={<LeaderboardPodium top3={top3} currentUserId={session?.user.id} />}
+          ListHeaderComponent={
+            <LeaderboardPodium top3={top3} currentUserId={session?.user.id} onSelect={openProfile} />
+          }
           renderItem={({ item, index }) => (
-            <LeaderboardRow profile={item} rank={index + 4} isMe={item.id === session?.user.id} />
+            <LeaderboardRow
+              profile={item}
+              rank={index + 4}
+              isMe={item.id === session?.user.id}
+              onPress={() => openProfile(item.id)}
+            />
           )}
           contentContainerStyle={styles.listContent}
         />

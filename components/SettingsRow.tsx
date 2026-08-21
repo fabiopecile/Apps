@@ -1,5 +1,10 @@
-import { View, Text, Switch, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Switch, Pressable, Platform, StyleSheet } from 'react-native';
 import { colors, fontSizes, spacing } from '@/constants/theme';
+
+// react-native-web reads the ON-state knob color from `activeThumbColor`, not
+// `thumbColor`, so without this the switch fell back to the library's default
+// green knob on web. The prop doesn't exist in React Native's own types.
+const webThumbProps = Platform.OS === 'web' ? ({ activeThumbColor: colors.white } as object) : {};
 
 interface SettingsRowProps {
   icon: string;
@@ -22,6 +27,8 @@ export function SettingsRow({ icon, label, value, onValueChange, trailingText, o
           onValueChange={onValueChange}
           trackColor={{ false: colors.surfaceAlt, true: colors.red }}
           thumbColor={colors.white}
+          ios_backgroundColor={colors.surfaceAlt}
+          {...webThumbProps}
         />
       ) : (
         <View style={styles.trailing}>

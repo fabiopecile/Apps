@@ -6,7 +6,13 @@ import { EmptyState } from '@/components/EmptyState';
 import { usePostComments } from '@/hooks/usePostComments';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 
-export function CommentsSheet({ postId, onClose }: { postId: string | null; onClose: () => void }) {
+interface CommentsSheetProps {
+  postId: string | null;
+  onClose: () => void;
+  onOpenProfile: (userId: string) => void;
+}
+
+export function CommentsSheet({ postId, onClose, onOpenProfile }: CommentsSheetProps) {
   const { comments, postComment } = usePostComments(postId);
   const [draft, setDraft] = useState('');
 
@@ -34,14 +40,28 @@ export function CommentsSheet({ postId, onClose }: { postId: string | null; onCl
             style={styles.list}
             renderItem={({ item }) => (
               <View style={styles.commentRow}>
-                <Avatar
-                  uri={item.profiles.avatar_url}
-                  name={item.profiles.username}
-                  size={32}
-                  ringColor={item.profiles.equipped_frame_color ?? undefined}
-                />
+                <Pressable
+                  onPress={() => {
+                    onClose();
+                    onOpenProfile(item.profiles.id);
+                  }}
+                >
+                  <Avatar
+                    uri={item.profiles.avatar_url}
+                    name={item.profiles.username}
+                    size={32}
+                    ringColor={item.profiles.equipped_frame_color ?? undefined}
+                  />
+                </Pressable>
                 <View style={styles.commentText}>
-                  <Text style={styles.commentUsername}>{item.profiles.username}</Text>
+                  <Pressable
+                    onPress={() => {
+                      onClose();
+                      onOpenProfile(item.profiles.id);
+                    }}
+                  >
+                    <Text style={styles.commentUsername}>{item.profiles.username}</Text>
+                  </Pressable>
                   <Text style={styles.commentContent}>{item.content}</Text>
                 </View>
               </View>
