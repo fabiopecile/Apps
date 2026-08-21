@@ -28,6 +28,7 @@ export type Profile = {
   coins: number;
   booster_charges: number;
   equipped_title: string | null;
+  equipped_frame_color: string | null;
   last_wheel_spin_date: string | null;
   created_at: string;
 };
@@ -236,6 +237,23 @@ export type NotificationLog = {
   sent_at: string;
 };
 
+export type ShopItemKind = 'frame' | 'title';
+
+export type ShopItem = {
+  key: string;
+  kind: ShopItemKind;
+  label: string;
+  price: number;
+  value: string;
+  sort_order: number;
+};
+
+export type OwnedShopItem = {
+  user_id: string;
+  item_key: string;
+  purchased_at: string;
+};
+
 export type WheelSpinResult = {
   prize_index: number;
   prize_type: WheelPrizeType;
@@ -292,6 +310,8 @@ export type Database = {
       notification_log: Table<NotificationLog, { user_id: string; type: string; ref_key: string }>;
       private_leagues: Table<PrivateLeague, { name: string; code: string; created_by: string }>;
       private_league_members: Table<PrivateLeagueMember, { league_id: string; user_id: string }>;
+      shop_items: Table<ShopItem, ShopItem>;
+      owned_shop_items: Table<OwnedShopItem, { user_id: string; item_key: string }>;
     };
     Views: {
       duel_scores: { Row: DuelScore; Relationships: [] };
@@ -312,6 +332,14 @@ export type Database = {
       join_private_league: {
         Args: { p_code: string };
         Returns: PrivateLeague;
+      };
+      buy_shop_item: {
+        Args: { p_key: string };
+        Returns: Profile;
+      };
+      equip_shop_item: {
+        Args: { p_key: string };
+        Returns: Profile;
       };
     };
   };

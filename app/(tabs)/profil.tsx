@@ -74,7 +74,7 @@ export default function ProfilScreen() {
                 uri={profile.avatar_url}
                 name={profile.display_name ?? profile.username}
                 size={88}
-                ringColor={profile.is_pro ? colors.gold : colors.red}
+                ringColor={profile.equipped_frame_color ?? (profile.is_pro ? colors.gold : colors.red)}
               />
               <View style={styles.profileInfo}>
                 <View style={styles.usernameRow}>
@@ -116,6 +116,10 @@ export default function ProfilScreen() {
             <ProCard isPro={profile.is_pro} />
 
             <InviteFriendsCard referralCode={profile.referral_code} />
+
+            <View style={styles.settings}>
+              <SettingsRow icon="🛍️" label="Shop" trailingText={`🪙 ${profile.coins}`} chevron onPress={() => router.push('/shop')} />
+            </View>
 
             {profile.is_pro ? (
               <View style={styles.settings}>
