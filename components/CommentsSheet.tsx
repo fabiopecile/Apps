@@ -34,7 +34,12 @@ export function CommentsSheet({ postId, onClose }: { postId: string | null; onCl
             style={styles.list}
             renderItem={({ item }) => (
               <View style={styles.commentRow}>
-                <Avatar uri={item.profiles.avatar_url} name={item.profiles.username} size={32} />
+                <Avatar
+                  uri={item.profiles.avatar_url}
+                  name={item.profiles.username}
+                  size={32}
+                  ringColor={item.profiles.equipped_frame_color ?? undefined}
+                />
                 <View style={styles.commentText}>
                   <Text style={styles.commentUsername}>{item.profiles.username}</Text>
                   <Text style={styles.commentContent}>{item.content}</Text>

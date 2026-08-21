@@ -23,7 +23,7 @@ export default function ConversationScreen() {
   const chatDuels = useChatDuels(messages);
   const { challengeFromChat, respond } = useDuels();
   const [draft, setDraft] = useState('');
-  const [partner, setPartner] = useState<Pick<Profile, 'id' | 'username' | 'avatar_url'> | null>(null);
+  const [partner, setPartner] = useState<Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'> | null>(null);
   const [challengeModalOpen, setChallengeModalOpen] = useState(false);
   const [challengeError, setChallengeError] = useState<string | null>(null);
   const listRef = useRef<FlatList>(null);
@@ -32,7 +32,7 @@ export default function ConversationScreen() {
     if (!session) return;
     supabase
       .from('conversation_participants')
-      .select('profiles(id, username, avatar_url)')
+      .select('profiles(id, username, avatar_url, equipped_frame_color)')
       .eq('conversation_id', id)
       .neq('user_id', session.user.id)
       .maybeSingle()
@@ -60,7 +60,12 @@ export default function ConversationScreen() {
         <Pressable onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={26} color={colors.white} />
         </Pressable>
-        <Avatar uri={partner?.avatar_url} name={partner?.username} size={32} />
+        <Avatar
+          uri={partner?.avatar_url}
+          name={partner?.username}
+          size={32}
+          ringColor={partner?.equipped_frame_color ?? undefined}
+        />
         <Text style={styles.title}>{partner?.username ?? 'Chat'}</Text>
         <Pressable style={styles.challengeButton} onPress={() => setChallengeModalOpen(true)}>
           <Ionicons name="trophy" size={14} color={colors.white} />

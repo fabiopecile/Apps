@@ -51,7 +51,12 @@ export function TopBar() {
         </Pressable>
 
         <Pressable onPress={() => router.push('/(tabs)/profil')}>
-          <Avatar uri={profile?.avatar_url} name={profile?.display_name ?? profile?.username} size={40} />
+          <Avatar
+            uri={profile?.avatar_url}
+            name={profile?.display_name ?? profile?.username}
+            size={40}
+            ringColor={profile?.equipped_frame_color ?? undefined}
+          />
         </Pressable>
       </View>
 

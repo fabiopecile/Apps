@@ -30,7 +30,12 @@ export default function FriendRequestsScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <View style={styles.row}>
-              <Avatar uri={item.sender.avatar_url} name={item.sender.username} size={48} />
+              <Avatar
+                uri={item.sender.avatar_url}
+                name={item.sender.username}
+                size={48}
+                ringColor={item.sender.equipped_frame_color ?? undefined}
+              />
               <View style={styles.rowText}>
                 <Text style={styles.username}>{item.sender.username}</Text>
                 <Text style={styles.subtitle}>Möchte dein Freund sein</Text>

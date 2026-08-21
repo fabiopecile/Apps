@@ -47,7 +47,12 @@ export function PostCard({ post, isOwnPost, onToggleLike, onOpenComments, onDele
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Avatar uri={post.profiles?.avatar_url} name={post.profiles?.username} size={40} ringColor={colors.blue} />
+        <Avatar
+          uri={post.profiles?.avatar_url}
+          name={post.profiles?.username}
+          size={40}
+          ringColor={post.profiles?.equipped_frame_color ?? colors.blue}
+        />
         <View style={styles.headerText}>
           <Text style={styles.username}>{post.profiles?.username ?? 'unknown'}</Text>
           {post.location ? (

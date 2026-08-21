@@ -5,7 +5,7 @@ import type { Profile } from '@/lib/database.types';
 
 export interface ConversationSummary {
   id: string;
-  otherUser: Pick<Profile, 'id' | 'username' | 'avatar_url'> | null;
+  otherUser: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'> | null;
   lastMessage: string | null;
   lastMessageAt: string | null;
   unread: boolean;
@@ -45,7 +45,7 @@ export function useConversations() {
     const [{ data: others }, { data: lastMessages }] = await Promise.all([
       supabase
         .from('conversation_participants')
-        .select('conversation_id, profiles(id, username, avatar_url)')
+        .select('conversation_id, profiles(id, username, avatar_url, equipped_frame_color)')
         .in('conversation_id', conversationIds)
         .neq('user_id', session.user.id),
       supabase

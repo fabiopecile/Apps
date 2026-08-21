@@ -92,7 +92,12 @@ export function StoryViewer({ stories, startIndex, currentUserId, isPro, onClose
         </View>
 
         <View style={styles.header}>
-          <Avatar uri={story.profiles.avatar_url} name={story.profiles.username} size={36} />
+          <Avatar
+            uri={story.profiles.avatar_url}
+            name={story.profiles.username}
+            size={36}
+            ringColor={story.profiles.equipped_frame_color ?? undefined}
+          />
           <Text style={styles.username}>{story.profiles.username}</Text>
           {isOwnStory && isPro && !story.is_highlight ? (
             <Pressable onPress={() => onSaveHighlight(story.id)} style={styles.deleteButton} hitSlop={8}>

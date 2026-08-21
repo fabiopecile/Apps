@@ -101,7 +101,12 @@ export default function AdminScreen() {
         {results.map((user) => (
           <View key={user.id} style={styles.userRow}>
             <View style={styles.userRowMain}>
-              <Avatar uri={user.avatar_url} name={user.username} size={36} />
+              <Avatar
+                uri={user.avatar_url}
+                name={user.username}
+                size={36}
+                ringColor={user.equipped_frame_color ?? undefined}
+              />
               <View>
                 <Text style={styles.username}>{user.username}</Text>
                 <Text style={styles.userMeta}>{user.points} Punkte · {user.xp} XP</Text>

@@ -17,7 +17,7 @@ export function useFriendRequests() {
     const { data } = await supabase
       .from('friend_requests')
       .select(
-        '*, sender:profiles!friend_requests_sender_id_fkey(id, username, avatar_url), recipient:profiles!friend_requests_recipient_id_fkey(id, username, avatar_url)'
+        '*, sender:profiles!friend_requests_sender_id_fkey(id, username, avatar_url, equipped_frame_color), recipient:profiles!friend_requests_recipient_id_fkey(id, username, avatar_url, equipped_frame_color)'
       )
       .eq('recipient_id', session.user.id)
       .eq('status', 'pending')

@@ -58,6 +58,7 @@ export default function FeedScreen() {
                 <StoryAvatar
                   name="Deine Story"
                   uri={profile?.avatar_url}
+                  frameColor={profile?.equipped_frame_color}
                   isAddButton
                   onPress={() => router.push('/story/new')}
                 />
@@ -66,6 +67,7 @@ export default function FeedScreen() {
                 <StoryAvatar
                   name={item.profile.username}
                   uri={item.profile.avatar_url}
+                  frameColor={item.profile.equipped_frame_color}
                   hasUnseen
                   onPress={() => setStoryIndex(stories.findIndex((s) => s.id === item.stories[0].id))}
                 />

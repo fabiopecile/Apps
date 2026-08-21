@@ -20,7 +20,7 @@ export function LeaderboardPodium({ top3, currentUserId }: { top3: Profile[]; cu
               uri={profile.avatar_url}
               name={profile.display_name ?? profile.username}
               size={rank === 1 ? 72 : 56}
-              ringColor={rank === 1 ? colors.red : colors.borderStrong}
+              ringColor={profile.equipped_frame_color ?? (rank === 1 ? colors.red : colors.borderStrong)}
             />
             <View style={[styles.rankCard, rank === 1 && styles.rankCardFirst]}>
               <Text style={[styles.rankNumber, rank === 1 && styles.rankNumberFirst]}>{rank}</Text>

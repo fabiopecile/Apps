@@ -12,7 +12,7 @@ export function useChatDuels(messages: Message[]) {
     const { data } = await supabase
       .from('duels')
       .select(
-        '*, challenger:profiles!duels_challenger_id_fkey(id, username, avatar_url), opponent:profiles!duels_opponent_id_fkey(id, username, avatar_url), matchday:matchdays(*, league:leagues(*))'
+        '*, challenger:profiles!duels_challenger_id_fkey(id, username, avatar_url, equipped_frame_color), opponent:profiles!duels_opponent_id_fkey(id, username, avatar_url, equipped_frame_color), matchday:matchdays(*, league:leagues(*))'
       )
       .in('id', ids);
 

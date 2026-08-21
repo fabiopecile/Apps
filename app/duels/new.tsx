@@ -93,7 +93,12 @@ export default function NewDuelScreen() {
         keyExtractor={(item) => item.id}
         renderItem={({ item }) => (
           <Pressable style={styles.row} onPress={() => sendChallenge(item)} disabled={!matchday || submittingId === item.id}>
-            <Avatar uri={item.avatar_url} name={item.display_name ?? item.username} size={44} />
+            <Avatar
+              uri={item.avatar_url}
+              name={item.display_name ?? item.username}
+              size={44}
+              ringColor={item.equipped_frame_color ?? undefined}
+            />
             <Text style={styles.username}>{item.username}</Text>
             <Text style={styles.challengeLabel}>Herausfordern</Text>
           </Pressable>

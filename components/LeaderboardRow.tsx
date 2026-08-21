@@ -7,7 +7,12 @@ export function LeaderboardRow({ profile, rank, isMe }: { profile: Profile; rank
   return (
     <View style={[styles.row, isMe && styles.rowMe]}>
       <Text style={styles.rank}>{rank}</Text>
-      <Avatar uri={profile.avatar_url} name={profile.display_name ?? profile.username} size={36} />
+      <Avatar
+        uri={profile.avatar_url}
+        name={profile.display_name ?? profile.username}
+        size={36}
+        ringColor={profile.equipped_frame_color ?? undefined}
+      />
       <Text style={styles.name} numberOfLines={1}>
         {isMe ? 'DU' : profile.username}
       </Text>

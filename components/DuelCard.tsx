@@ -35,7 +35,12 @@ export function DuelCard({ duel, currentUserId, onAccept, onDecline, onCancel }:
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <Avatar uri={opponentUser.avatar_url} name={opponentUser.username} size={44} />
+        <Avatar
+          uri={opponentUser.avatar_url}
+          name={opponentUser.username}
+          size={44}
+          ringColor={opponentUser.equipped_frame_color ?? undefined}
+        />
         <View style={styles.headerText}>
           <Text style={styles.username}>
             {DUEL_TYPE_LABEL[duel.duel_type].emoji} vs. {opponentUser.username}

@@ -13,7 +13,7 @@ export function usePostComments(postId: string | null) {
     setLoading(true);
     const { data } = await supabase
       .from('post_comments')
-      .select('*, profiles!post_comments_user_id_fkey(id, username, avatar_url)')
+      .select('*, profiles!post_comments_user_id_fkey(id, username, avatar_url, equipped_frame_color)')
       .eq('post_id', postId)
       .order('created_at', { ascending: true });
     setComments((data as any) ?? []);

@@ -4,11 +4,11 @@ import { useAuth } from '@/contexts/AuthContext';
 import type { Profile, Story } from '@/lib/database.types';
 
 export interface StoryWithAuthor extends Story {
-  profiles: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+  profiles: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
 }
 
 export interface StoryGroup {
-  profile: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+  profile: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
   stories: StoryWithAuthor[];
 }
 
@@ -21,7 +21,7 @@ export function useStories() {
   const load = useCallback(async () => {
     const { data } = await supabase
       .from('stories')
-      .select('*, profiles!stories_user_id_fkey(id, username, avatar_url)')
+      .select('*, profiles!stories_user_id_fkey(id, username, avatar_url, equipped_frame_color)')
       .order('created_at', { ascending: true });
 
     const rows = ((data ?? []) as unknown) as StoryWithAuthor[];

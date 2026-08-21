@@ -13,7 +13,7 @@ export function usePosts() {
     setError(null);
     const { data, error: fetchError } = await supabase
       .from('posts')
-      .select('*, profiles!posts_user_id_fkey(id, username, avatar_url), post_likes(user_id)')
+      .select('*, profiles!posts_user_id_fkey(id, username, avatar_url, equipped_frame_color), post_likes(user_id)')
       .order('created_at', { ascending: false })
       .limit(30);
 

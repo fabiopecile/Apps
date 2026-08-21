@@ -42,7 +42,12 @@ export default function ChatScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Pressable style={styles.row} onPress={() => router.push(`/chat/${item.id}`)}>
-              <Avatar uri={item.otherUser?.avatar_url} name={item.otherUser?.username} size={52} />
+              <Avatar
+                uri={item.otherUser?.avatar_url}
+                name={item.otherUser?.username}
+                size={52}
+                ringColor={item.otherUser?.equipped_frame_color ?? undefined}
+              />
               <View style={styles.rowText}>
                 <Text style={styles.username}>{item.otherUser?.username ?? 'Unbekannt'}</Text>
                 <Text style={styles.preview} numberOfLines={1}>

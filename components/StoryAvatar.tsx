@@ -5,15 +5,16 @@ import { colors, fontSizes, spacing } from '@/constants/theme';
 interface StoryAvatarProps {
   uri?: string | null;
   name: string;
+  frameColor?: string | null;
   isAddButton?: boolean;
   hasUnseen?: boolean;
   onPress?: () => void;
 }
 
-export function StoryAvatar({ uri, name, isAddButton, hasUnseen, onPress }: StoryAvatarProps) {
+export function StoryAvatar({ uri, name, frameColor, isAddButton, hasUnseen, onPress }: StoryAvatarProps) {
   return (
     <Pressable style={styles.container} onPress={onPress}>
-      <Avatar uri={uri} name={name} size={64} ringColor={hasUnseen ? colors.red : undefined} />
+      <Avatar uri={uri} name={name} size={64} ringColor={frameColor ?? (hasUnseen ? colors.red : undefined)} />
       {isAddButton ? (
         <View style={styles.plusBadge}>
           <Text style={styles.plusText}>+</Text>

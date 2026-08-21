@@ -89,7 +89,12 @@ export default function NewConversationScreen() {
         renderItem={({ item }) => (
           <View style={styles.row}>
             <Pressable style={styles.rowMain} onPress={() => startConversation(item)} disabled={creatingId === item.id}>
-              <Avatar uri={item.avatar_url} name={item.display_name ?? item.username} size={44} />
+              <Avatar
+                uri={item.avatar_url}
+                name={item.display_name ?? item.username}
+                size={44}
+                ringColor={item.equipped_frame_color ?? undefined}
+              />
               <Text style={styles.username}>{item.username}</Text>
             </Pressable>
             <Pressable

@@ -87,7 +87,7 @@ export type Post = {
 };
 
 export type PostWithAuthor = Post & {
-  profiles: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+  profiles: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
   like_count: number;
   liked_by_me: boolean;
 };
@@ -101,7 +101,7 @@ export type PostComment = {
 };
 
 export type PostCommentWithAuthor = PostComment & {
-  profiles: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+  profiles: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
 };
 
 export type Story = {
@@ -189,8 +189,8 @@ export type Duel = {
 };
 
 export type DuelWithDetails = Duel & {
-  challenger: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
-  opponent: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+  challenger: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
+  opponent: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
   matchday: Matchday & { league: League };
   challenger_points: number;
   opponent_points: number;
@@ -216,8 +216,8 @@ export type FriendRequest = {
 };
 
 export type FriendRequestWithProfiles = FriendRequest & {
-  sender: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
-  recipient: Pick<Profile, 'id' | 'username' | 'avatar_url'>;
+  sender: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
+  recipient: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
 };
 
 export type WheelPrizeType = 'xp' | 'joker' | 'coins' | 'booster' | 'title';
