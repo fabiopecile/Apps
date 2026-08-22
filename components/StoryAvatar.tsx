@@ -41,5 +41,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  plusText: { color: colors.black, fontWeight: '900', fontSize: 14, lineHeight: 16 },
+  plusText: { color: colors.black, fontWeight: '800', fontSize: 14, lineHeight: 16 },
 });

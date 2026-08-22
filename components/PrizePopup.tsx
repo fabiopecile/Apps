@@ -1,17 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { Modal, View, Text, Pressable, Animated, Easing, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { PopIn } from '@/components/PopIn';
 import { ConfettiBurst } from '@/components/ConfettiBurst';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { WheelSpinResult } from '@/lib/database.types';
 
-const PRIZE_EMOJI: Record<WheelSpinResult['prize_type'], string> = {
-  xp: '⭐',
-  joker: '🎁',
-  coins: '🪙',
-  booster: '🚀',
-  title: '👑',
+const PRIZE_ICON: Record<WheelSpinResult['prize_type'], keyof typeof Ionicons.glyphMap> = {
+  xp: 'star',
+  joker: 'gift',
+  coins: 'ellipse',
+  booster: 'rocket',
+  title: 'ribbon',
 };
 
 export function PrizePopup({ result, onClose }: { result: WheelSpinResult | null; onClose: () => void }) {
@@ -38,7 +39,7 @@ export function PrizePopup({ result, onClose }: { result: WheelSpinResult | null
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <ConfettiBurst trigger={confetti} />
         <PopIn style={styles.card}>
-          <Animated.Text
+          <Animated.View
             style={[
               styles.icon,
               {
@@ -49,8 +50,8 @@ export function PrizePopup({ result, onClose }: { result: WheelSpinResult | null
               },
             ]}
           >
-            {result ? PRIZE_EMOJI[result.prize_type] : '🎉'}
-          </Animated.Text>
+            <Ionicons name={result ? PRIZE_ICON[result.prize_type] : 'trophy'} size={56} color={colors.gold} />
+          </Animated.View>
           <Text style={styles.title}>GEWONNEN!</Text>
           <Text style={styles.desc}>
             {result?.prize_type === 'title'
@@ -81,8 +82,8 @@ const styles = StyleSheet.create({
     padding: spacing.xxl,
     alignItems: 'center',
   },
-  icon: { fontSize: 64, marginBottom: spacing.md },
-  title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '900', marginBottom: spacing.sm },
+  icon: { marginBottom: spacing.md },
+  title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '800', letterSpacing: -0.4, marginBottom: spacing.sm },
   desc: { color: colors.textMuted, fontSize: fontSizes.md, textAlign: 'center', marginBottom: spacing.xl },
   button: { width: '100%' },
 });

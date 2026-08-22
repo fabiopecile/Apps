@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Modal, View, Text, Pressable, Animated, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { PrimaryButton } from '@/components/PrimaryButton';
 import { PopIn } from '@/components/PopIn';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
@@ -25,7 +26,9 @@ export function StreakRewardModal({ reward, onClose }: { reward: StreakReward | 
       <View style={styles.backdrop}>
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <PopIn style={styles.card}>
-          <Animated.Text style={[styles.flame, { transform: [{ scale: flicker }] }]}>🔥</Animated.Text>
+          <Animated.View style={[styles.flame, { transform: [{ scale: flicker }] }]}>
+            <Ionicons name="flame" size={46} color={colors.gold} />
+          </Animated.View>
           <Text style={styles.title}>{reward?.streak}-Tage-Streak!</Text>
           <Text style={styles.subtitle}>Du bist {reward?.streak} Tage in Folge dabei.</Text>
 
@@ -66,8 +69,8 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     alignItems: 'center',
   },
-  flame: { fontSize: 48, marginBottom: spacing.sm },
-  title: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', marginBottom: spacing.xs },
+  flame: { marginBottom: spacing.sm },
+  title: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', letterSpacing: -0.4, marginBottom: spacing.xs },
   subtitle: { color: colors.textMuted, fontSize: fontSizes.sm, textAlign: 'center', marginBottom: spacing.lg },
   rewards: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.xl },
   rewardPill: {

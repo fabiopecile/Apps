@@ -1,12 +1,13 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { DuelType, DuelWithDetails } from '@/lib/database.types';
 
-const DUEL_TYPE_LABEL: Record<DuelType, { emoji: string; title: string }> = {
-  tips: { emoji: '🎯', title: 'Tipp-Duell' },
-  xp: { emoji: '🏆', title: 'Punktewettkampf' },
-  streak: { emoji: '🔥', title: 'Streak-Battle' },
+const DUEL_TYPE_LABEL: Record<DuelType, { icon: keyof typeof Ionicons.glyphMap; title: string }> = {
+  tips: { icon: 'locate' as const, title: 'Tipp-Duell' },
+  xp: { icon: 'trophy' as const, title: 'Punktewettkampf' },
+  streak: { icon: 'flame' as const, title: 'Streak-Battle' },
 };
 
 interface DuelCardProps {
@@ -42,9 +43,10 @@ export function DuelCard({ duel, currentUserId, onAccept, onDecline, onCancel }:
           ringColor={opponentUser.equipped_frame_color ?? undefined}
         />
         <View style={styles.headerText}>
-          <Text style={styles.username}>
-            {DUEL_TYPE_LABEL[duel.duel_type].emoji} vs. {opponentUser.username}
-          </Text>
+          <View style={styles.usernameRow}>
+            <Ionicons name={DUEL_TYPE_LABEL[duel.duel_type].icon} size={13} color={colors.textMuted} />
+            <Text style={styles.username}>vs. {opponentUser.username}</Text>
+          </View>
           <Text style={styles.matchday}>
             {DUEL_TYPE_LABEL[duel.duel_type].title} · {duel.matchday.league.flag_emoji} Spieltag {duel.matchday.number}
           </Text>
@@ -108,6 +110,7 @@ const styles = StyleSheet.create({
   },
   header: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   headerText: { flex: 1 },
+  usernameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   username: { color: colors.text, fontWeight: '700', fontSize: fontSizes.md },
   matchday: { color: colors.textMuted, fontSize: fontSizes.xs, marginTop: 2 },
   resultBadge: { backgroundColor: colors.surface, borderRadius: radii.pill, paddingHorizontal: spacing.md, paddingVertical: 6 },
@@ -115,7 +118,7 @@ const styles = StyleSheet.create({
   resultLoss: { backgroundColor: colors.surfaceAlt },
   resultText: { color: colors.white, fontWeight: '700', fontSize: fontSizes.xs },
   scoreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, marginTop: spacing.lg },
-  scoreValue: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800' },
+  scoreValue: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', letterSpacing: -0.4 },
   scoreLabel: { color: colors.textMuted, fontSize: fontSizes.sm },
   scoreDivider: { color: colors.textFaint, fontSize: fontSizes.lg },
   actions: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.lg, gap: spacing.sm },

@@ -1,28 +1,31 @@
+// Dark UI with slightly cool-tinted neutrals rather than pure black/grey -
+// the tint is what keeps a dark app from looking cheap. Accents are muted
+// versions of the original brand colors: still recognisable, no longer neon.
 export const colors = {
-  background: '#000000',
-  surface: '#0a0a0a',
-  surfaceAlt: '#1a1a1a',
-  card: '#1a1a1a',
-  border: '#262626',
-  borderStrong: '#333333',
+  background: '#0B0B0E',
+  surface: '#131318',
+  surfaceAlt: '#1C1C23',
+  card: '#141419',
+  border: '#22222B',
+  borderStrong: '#2E2E39',
 
-  text: '#ffffff',
-  textMuted: '#9ca3af',
-  textFaint: '#6b7280',
+  text: '#F2F2F5',
+  textMuted: '#9494A0',
+  textFaint: '#61616C',
 
-  red: '#DC2626',
-  redDark: '#7f1d1d',
-  redGlow: 'rgba(220,38,38,0.4)',
+  red: '#E5484D',
+  redDark: '#3A1416',
+  redGlow: 'rgba(229,72,77,0.22)',
 
-  blue: '#3b82f6',
-  blueDark: '#0f172a',
-  blueGlow: 'rgba(59,130,246,0.45)',
+  blue: '#5B8DEF',
+  blueDark: '#121A2B',
+  blueGlow: 'rgba(91,141,239,0.22)',
 
-  gold: '#fbbf24',
-  goldDark: '#78350f',
+  gold: '#E3B341',
+  goldDark: '#2C2312',
 
-  success: '#22c55e',
-  danger: '#DC2626',
+  success: '#3DD68C',
+  danger: '#E5484D',
 
   black: '#000000',
   white: '#FFFFFF',
@@ -37,11 +40,13 @@ export const spacing = {
   xxl: 32,
 } as const;
 
+// Tighter than before: oversized corner radii are what made the app read as
+// playful rather than considered.
 export const radii = {
-  sm: 8,
-  md: 12,
-  lg: 18,
-  xl: 24,
+  sm: 6,
+  md: 10,
+  lg: 14,
+  xl: 20,
   pill: 999,
 } as const;
 
@@ -54,19 +59,28 @@ export const fontSizes = {
   xxl: 28,
 } as const;
 
+// Headings get negative tracking, small uppercase labels get positive - the
+// standard pairing that makes type look deliberate.
+export const typography = {
+  display: { fontWeight: '800' as const, letterSpacing: -0.6 },
+  heading: { fontWeight: '700' as const, letterSpacing: -0.3 },
+  label: { fontWeight: '600' as const, letterSpacing: 0.6, textTransform: 'uppercase' as const },
+} as const;
+
+// Depth via soft shadow instead of the coloured neon glow it replaces.
 export const shadows = {
   blueButton: {
-    shadowColor: colors.blue,
-    shadowOpacity: 0.6,
-    shadowRadius: 16,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
+    shadowColor: '#000000',
+    shadowOpacity: 0.35,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
   redGlow: {
-    shadowColor: colors.red,
-    shadowOpacity: 0.5,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
-    elevation: 6,
+    shadowColor: '#000000',
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
 } as const;

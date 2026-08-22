@@ -61,7 +61,7 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     alignItems: 'center',
   },
-  badge: { color: colors.blue, fontWeight: '900', fontSize: fontSizes.sm, marginBottom: spacing.sm },
+  badge: { color: colors.blue, fontWeight: '800', fontSize: fontSizes.sm, marginBottom: spacing.sm },
   title: { color: colors.white, fontSize: fontSizes.lg, fontWeight: '800', textAlign: 'center', marginBottom: spacing.lg },
   barTrack: {
     width: '100%',

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Animated } from 'react-native';
 import { useRouter } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { WheelModal } from '@/components/WheelModal';
 import { PrizePopup } from '@/components/PrizePopup';
@@ -67,7 +68,8 @@ export function TopBar() {
       <View style={styles.right}>
         {profile && profile.login_streak > 0 ? (
           <View style={styles.streakPill}>
-            <Text style={styles.streakText}>🔥 {profile.login_streak}</Text>
+            <Ionicons name="flame" size={13} color={colors.gold} />
+            <Text style={styles.streakText}>{profile.login_streak}</Text>
           </View>
         ) : null}
 
@@ -78,7 +80,7 @@ export function TopBar() {
 
         <Pressable onPress={() => setWheelOpen(true)}>
           <Animated.View style={[styles.giftButton, { transform: [{ scale: giftPulse }] }]}>
-            <Text style={styles.giftEmoji}>🎁</Text>
+            <Ionicons name="gift" size={17} color={colors.gold} />
             {canSpin ? <View style={styles.badgeDot} /> : null}
           </Animated.View>
         </Pressable>
@@ -127,9 +129,9 @@ const styles = StyleSheet.create({
   logoRow: { flexDirection: 'row', alignItems: 'center' },
   logo: {
     fontSize: fontSizes.xl,
-    fontWeight: '900',
-    color: colors.white,
-    letterSpacing: 0.5,
+    fontWeight: '800',
+    color: colors.text,
+    letterSpacing: -0.5,
   },
   logoAccent: { color: colors.red },
   right: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
@@ -146,6 +148,9 @@ const styles = StyleSheet.create({
   },
   levelText: { color: colors.blue, fontWeight: '700', fontSize: fontSizes.xs },
   streakPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.borderStrong,
@@ -169,7 +174,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  giftEmoji: { fontSize: 16 },
   badgeDot: {
     position: 'absolute',
     top: -1,

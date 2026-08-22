@@ -203,7 +203,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  title: { color: colors.white, fontWeight: '900', fontSize: fontSizes.xl },
+  title: { color: colors.white, fontWeight: '800', fontSize: fontSizes.xl, letterSpacing: -0.4 },
   scrollContent: { padding: spacing.lg, paddingBottom: spacing.xxl },
   imagePicker: {
     aspectRatio: 4 / 5,

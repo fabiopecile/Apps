@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { View, Text, Image, FlatList, Pressable, StyleSheet } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { StatRow } from '@/components/StatPill';
 import { SettingsRow } from '@/components/SettingsRow';
@@ -10,6 +11,7 @@ import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { LanguagePickerModal } from '@/components/LanguagePickerModal';
 import { ProCard } from '@/components/ProCard';
 import { ReminderHourModal } from '@/components/ReminderHourModal';
+import { AnimatedBar } from '@/components/AnimatedBar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOwnPosts } from '@/hooks/useOwnPosts';
 import { useBadges } from '@/hooks/useBadges';
@@ -95,7 +97,8 @@ export default function ProfilScreen() {
                   ) : null}
                   {profile.equipped_title ? (
                     <View style={styles.titleBadge}>
-                      <Text style={styles.titleBadgeText}>👑 {profile.equipped_title}</Text>
+                      <Ionicons name="ribbon" size={11} color={colors.gold} />
+                      <Text style={styles.titleBadgeText}>{profile.equipped_title}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -103,9 +106,11 @@ export default function ProfilScreen() {
                   <View style={styles.levelPill}>
                     <Text style={styles.levelText}>LVL {profile.level}</Text>
                   </View>
-                  <View style={styles.xpBarTrack}>
-                    <View style={[styles.xpBarFill, { width: `${Math.min(100, (xpInLevel / XP_PER_LEVEL) * 100)}%` }]} />
-                  </View>
+                  <AnimatedBar
+                    progress={xpInLevel / XP_PER_LEVEL}
+                    color={colors.blue}
+                    trackStyle={styles.xpBarTrack}
+                  />
                   <Text style={styles.xpText}>
                     {xpInLevel}/{XP_PER_LEVEL} XP
                   </Text>
@@ -118,7 +123,12 @@ export default function ProfilScreen() {
                 { value: String(profile.tips_count), label: t('profil.statTipps') },
                 { value: `${quote}%`, label: t('profil.statQuote') },
                 { value: profile.points.toLocaleString('de-DE'), label: t('profil.statPoints'), accent: true },
-                { value: `🪙 ${profile.coins}`, label: t('profil.statCoins') },
+                {
+                  value: String(profile.coins),
+                  label: t('profil.statCoins'),
+                  icon: 'ellipse',
+                  iconColor: colors.gold,
+                },
               ]}
             />
 
@@ -127,21 +137,21 @@ export default function ProfilScreen() {
             <InviteFriendsCard referralCode={profile.referral_code} />
 
             <View style={styles.settings}>
-              <SettingsRow icon="🛍️" label="Shop" trailingText={`🪙 ${profile.coins}`} chevron onPress={() => router.push('/shop')} />
+              <SettingsRow icon="bag-outline" label="Shop" trailingText={`${profile.coins} Coins`} chevron onPress={() => router.push('/shop')} />
             </View>
 
             {profile.is_pro ? (
               <View style={styles.settings}>
-                <SettingsRow icon="🏆" label="Private Ligen" chevron onPress={() => router.push('/leagues')} />
+                <SettingsRow icon="trophy-outline" label="Private Ligen" chevron onPress={() => router.push('/leagues')} />
                 <SettingsRow
-                  icon="⏰"
+                  icon="time-outline"
                   label="Erinnerungszeit"
                   trailingText={`${profile.reminder_hour_utc ?? 18}:00 UTC`}
                   chevron
                   onPress={() => setReminderHourOpen(true)}
                 />
                 <SettingsRow
-                  icon="📄"
+                  icon="document-text-outline"
                   label={exportingPdf ? 'Wird erstellt...' : 'Statistik exportieren'}
                   chevron
                   onPress={handleExportPdf}
@@ -151,21 +161,21 @@ export default function ProfilScreen() {
 
             <View style={styles.settings}>
               <SettingsRow
-                icon="🌐"
+                icon="language-outline"
                 label={t('profil.language')}
                 trailingText={profile.language.toUpperCase()}
                 chevron
                 onPress={() => setLanguagePickerOpen(true)}
               />
               <SettingsRow
-                icon="🔔"
+                icon="notifications-outline"
                 label={t('profil.notifications')}
                 value={profile.notifications_enabled}
                 onValueChange={handleNotificationsToggle}
               />
-              <SettingsRow icon="🛡️" label={t('profil.privacy')} chevron onPress={() => router.push('/privacy')} />
+              <SettingsRow icon="shield-checkmark-outline" label={t('profil.privacy')} chevron onPress={() => router.push('/privacy')} />
               {profile.is_admin ? (
-                <SettingsRow icon="⚙️" label="Admin" chevron onPress={() => router.push('/admin')} />
+                <SettingsRow icon="construct-outline" label="Admin" chevron onPress={() => router.push('/admin')} />
               ) : null}
             </View>
 
@@ -191,7 +201,11 @@ export default function ProfilScreen() {
                   const earned = earnedIds.has(badge.id);
                   return (
                     <View key={badge.id} style={[styles.badgeCard, !earned && styles.badgeCardLocked]}>
-                      <Text style={styles.badgeIcon}>{earned ? '🏅' : '🔒'}</Text>
+                      <Ionicons
+                        name={earned ? 'medal' : 'lock-closed'}
+                        size={24}
+                        color={earned ? colors.gold : colors.textFaint}
+                      />
                       <Text style={styles.badgeName}>{badge.name}</Text>
                     </View>
                   );
@@ -206,7 +220,7 @@ export default function ProfilScreen() {
             <Image source={{ uri: item.image_url }} style={styles.gridImage} />
           ) : (
             <View style={[styles.gridImage, styles.gridImageFallback]}>
-              <Text>⚽️</Text>
+              <Ionicons name="football-outline" size={20} color={colors.textFaint} />
             </View>
           )
         }
@@ -258,16 +272,15 @@ const styles = StyleSheet.create({
   profileHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, padding: spacing.lg },
   profileInfo: { flex: 1, gap: spacing.sm },
   usernameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
-  username: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800' },
+  username: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', letterSpacing: -0.4 },
   proBadge: { backgroundColor: colors.gold, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
-  proBadgeText: { color: colors.black, fontSize: fontSizes.xs, fontWeight: '900' },
-  titleBadge: { backgroundColor: colors.goldDark, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  proBadgeText: { color: colors.black, fontSize: fontSizes.xs, fontWeight: '800' },
+  titleBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.goldDark, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
   titleBadgeText: { color: colors.gold, fontSize: fontSizes.xs, fontWeight: '700' },
   levelRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   levelPill: { backgroundColor: colors.surface, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 4, borderWidth: 1, borderColor: colors.borderStrong },
   levelText: { color: colors.blue, fontWeight: '700', fontSize: fontSizes.xs },
   xpBarTrack: { flex: 1, height: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceAlt, overflow: 'hidden' },
-  xpBarFill: { height: '100%', backgroundColor: colors.blue },
   xpText: { color: colors.textMuted, fontSize: 10 },
   settings: { marginTop: spacing.xl, borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: colors.border },
   tabs: { flexDirection: 'row', marginTop: spacing.lg },
@@ -284,7 +297,6 @@ const styles = StyleSheet.create({
   badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.lg, gap: spacing.md },
   badgeCard: { width: '30%', backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center', padding: spacing.md, gap: spacing.xs },
   badgeCardLocked: { opacity: 0.4 },
-  badgeIcon: { fontSize: 28 },
   badgeName: { color: colors.text, fontSize: fontSizes.xs, textAlign: 'center' },
   signOut: { margin: spacing.lg, padding: spacing.md, alignItems: 'center', borderRadius: radii.lg, borderWidth: 1, borderColor: colors.borderStrong },
   signOutText: { color: colors.danger, fontWeight: '700' },

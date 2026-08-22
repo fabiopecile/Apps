@@ -27,43 +27,56 @@ export default function TabsLayout() {
             backgroundColor: colors.background,
             borderTopColor: colors.border,
             borderTopWidth: StyleSheet.hairlineWidth,
+            height: 62,
+            paddingTop: 6,
+            paddingBottom: 8,
           },
-          tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+          tabBarLabelStyle: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.2 },
         }}
       >
         <Tabs.Screen
           name="index"
           options={{
             title: t('tabs.feed'),
-            tabBarIcon: ({ color, size }) => <Ionicons name="home" color={color} size={size} />,
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={size - 1} />
+            ),
           }}
         />
         <Tabs.Screen
           name="tipps"
           options={{
             title: t('tabs.tipps'),
-            tabBarIcon: ({ color, size }) => <Ionicons name="checkbox" color={color} size={size} />,
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'checkbox' : 'checkbox-outline'} color={color} size={size - 1} />
+            ),
           }}
         />
         <Tabs.Screen
           name="chat"
           options={{
             title: t('tabs.chat'),
-            tabBarIcon: ({ color, size }) => <Ionicons name="chatbubble-ellipses" color={color} size={size} />,
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'chatbubble-ellipses' : 'chatbubble-ellipses-outline'} color={color} size={size - 1} />
+            ),
           }}
         />
         <Tabs.Screen
           name="ranking"
           options={{
             title: t('tabs.ranking'),
-            tabBarIcon: ({ color, size }) => <Ionicons name="stats-chart" color={color} size={size} />,
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'stats-chart' : 'stats-chart-outline'} color={color} size={size - 1} />
+            ),
           }}
         />
         <Tabs.Screen
           name="profil"
           options={{
             title: t('tabs.profil'),
-            tabBarIcon: ({ color, size }) => <Ionicons name="person" color={color} size={size} />,
+            tabBarIcon: ({ color, size, focused }) => (
+              <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size - 1} />
+            ),
           }}
         />
       </Tabs>

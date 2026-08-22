@@ -1,11 +1,12 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { DuelType, DuelWithDetails } from '@/lib/database.types';
 
-const DUEL_TYPE_LABEL: Record<DuelType, { emoji: string; title: string }> = {
-  tips: { emoji: '🎯', title: 'Tipp-Duell' },
-  xp: { emoji: '🏆', title: 'Punktewettkampf' },
-  streak: { emoji: '🔥', title: 'Streak-Battle' },
+const DUEL_TYPE_LABEL: Record<DuelType, { icon: keyof typeof Ionicons.glyphMap; title: string }> = {
+  tips: { icon: 'locate' as const, title: 'Tipp-Duell' },
+  xp: { icon: 'trophy' as const, title: 'Punktewettkampf' },
+  streak: { icon: 'flame' as const, title: 'Streak-Battle' },
 };
 
 interface ChallengeMessageCardProps {
@@ -39,9 +40,10 @@ export function ChallengeMessageCard({ duel, currentUserId, onAccept, onDecline 
 
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>
-        {meta.emoji} {meta.title}!
-      </Text>
+      <View style={styles.titleRow}>
+        <Ionicons name={meta.icon} size={15} color={colors.black} />
+        <Text style={styles.title}>{meta.title}</Text>
+      </View>
       <Text style={styles.subtitle}>Spieltag {duel.matchday.number} · {duel.matchday.league.name}</Text>
 
       {duel.status === 'pending' && !isChallenger ? (
@@ -69,7 +71,8 @@ const styles = StyleSheet.create({
     padding: spacing.md,
     maxWidth: '82%',
   },
-  title: { color: colors.black, fontWeight: '800', fontSize: fontSizes.md, marginBottom: 2 },
+  titleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 },
+  title: { color: colors.black, fontWeight: '800', fontSize: fontSizes.md },
   subtitle: { color: colors.black, fontSize: fontSizes.xs, opacity: 0.75, marginBottom: spacing.sm },
   actions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xs },
   declineButton: { flex: 1, backgroundColor: 'rgba(0,0,0,0.15)', borderRadius: radii.md, paddingVertical: spacing.sm, alignItems: 'center' },

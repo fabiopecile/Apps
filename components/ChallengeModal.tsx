@@ -1,11 +1,12 @@
 import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { DuelType } from '@/lib/database.types';
 
-const CHALLENGE_OPTIONS: { type: DuelType; emoji: string; title: string; desc: string; colorStart: string; colorEnd: string }[] = [
-  { type: 'tips', emoji: '🎯', title: 'Tipp-Duell', desc: 'Wer tippt mehr Spiele richtig?', colorStart: colors.blueDark, colorEnd: colors.blue },
-  { type: 'xp', emoji: '🏆', title: 'Punktewettkampf', desc: 'Wer sammelt mehr XP?', colorStart: '#4c1d95', colorEnd: '#7c3aed' },
-  { type: 'streak', emoji: '🔥', title: 'Streak-Battle', desc: 'Wer hat die längste Serie?', colorStart: colors.goldDark, colorEnd: colors.gold },
+const CHALLENGE_OPTIONS: { type: DuelType; icon: keyof typeof Ionicons.glyphMap; title: string; desc: string; colorStart: string; colorEnd: string }[] = [
+  { type: 'tips', icon: 'locate', title: 'Tipp-Duell', desc: 'Wer tippt mehr Spiele richtig?', colorStart: colors.blueDark, colorEnd: colors.blue },
+  { type: 'xp', icon: 'trophy', title: 'Punktewettkampf', desc: 'Wer sammelt mehr XP?', colorStart: '#4c1d95', colorEnd: '#7c3aed' },
+  { type: 'streak', icon: 'flame', title: 'Streak-Battle', desc: 'Wer hat die längste Serie?', colorStart: colors.goldDark, colorEnd: colors.gold },
 ];
 
 interface ChallengeModalProps {
@@ -31,7 +32,7 @@ export function ChallengeModal({ visible, recipientName, onClose, onSelect }: Ch
               style={[styles.option, { backgroundColor: option.colorStart, borderColor: option.colorEnd }]}
               onPress={() => onSelect(option.type)}
             >
-              <Text style={styles.optionEmoji}>{option.emoji}</Text>
+              <Ionicons name={option.icon} size={22} color={colors.white} style={styles.optionEmoji} />
               <View style={styles.optionText}>
                 <Text style={styles.optionTitle}>{option.title}</Text>
                 <Text style={styles.optionDesc}>{option.desc}</Text>
@@ -58,7 +59,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.xl,
     padding: spacing.xl,
   },
-  title: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '900', textAlign: 'center', marginBottom: spacing.sm },
+  title: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', letterSpacing: -0.4, textAlign: 'center', marginBottom: spacing.sm },
   subtitle: { color: colors.textMuted, fontSize: fontSizes.sm, textAlign: 'center', marginBottom: spacing.xl },
   recipient: { color: colors.white, fontWeight: '700' },
   option: {

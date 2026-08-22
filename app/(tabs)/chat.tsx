@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '800' },
+  title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '800', letterSpacing: -0.4 },
   headerActions: { flexDirection: 'row', gap: spacing.sm },
   newButton: {
     width: 36,

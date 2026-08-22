@@ -90,9 +90,12 @@ export function PostCard({
           <View style={styles.headerText}>
             <Text style={styles.username}>{post.profiles?.username ?? 'unknown'}</Text>
             {post.location ? (
-              <Text style={styles.location} numberOfLines={1}>
-                📍 {post.location}
-              </Text>
+              <View style={styles.locationRow}>
+                <Ionicons name="location-sharp" size={11} color={colors.textFaint} />
+                <Text style={styles.location} numberOfLines={1}>
+                  {post.location}
+                </Text>
+              </View>
             ) : null}
           </View>
         </Pressable>
@@ -133,15 +136,15 @@ export function PostCard({
             {images[0] ? (
               <Image source={{ uri: images[0] }} style={[styles.image, { aspectRatio: imageAspect }]} />
             ) : (
-              <View style={[styles.image, styles.imageFallback]}>
-                <Text style={styles.imageFallbackText}>⚽️</Text>
+              <View style={[styles.image, styles.imageFallback, { aspectRatio: imageAspect }]}>
+                <Ionicons name="football-outline" size={44} color={colors.textFaint} />
               </View>
             )}
           </Pressable>
         )}
 
         {showHeart ? (
-          <Animated.Text
+          <Animated.View
             style={[
               styles.doubleTapHeart,
               {
@@ -150,8 +153,8 @@ export function PostCard({
               },
             ]}
           >
-            ❤️
-          </Animated.Text>
+            <Ionicons name="heart" size={92} color={colors.white} />
+          </Animated.View>
         ) : null}
 
         {images.length > 1 ? (
@@ -165,13 +168,17 @@ export function PostCard({
 
       <View style={styles.actions}>
         <Pressable onPress={handleLikePress} style={styles.actionButton} hitSlop={6}>
-          <Animated.Text style={[styles.actionIcon, { transform: [{ scale: likeScale }] }]}>
-            {post.liked_by_me ? '❤️' : '🤍'}
-          </Animated.Text>
+          <Animated.View style={{ transform: [{ scale: likeScale }] }}>
+            <Ionicons
+              name={post.liked_by_me ? 'heart' : 'heart-outline'}
+              size={24}
+              color={post.liked_by_me ? colors.red : colors.text}
+            />
+          </Animated.View>
           <CountUp value={post.like_count} style={styles.actionCount} duration={350} />
         </Pressable>
         <Pressable onPress={onOpenComments} style={styles.actionButton} hitSlop={6}>
-          <Text style={styles.actionIcon}>💬</Text>
+          <Ionicons name="chatbubble-outline" size={22} color={colors.text} />
         </Pressable>
       </View>
 
@@ -201,7 +208,8 @@ const styles = StyleSheet.create({
   authorTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   headerText: { flex: 1 },
   username: { color: colors.text, fontWeight: '700', fontSize: fontSizes.md },
-  location: { color: colors.textMuted, fontSize: fontSizes.xs, marginTop: 2 },
+  locationRow: { flexDirection: 'row', alignItems: 'center', gap: 3, marginTop: 2 },
+  location: { color: colors.textFaint, fontSize: fontSizes.xs },
   followButton: {
     borderWidth: 1,
     borderColor: colors.red,
@@ -215,14 +223,12 @@ const styles = StyleSheet.create({
   followingText: { color: colors.textMuted },
   image: { width: '100%', backgroundColor: colors.surface },
   imageFallback: { alignItems: 'center', justifyContent: 'center' },
-  imageFallbackText: { fontSize: 48 },
   doubleTapHeart: {
     position: 'absolute',
     top: '50%',
     left: '50%',
-    marginTop: -50,
-    marginLeft: -50,
-    fontSize: 100,
+    marginTop: -46,
+    marginLeft: -46,
   },
   dotsRow: {
     position: 'absolute',
@@ -237,8 +243,6 @@ const styles = StyleSheet.create({
   dotActive: { backgroundColor: colors.white },
   actions: { flexDirection: 'row', paddingHorizontal: spacing.lg, paddingTop: spacing.sm, gap: spacing.lg },
   actionButton: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
-  actionIcon: { fontSize: 22 },
-  actionIconActive: {},
   actionCount: { color: colors.textMuted, fontSize: fontSizes.sm },
   caption: {
     color: colors.text,

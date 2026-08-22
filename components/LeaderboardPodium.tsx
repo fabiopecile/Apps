@@ -1,4 +1,5 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { Profile } from '@/lib/database.types';
@@ -27,7 +28,7 @@ export function LeaderboardPodium({
             style={[styles.slot, rank === 1 && styles.slotFirst]}
             onPress={() => onSelect?.(profile.id)}
           >
-            {rank === 1 ? <Text style={styles.crown}>👑</Text> : null}
+            {rank === 1 ? <Ionicons name="trophy" size={20} color={colors.gold} style={styles.crown} /> : null}
             <Avatar
               uri={profile.avatar_url}
               name={profile.display_name ?? profile.username}
@@ -59,7 +60,7 @@ const styles = StyleSheet.create({
   },
   slot: { alignItems: 'center', width: 96, gap: spacing.xs },
   slotFirst: { marginBottom: spacing.md },
-  crown: { fontSize: 22, marginBottom: -4 },
+  crown: { marginBottom: 2 },
   rankCard: {
     width: 96,
     height: 72,
@@ -72,7 +73,7 @@ const styles = StyleSheet.create({
     marginTop: -spacing.md,
   },
   rankCardFirst: { height: 96, borderColor: colors.red },
-  rankNumber: { fontSize: fontSizes.xxl, fontWeight: '800', color: colors.textMuted },
+  rankNumber: { fontSize: fontSizes.xxl, fontWeight: '800', letterSpacing: -0.4, color: colors.textMuted },
   rankNumberFirst: { color: colors.red },
   name: { color: colors.text, fontWeight: '700', fontSize: fontSizes.sm },
   points: { color: colors.red, fontWeight: '700', fontSize: fontSizes.sm },

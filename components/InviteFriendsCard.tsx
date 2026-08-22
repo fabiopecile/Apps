@@ -66,7 +66,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   codeLabel: { color: colors.textFaint, fontSize: fontSizes.xs },
-  code: { color: colors.gold, fontWeight: '900', fontSize: fontSizes.lg, letterSpacing: 2 },
+  code: { color: colors.gold, fontWeight: '800', fontSize: fontSizes.lg, letterSpacing: 2 },
   shareButton: {
     flexDirection: 'row',
     alignItems: 'center',

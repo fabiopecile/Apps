@@ -7,6 +7,7 @@ import { Avatar } from '@/components/Avatar';
 import { StatRow } from '@/components/StatPill';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
+import { AnimatedBar } from '@/components/AnimatedBar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useFollows } from '@/hooks/useFollows';
@@ -90,7 +91,8 @@ export default function UserProfileScreen() {
                   ) : null}
                   {profile.equipped_title ? (
                     <View style={styles.titleBadge}>
-                      <Text style={styles.titleBadgeText}>👑 {profile.equipped_title}</Text>
+                      <Ionicons name="ribbon" size={11} color={colors.gold} />
+                      <Text style={styles.titleBadgeText}>{profile.equipped_title}</Text>
                     </View>
                   ) : null}
                 </View>
@@ -98,9 +100,11 @@ export default function UserProfileScreen() {
                   <View style={styles.levelPill}>
                     <Text style={styles.levelText}>LVL {profile.level}</Text>
                   </View>
-                  <View style={styles.xpBarTrack}>
-                    <View style={[styles.xpBarFill, { width: `${Math.min(100, (xpInLevel / XP_PER_LEVEL) * 100)}%` }]} />
-                  </View>
+                  <AnimatedBar
+                    progress={xpInLevel / XP_PER_LEVEL}
+                    color={colors.blue}
+                    trackStyle={styles.xpBarTrack}
+                  />
                 </View>
                 <Text style={styles.followCounts}>
                   {followerCount} Follower · {followingCount} gefolgt
@@ -141,7 +145,7 @@ export default function UserProfileScreen() {
                 { value: String(profile.tips_count), label: 'Tipps' },
                 { value: `${quote}%`, label: 'Quote' },
                 { value: profile.points.toLocaleString('de-DE'), label: 'Punkte', accent: true },
-                { value: `🔥 ${profile.login_streak}`, label: 'Streak' },
+                { value: String(profile.login_streak), label: 'Streak', icon: 'flame' as const, iconColor: colors.gold },
               ]}
             />
 
@@ -153,7 +157,7 @@ export default function UserProfileScreen() {
             <Image source={{ uri: item.image_url }} style={styles.gridImage} />
           ) : (
             <View style={[styles.gridImage, styles.gridImageFallback]}>
-              <Text>⚽️</Text>
+              <Ionicons name="football-outline" size={20} color={colors.textFaint} />
             </View>
           )
         }
@@ -182,10 +186,10 @@ const styles = StyleSheet.create({
   profileHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.lg, padding: spacing.lg },
   profileInfo: { flex: 1, gap: spacing.sm },
   usernameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, flexWrap: 'wrap' },
-  username: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800' },
+  username: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', letterSpacing: -0.4 },
   proBadge: { backgroundColor: colors.gold, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
-  proBadgeText: { color: colors.black, fontSize: fontSizes.xs, fontWeight: '900' },
-  titleBadge: { backgroundColor: colors.goldDark, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  proBadgeText: { color: colors.black, fontSize: fontSizes.xs, fontWeight: '800' },
+  titleBadge: { flexDirection: 'row', alignItems: 'center', gap: 4, backgroundColor: colors.goldDark, borderRadius: radii.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
   titleBadgeText: { color: colors.gold, fontSize: fontSizes.xs, fontWeight: '700' },
   levelRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   levelPill: {
@@ -198,7 +202,6 @@ const styles = StyleSheet.create({
   },
   levelText: { color: colors.blue, fontWeight: '700', fontSize: fontSizes.xs },
   xpBarTrack: { flex: 1, height: 6, borderRadius: radii.pill, backgroundColor: colors.surfaceAlt, overflow: 'hidden' },
-  xpBarFill: { height: '100%', backgroundColor: colors.blue },
   followCounts: { color: colors.textMuted, fontSize: fontSizes.xs },
   bio: { color: colors.textMuted, fontSize: fontSizes.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.md },
   actions: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingBottom: spacing.lg },

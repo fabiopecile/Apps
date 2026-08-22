@@ -1,5 +1,6 @@
 import { View, Text, Switch, Pressable, Platform, StyleSheet } from 'react-native';
-import { colors, fontSizes, spacing } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 
 // react-native-web reads the ON-state knob color from `activeThumbColor`, not
 // `thumbColor`, so without this the switch fell back to the library's default
@@ -7,7 +8,7 @@ import { colors, fontSizes, spacing } from '@/constants/theme';
 const webThumbProps = Platform.OS === 'web' ? ({ activeThumbColor: colors.white } as object) : {};
 
 interface SettingsRowProps {
-  icon: string;
+  icon: keyof typeof Ionicons.glyphMap;
   label: string;
   value?: boolean;
   onValueChange?: (value: boolean) => void;
@@ -19,7 +20,9 @@ interface SettingsRowProps {
 export function SettingsRow({ icon, label, value, onValueChange, trailingText, onPress, chevron }: SettingsRowProps) {
   const content = (
     <View style={styles.row}>
-      <Text style={styles.icon}>{icon}</Text>
+      <View style={styles.iconWrap}>
+        <Ionicons name={icon} size={17} color={colors.textMuted} />
+      </View>
       <Text style={styles.label}>{label}</Text>
       {onValueChange ? (
         <Switch
@@ -33,7 +36,7 @@ export function SettingsRow({ icon, label, value, onValueChange, trailingText, o
       ) : (
         <View style={styles.trailing}>
           {trailingText ? <Text style={styles.trailingText}>{trailingText}</Text> : null}
-          {chevron ? <Text style={styles.chevron}>›</Text> : null}
+          {chevron ? <Ionicons name="chevron-forward" size={16} color={colors.textFaint} /> : null}
         </View>
       )}
     </View>
@@ -51,13 +54,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.md,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.lg,
+    paddingVertical: spacing.md + 2,
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  icon: { fontSize: 18, width: 22, textAlign: 'center' },
-  label: { flex: 1, color: colors.text, fontWeight: '600', fontSize: fontSizes.md },
+  iconWrap: {
+    width: 30,
+    height: 30,
+    borderRadius: radii.sm,
+    backgroundColor: colors.surfaceAlt,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  label: { flex: 1, color: colors.text, fontWeight: '500', fontSize: fontSizes.md },
   trailing: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   trailingText: { color: colors.textMuted, fontSize: fontSizes.sm },
-  chevron: { color: colors.textFaint, fontSize: fontSizes.lg },
 });

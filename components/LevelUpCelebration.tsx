@@ -120,8 +120,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeLevel: { color: colors.white, fontSize: 34, fontWeight: '900' },
-  title: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '900', marginBottom: spacing.xs },
+  badgeLevel: { color: colors.white, fontSize: 34, fontWeight: '800' },
+  title: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', letterSpacing: -0.4, marginBottom: spacing.xs },
   subtitle: { color: colors.textMuted, fontSize: fontSizes.sm, textAlign: 'center', marginBottom: spacing.lg },
   rewardPill: {
     backgroundColor: colors.goldDark,

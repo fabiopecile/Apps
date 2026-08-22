@@ -95,7 +95,7 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.xxl,
   },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.lg },
-  title: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '900' },
+  title: { color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', letterSpacing: -0.4 },
   subtitle: { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 2 },
   option: {
     flexDirection: 'row',

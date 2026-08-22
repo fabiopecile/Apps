@@ -104,7 +104,7 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   flex: { flex: 1, backgroundColor: colors.background },
   container: { flexGrow: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
-  logo: { fontSize: 40, fontWeight: '900', color: colors.white, marginBottom: spacing.xs },
+  logo: { fontSize: 40, fontWeight: '800', color: colors.white, marginBottom: spacing.xs },
   logoAccent: { color: colors.red },
   tagline: { color: colors.textMuted, marginBottom: spacing.xl },
   form: { width: '100%', gap: spacing.md },

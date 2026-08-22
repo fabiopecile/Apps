@@ -76,7 +76,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  title: { color: colors.white, fontWeight: '900', fontSize: fontSizes.xl },
+  title: { color: colors.white, fontWeight: '800', fontSize: fontSizes.xl, letterSpacing: -0.4 },
   subtitle: { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 2 },
   listContent: { paddingBottom: spacing.xxl },
 });

@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   jokerButtonText: { color: colors.textMuted, fontWeight: '700', fontSize: fontSizes.xs },
   jokerButtonTextActive: { color: colors.gold },
   teamsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg },
-  teamName: { flex: 1, color: colors.white, fontSize: fontSizes.xl, fontWeight: '800' },
+  teamName: { flex: 1, color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', letterSpacing: -0.4 },
   teamNameRight: { textAlign: 'right' },
   vs: { color: colors.textFaint, fontSize: fontSizes.sm, marginHorizontal: spacing.sm },
   statsToggle: {

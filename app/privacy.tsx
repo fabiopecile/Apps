@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  title: { color: colors.white, fontWeight: '900', fontSize: fontSizes.xl },
+  title: { color: colors.white, fontWeight: '800', fontSize: fontSizes.xl, letterSpacing: -0.4 },
   content: { padding: spacing.lg, gap: spacing.lg },
   notice: {
     color: colors.gold,

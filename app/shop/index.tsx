@@ -45,7 +45,7 @@ export default function ShopScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.title}>Shop</Text>
-          <CountUp value={profile.coins} style={styles.coins} format={(n) => `🪙 ${n} Coins`} />
+          <CountUp value={profile.coins} style={styles.coins} format={(n) => `${n} Coins`} />
         </View>
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="close" size={24} color={colors.textMuted} />
@@ -87,7 +87,7 @@ export default function ShopScreen() {
                   onAction={() => handleAction(item)}
                   preview={
                     <View style={styles.titlePreview}>
-                      <Text style={styles.titlePreviewText}>👑 {item.value}</Text>
+                      <Ionicons name="ribbon" size={16} color={colors.gold} />
                     </View>
                   }
                 />
@@ -119,7 +119,7 @@ function ShopRow({
   onAction: () => void;
   preview: ReactNode;
 }) {
-  const buttonLabel = equipped ? 'Aktiv' : owned ? 'Anlegen' : `${item.price} 🪙`;
+  const buttonLabel = equipped ? 'Aktiv' : owned ? 'Anlegen' : `${item.price}`;
   const disabled = busy || equipped || (!owned && !canAfford);
 
   return (
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
-  title: { color: colors.white, fontWeight: '900', fontSize: fontSizes.xl },
+  title: { color: colors.white, fontWeight: '800', fontSize: fontSizes.xl, letterSpacing: -0.4 },
   coins: { color: colors.gold, fontWeight: '700', fontSize: fontSizes.sm, marginTop: 2 },
   content: { padding: spacing.lg },
   error: { color: colors.danger, fontSize: fontSizes.sm, marginBottom: spacing.md },
@@ -179,7 +179,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  titlePreviewText: { fontSize: 14 },
   buyButton: {
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,

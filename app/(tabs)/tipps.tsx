@@ -101,7 +101,7 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   headerText: { flex: 1 },
-  title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '800' },
+  title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '800', letterSpacing: -0.4 },
   subtitle: { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 2 },
   headerActions: { alignItems: 'flex-end', gap: spacing.sm },
   duelsButton: {

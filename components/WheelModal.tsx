@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
   },
   closeButton: { position: 'absolute', top: 60, right: spacing.xl, zIndex: 10 },
-  title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '900', marginBottom: spacing.xs },
+  title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '800', letterSpacing: -0.4, marginBottom: spacing.xs },
   subtitle: { color: colors.textMuted, fontSize: fontSizes.sm, marginBottom: spacing.xxl, textAlign: 'center' },
   wheelWrapper: { width: SIZE + 20, height: SIZE + 20, alignItems: 'center', justifyContent: 'center' },
   wheelOuter: {
