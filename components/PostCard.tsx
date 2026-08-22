@@ -38,6 +38,9 @@ export function PostCard({
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
   const images = post.image_urls && post.image_urls.length > 1 ? post.image_urls : post.image_url ? [post.image_url] : [];
+  // Posts made before the cropper existed have no stored ratio and keep the
+  // old fixed 4:5 frame.
+  const imageAspect = post.image_aspect_ratio ?? 4 / 5;
 
   const popLikeIcon = () => {
     likeScale.setValue(1);
@@ -121,14 +124,14 @@ export function PostCard({
           >
             {images.map((uri) => (
               <Pressable key={uri} onPress={handleImagePress} style={{ width: imageWidth || undefined }}>
-                <Image source={{ uri }} style={styles.image} />
+                <Image source={{ uri }} style={[styles.image, { aspectRatio: imageAspect }]} />
               </Pressable>
             ))}
           </ScrollView>
         ) : (
           <Pressable onPress={handleImagePress}>
             {images[0] ? (
-              <Image source={{ uri: images[0] }} style={styles.image} />
+              <Image source={{ uri: images[0] }} style={[styles.image, { aspectRatio: imageAspect }]} />
             ) : (
               <View style={[styles.image, styles.imageFallback]}>
                 <Text style={styles.imageFallbackText}>⚽️</Text>
@@ -210,7 +213,7 @@ const styles = StyleSheet.create({
   followingButton: { backgroundColor: 'transparent', borderColor: colors.borderStrong },
   followText: { color: colors.white, fontSize: fontSizes.xs, fontWeight: '700' },
   followingText: { color: colors.textMuted },
-  image: { width: '100%', aspectRatio: 4 / 5, backgroundColor: colors.surface },
+  image: { width: '100%', backgroundColor: colors.surface },
   imageFallback: { alignItems: 'center', justifyContent: 'center' },
   imageFallbackText: { fontSize: 48 },
   doubleTapHeart: {

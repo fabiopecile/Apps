@@ -7,34 +7,38 @@ import * as ImagePicker from 'expo-image-picker';
 import { usePosts } from '@/hooks/usePosts';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadImage } from '@/lib/storage';
+import { ImageCropper, type CroppedImage } from '@/components/ImageCropper';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 
 const MAX_PRO_PHOTOS = 5;
+const DEFAULT_ASPECT = 4 / 5;
 
 export default function NewPostScreen() {
   const router = useRouter();
   const { session, profile } = useAuth();
   const { createPost } = usePosts();
-  const [imageUris, setImageUris] = useState<string[]>([]);
+  const [images, setImages] = useState<CroppedImage[]>([]);
+  const [pendingUris, setPendingUris] = useState<string[] | null>(null);
   const [caption, setCaption] = useState('');
   const [location, setLocation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isPro = !!profile?.is_pro;
+  const aspectRatio = images[0]?.aspectRatio ?? DEFAULT_ASPECT;
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) return;
+    // No allowsEditing here - the built-in crop UI is square-only on iOS and
+    // missing entirely on web, so framing happens in our own cropper instead.
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.8,
-      aspect: isPro ? undefined : [4, 5],
-      allowsEditing: !isPro,
+      quality: 1,
       allowsMultipleSelection: isPro,
       selectionLimit: isPro ? MAX_PRO_PHOTOS : 1,
     });
-    if (!result.canceled) setImageUris(result.assets.map((a) => a.uri).slice(0, MAX_PRO_PHOTOS));
+    if (!result.canceled) setPendingUris(result.assets.map((a) => a.uri).slice(0, MAX_PRO_PHOTOS));
   };
 
   const handleSubmit = async () => {
@@ -43,12 +47,13 @@ export default function NewPostScreen() {
     setError(null);
 
     try {
-      const uploadedUrls = await Promise.all(imageUris.map((uri) => uploadImage(uri, session.user.id)));
+      const uploadedUrls = await Promise.all(images.map((image) => uploadImage(image.uri, session.user.id)));
       const { error: submitError } = await createPost({
         caption,
         location: location || undefined,
         image_url: uploadedUrls[0],
         image_urls: uploadedUrls,
+        image_aspect_ratio: images.length > 0 ? aspectRatio : undefined,
       });
       if (submitError) {
         setError(submitError);
@@ -62,7 +67,22 @@ export default function NewPostScreen() {
     }
   };
 
-  const canSubmit = (!!caption.trim() || imageUris.length > 0) && !submitting;
+  const canSubmit = (!!caption.trim() || images.length > 0) && !submitting;
+
+  if (pendingUris) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ImageCropper
+          uris={pendingUris}
+          onCancel={() => setPendingUris(null)}
+          onDone={(cropped) => {
+            setImages(cropped);
+            setPendingUris(null);
+          }}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -75,9 +95,12 @@ export default function NewPostScreen() {
 
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <Pressable style={styles.imagePicker} onPress={pickImage}>
-            {imageUris.length > 0 ? (
-              <Image source={{ uri: imageUris[0] }} style={styles.imagePreview} />
+          <Pressable
+            style={[styles.imagePicker, images.length > 0 && { aspectRatio, maxHeight: undefined }]}
+            onPress={pickImage}
+          >
+            {images.length > 0 ? (
+              <Image source={{ uri: images[0].uri }} style={styles.imagePreview} />
             ) : (
               <>
                 <Ionicons name="camera" size={40} color={colors.textFaint} style={styles.cameraIcon} />
@@ -88,12 +111,25 @@ export default function NewPostScreen() {
             )}
           </Pressable>
 
-          {imageUris.length > 1 ? (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbRow}>
-              {imageUris.map((uri) => (
-                <Image key={uri} source={{ uri }} style={styles.thumb} />
-              ))}
-            </ScrollView>
+          {images.length > 0 ? (
+            <View style={styles.editRow}>
+              {images.length > 1 ? (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbRow}>
+                  {images.map((image) => (
+                    <Image key={image.uri} source={{ uri: image.uri }} style={styles.thumb} />
+                  ))}
+                </ScrollView>
+              ) : (
+                <View style={styles.flex} />
+              )}
+              <Pressable
+                style={styles.recropButton}
+                onPress={() => setPendingUris(images.map((image) => image.uri))}
+              >
+                <Ionicons name="crop" size={14} color={colors.text} />
+                <Text style={styles.recropText}>Anpassen</Text>
+              </Pressable>
+            </View>
           ) : null}
 
           <Text style={styles.label}>BESCHREIBUNG</Text>
@@ -173,8 +209,26 @@ const styles = StyleSheet.create({
   },
   cameraIcon: { marginBottom: spacing.sm },
   imagePreview: { width: '100%', height: '100%' },
-  thumbRow: { marginTop: -spacing.md, marginBottom: spacing.lg },
+  editRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginTop: -spacing.md,
+    marginBottom: spacing.lg,
+  },
+  thumbRow: { flex: 1 },
   thumb: { width: 56, height: 56, borderRadius: radii.md, marginRight: spacing.sm },
+  recropButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  recropText: { color: colors.text, fontWeight: '700', fontSize: fontSizes.xs },
   imagePickerText: { color: colors.textMuted, fontSize: fontSizes.sm },
   label: {
     color: colors.textFaint,

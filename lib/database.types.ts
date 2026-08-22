@@ -81,6 +81,7 @@ export type Post = {
   user_id: string;
   image_url: string | null;
   image_urls: string[] | null;
+  image_aspect_ratio: number | null;
   caption: string | null;
   location: string | null;
   created_at: string;
