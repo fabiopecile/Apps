@@ -48,12 +48,13 @@ export function useStories() {
     load();
   }, [load]);
 
-  const createStory = async (input: { media_url: string; location?: string }) => {
+  const createStory = async (input: { media_url: string; location?: string; media_aspect_ratio?: number }) => {
     if (!session) return { error: 'not signed in' };
     const { error } = await supabase.from('stories').insert({
       user_id: session.user.id,
       media_url: input.media_url,
       location: input.location ?? null,
+      media_aspect_ratio: input.media_aspect_ratio ?? null,
     });
     if (!error) await load();
     return { error: error?.message ?? null };

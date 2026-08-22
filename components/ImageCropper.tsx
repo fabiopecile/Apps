@@ -21,22 +21,25 @@ interface ImageCropperProps {
   uris: string[];
   onDone: (images: CroppedImage[]) => void;
   onCancel: () => void;
+  /** Locks the crop to one ratio and hides the format picker (stories are always 9:16). */
+  fixedRatio?: number;
+  title?: string;
 }
 
 // Instagram-style framing: pick one format for the whole post, then drag and
 // zoom each photo inside that frame. What you see in the frame is exactly what
 // gets uploaded - the crop is applied to the file, not just to the preview.
-export function ImageCropper({ uris, onDone, onCancel }: ImageCropperProps) {
+export function ImageCropper({ uris, onDone, onCancel, fixedRatio, title }: ImageCropperProps) {
   const [aspectIndex, setAspectIndex] = useState(1); // 4:5 by default, like the old fixed format
   const [current, setCurrent] = useState(0);
-  const [frameWidth, setFrameWidth] = useState(0);
+  const [available, setAvailable] = useState({ width: 0, height: 0 });
   const [imageSize, setImageSize] = useState<{ width: number; height: number } | null>(null);
   const [zoom, setZoom] = useState(1);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [results, setResults] = useState<CroppedImage[]>([]);
   const [busy, setBusy] = useState(false);
 
-  const aspect = ASPECT_OPTIONS[aspectIndex].ratio;
+  const aspect = fixedRatio ?? ASPECT_OPTIONS[aspectIndex].ratio;
   const uri = uris[current];
 
   // Live values for the pan/zoom responders, which can't read fresh state.
@@ -45,6 +48,10 @@ export function ImageCropper({ uris, onDone, onCancel }: ImageCropperProps) {
   offsetRef.current = offset;
   zoomRef.current = zoom;
 
+  // Fit the frame inside whatever space is left - a 9:16 story frame is taller
+  // than it is wide and would otherwise run off the bottom of the screen.
+  const frameWidth =
+    available.width > 0 && available.height > 0 ? Math.min(available.width, available.height * aspect) : 0;
   const frameHeight = frameWidth > 0 ? frameWidth / aspect : 0;
 
   const layout = useMemo(() => {
@@ -168,12 +175,18 @@ export function ImageCropper({ uris, onDone, onCancel }: ImageCropperProps) {
           <Ionicons name="close" size={24} color={colors.white} />
         </Pressable>
         <Text style={styles.title}>
-          Zuschneiden{uris.length > 1 ? ` (${current + 1}/${uris.length})` : ''}
+          {title ?? 'Zuschneiden'}
+          {uris.length > 1 ? ` (${current + 1}/${uris.length})` : ''}
         </Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={styles.frameWrap} onLayout={(e: LayoutChangeEvent) => setFrameWidth(e.nativeEvent.layout.width)}>
+      <View
+        style={styles.frameWrap}
+        onLayout={(e: LayoutChangeEvent) =>
+          setAvailable({ width: e.nativeEvent.layout.width, height: e.nativeEvent.layout.height })
+        }
+      >
         {frameWidth > 0 ? (
           <View style={[styles.frame, { width: frameWidth, height: frameHeight }]} {...panResponder.panHandlers}>
             {imageSize && layout ? (
@@ -214,19 +227,23 @@ export function ImageCropper({ uris, onDone, onCancel }: ImageCropperProps) {
         <Ionicons name="add" size={18} color={colors.textMuted} />
       </View>
 
-      <View style={styles.aspectRow}>
-        {ASPECT_OPTIONS.map((option, i) => (
-          <Pressable
-            key={option.key}
-            style={[styles.aspectButton, i === aspectIndex && styles.aspectButtonActive]}
-            onPress={() => setAspectIndex(i)}
-            disabled={current > 0} // all photos in one post share a format
-          >
-            <Text style={[styles.aspectText, i === aspectIndex && styles.aspectTextActive]}>{option.label}</Text>
-          </Pressable>
-        ))}
-      </View>
-      {current > 0 ? <Text style={styles.lockHint}>Format gilt für alle Fotos dieses Beitrags</Text> : null}
+      {fixedRatio ? null : (
+        <>
+          <View style={styles.aspectRow}>
+            {ASPECT_OPTIONS.map((option, i) => (
+              <Pressable
+                key={option.key}
+                style={[styles.aspectButton, i === aspectIndex && styles.aspectButtonActive]}
+                onPress={() => setAspectIndex(i)}
+                disabled={current > 0} // all photos in one post share a format
+              >
+                <Text style={[styles.aspectText, i === aspectIndex && styles.aspectTextActive]}>{option.label}</Text>
+              </Pressable>
+            ))}
+          </View>
+          {current > 0 ? <Text style={styles.lockHint}>Format gilt für alle Fotos dieses Beitrags</Text> : null}
+        </>
+      )}
 
       <Pressable
         style={[styles.confirmButton, (busy || !imageSize) && styles.confirmButtonDisabled]}
@@ -251,7 +268,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing.lg,
   },
   title: { color: colors.white, fontWeight: '800', fontSize: fontSizes.md },
-  frameWrap: { paddingHorizontal: spacing.lg },
+  frameWrap: { flex: 1, paddingHorizontal: spacing.lg, alignItems: 'center', justifyContent: 'center' },
   frame: {
     backgroundColor: colors.surface,
     borderRadius: radii.lg,
@@ -307,7 +324,6 @@ const styles = StyleSheet.create({
   lockHint: { color: colors.textFaint, fontSize: fontSizes.xs, textAlign: 'center', marginTop: spacing.sm },
   confirmButton: {
     margin: spacing.lg,
-    marginTop: 'auto',
     backgroundColor: colors.red,
     borderRadius: radii.lg,
     paddingVertical: spacing.md,

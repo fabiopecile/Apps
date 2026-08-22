@@ -7,13 +7,17 @@ import * as ImagePicker from 'expo-image-picker';
 import { useStories } from '@/hooks/useStories';
 import { useAuth } from '@/contexts/AuthContext';
 import { uploadImage } from '@/lib/storage';
+import { ImageCropper } from '@/components/ImageCropper';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
+
+const STORY_ASPECT = 9 / 16;
 
 export default function NewStoryScreen() {
   const router = useRouter();
   const { session } = useAuth();
   const { createStory } = useStories();
   const [imageUri, setImageUri] = useState<string | null>(null);
+  const [pendingUri, setPendingUri] = useState<string | null>(null);
   const [location, setLocation] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,10 +27,9 @@ export default function NewStoryScreen() {
     if (!permission.granted) return;
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      quality: 0.8,
-      allowsEditing: true,
+      quality: 1,
     });
-    if (!result.canceled) setImageUri(result.assets[0].uri);
+    if (!result.canceled) setPendingUri(result.assets[0].uri);
   };
 
   const handleSubmit = async () => {
@@ -39,6 +42,7 @@ export default function NewStoryScreen() {
       const { error: submitError } = await createStory({
         media_url: uploadedUrl,
         location: location.trim() || undefined,
+        media_aspect_ratio: STORY_ASPECT,
       });
       if (submitError) {
         setError(submitError);
@@ -51,6 +55,23 @@ export default function NewStoryScreen() {
       setSubmitting(false);
     }
   };
+
+  if (pendingUri) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+        <ImageCropper
+          uris={[pendingUri]}
+          fixedRatio={STORY_ASPECT}
+          title="Story zuschneiden"
+          onCancel={() => setPendingUri(null)}
+          onDone={(cropped) => {
+            setImageUri(cropped[0]?.uri ?? null);
+            setPendingUri(null);
+          }}
+        />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
@@ -80,6 +101,13 @@ export default function NewStoryScreen() {
             </>
           )}
         </Pressable>
+
+        {imageUri ? (
+          <Pressable style={styles.recropButton} onPress={() => setPendingUri(imageUri)}>
+            <Ionicons name="crop" size={14} color={colors.text} />
+            <Text style={styles.recropText}>Anpassen</Text>
+          </Pressable>
+        ) : null}
 
         <View style={styles.locationRow}>
           <Ionicons name="location-outline" size={18} color={colors.textFaint} style={styles.locationIcon} />
@@ -134,6 +162,20 @@ const styles = StyleSheet.create({
   cameraIcon: { marginBottom: spacing.sm },
   imagePreview: { width: '100%', height: '100%' },
   imagePickerText: { color: colors.textMuted, fontSize: fontSizes.sm },
+  recropButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+  },
+  recropText: { color: colors.text, fontWeight: '700', fontSize: fontSizes.xs },
   locationBadge: {
     position: 'absolute',
     bottom: spacing.lg,

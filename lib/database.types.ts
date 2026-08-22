@@ -25,6 +25,7 @@ export type Profile = {
   reminder_hour_utc: number | null;
   login_streak: number;
   last_login_date: string | null;
+  last_post_xp_date: string | null;
   coins: number;
   booster_charges: number;
   equipped_title: string | null;
@@ -109,6 +110,7 @@ export type Story = {
   id: string;
   user_id: string;
   media_url: string;
+  media_aspect_ratio: number | null;
   location: string | null;
   is_highlight: boolean;
   created_at: string;

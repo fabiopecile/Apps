@@ -132,7 +132,14 @@ export function StoryViewer({
           </Pressable>
         </View>
 
-        <Image source={{ uri: story.media_url }} style={styles.image} resizeMode="contain" />
+        {/* Cropped stories are already 9:16, so they can fill the screen.
+            Older ones from before the cropper keep being fitted so nothing
+            important gets cut off. */}
+        <Image
+          source={{ uri: story.media_url }}
+          style={styles.image}
+          resizeMode={story.media_aspect_ratio ? 'cover' : 'contain'}
+        />
 
         {story.location ? (
           <View style={styles.locationBadge}>

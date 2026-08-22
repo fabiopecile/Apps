@@ -26,6 +26,7 @@ export default function NewPostScreen() {
 
   const isPro = !!profile?.is_pro;
   const aspectRatio = images[0]?.aspectRatio ?? DEFAULT_ASPECT;
+  const xpAlreadyEarned = profile?.last_post_xp_date === new Date().toISOString().slice(0, 10);
 
   const pickImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -154,13 +155,23 @@ export default function NewPostScreen() {
             />
           </View>
 
-          <View style={styles.xpBox}>
+          <View style={[styles.xpBox, xpAlreadyEarned && styles.xpBoxSpent]}>
             <View style={styles.xpIcon}>
-              <Ionicons name="star" size={18} color={colors.blue} />
+              <Ionicons
+                name={xpAlreadyEarned ? 'checkmark' : 'star'}
+                size={18}
+                color={xpAlreadyEarned ? colors.textMuted : colors.blue}
+              />
             </View>
-            <View>
-              <Text style={styles.xpTitle}>+50 XP für diesen Post</Text>
-              <Text style={styles.xpSubtitle}>Täglicher Bonus verfügbar</Text>
+            <View style={styles.flex}>
+              <Text style={styles.xpTitle}>
+                {xpAlreadyEarned ? 'XP-Bonus heute schon erhalten' : '+50 XP für diesen Beitrag'}
+              </Text>
+              <Text style={styles.xpSubtitle}>
+                {xpAlreadyEarned
+                  ? 'Posten geht weiterhin – XP gibt es morgen wieder.'
+                  : 'Einmal pro Tag für den ersten Beitrag'}
+              </Text>
             </View>
           </View>
 
@@ -283,6 +294,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  xpBoxSpent: { backgroundColor: colors.surface, borderColor: colors.borderStrong },
   xpTitle: { color: colors.white, fontWeight: '700', fontSize: fontSizes.sm },
   xpSubtitle: { color: colors.textMuted, fontSize: fontSizes.xs, marginTop: 2 },
   error: { color: colors.danger, textAlign: 'center', marginBottom: spacing.md },

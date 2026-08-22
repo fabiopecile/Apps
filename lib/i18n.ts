@@ -21,9 +21,9 @@ const dictionaries = {
     'auth.hasAccount': 'Schon ein Konto?',
     'auth.confirmEmail': 'Fast geschafft! Bestätige deine E-Mail-Adresse, um dich einzuloggen.',
 
-    'feed.addPost': '+ Beitrag hinzufügen (+50 XP)',
+    'feed.addPost': '+ Beitrag hinzufügen (+50 XP/Tag)',
     'feed.emptyTitle': 'Noch keine Beiträge',
-    'feed.emptySubtitle': "Sei der Erste und teile einen Beitrag aus dem Stadion – dafür gibt's +50 XP.",
+    'feed.emptySubtitle': "Sei der Erste und teile einen Beitrag aus dem Stadion – der erste Beitrag pro Tag bringt +50 XP.",
 
     'profil.tabPosts': 'BEITRÄGE',
     'profil.tabStats': 'STATISTIK',
@@ -75,9 +75,9 @@ const dictionaries = {
     'auth.hasAccount': 'Already have an account?',
     'auth.confirmEmail': 'Almost there! Confirm your email address to log in.',
 
-    'feed.addPost': '+ Add post (+50 XP)',
+    'feed.addPost': '+ Add post (+50 XP/day)',
     'feed.emptyTitle': 'No posts yet',
-    'feed.emptySubtitle': "Be the first to share a post from the stadium – you'll get +50 XP.",
+    'feed.emptySubtitle': "Be the first to share a post from the stadium – your first post each day earns +50 XP.",
 
     'profil.tabPosts': 'POSTS',
     'profil.tabStats': 'STATS',
