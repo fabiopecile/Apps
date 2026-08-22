@@ -37,6 +37,26 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
   const [statsOpen, setStatsOpen] = useState(false);
   const [stampTrigger, setStampTrigger] = useState(0);
 
+  // Blue while a tip is placed but undecided, then green if it scored and red
+  // if it didn't. points_earned is only filled in once the matchday is settled,
+  // so a finished-but-unsettled match stays blue rather than showing red early.
+  const tipState: 'none' | 'placed' | 'correct' | 'wrong' = !match.tip
+    ? 'none'
+    : match.tip.points_earned == null
+      ? 'placed'
+      : match.tip.points_earned > 0
+        ? 'correct'
+        : 'wrong';
+
+  const tipColor =
+    tipState === 'correct'
+      ? colors.success
+      : tipState === 'wrong'
+        ? colors.red
+        : tipState === 'placed'
+          ? colors.blue
+          : null;
+
   const cardScale = useRef(new Animated.Value(1)).current;
   const homeBump = useRef(new Animated.Value(1)).current;
   const awayBump = useRef(new Animated.Value(1)).current;
@@ -170,7 +190,12 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
       <View style={styles.scoreRow}>
         <Animated.View style={{ transform: [{ scale: homeBump }] }}>
           <TextInput
-            style={[styles.scoreInput, isLocked && styles.scoreInputLocked, justSubmitted && styles.scoreInputSuccess]}
+            style={[
+              styles.scoreInput,
+              isLocked && styles.scoreInputLocked,
+              tipColor ? { borderColor: tipColor, backgroundColor: tipColor + '1A', color: tipColor } : null,
+              justSubmitted && styles.scoreInputSuccess,
+            ]}
             value={homeScore}
             onChangeText={(t) => {
               const next = t.replace(/[^0-9]/g, '').slice(0, 2);
@@ -187,7 +212,12 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
         <Text style={styles.colon}>:</Text>
         <Animated.View style={{ transform: [{ scale: awayBump }] }}>
           <TextInput
-            style={[styles.scoreInput, isLocked && styles.scoreInputLocked, justSubmitted && styles.scoreInputSuccess]}
+            style={[
+              styles.scoreInput,
+              isLocked && styles.scoreInputLocked,
+              tipColor ? { borderColor: tipColor, backgroundColor: tipColor + '1A', color: tipColor } : null,
+              justSubmitted && styles.scoreInputSuccess,
+            ]}
             value={awayScore}
             onChangeText={(t) => {
               const next = t.replace(/[^0-9]/g, '').slice(0, 2);
@@ -203,12 +233,28 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
         </Animated.View>
       </View>
 
+      {tipState !== 'none' ? (
+        <View style={styles.tipStatusRow}>
+          <Ionicons
+            name={
+              tipState === 'correct' ? 'checkmark-circle' : tipState === 'wrong' ? 'close-circle' : 'ellipse'
+            }
+            size={13}
+            color={tipColor ?? colors.textMuted}
+          />
+          <Text style={[styles.tipStatusText, { color: tipColor ?? colors.textMuted }]}>
+            {tipState === 'correct'
+              ? `Richtig getippt · +${match.tip?.points_earned} Punkte`
+              : tipState === 'wrong'
+                ? 'Daneben – keine Punkte'
+                : 'Dein Tipp ist abgegeben'}
+          </Text>
+        </View>
+      ) : null}
+
       {match.status === 'finished' && match.home_score !== null && match.away_score !== null ? (
         <Text style={styles.finalScore}>
-          Endstand: {match.home_score}:{match.away_score}
-          {match.tip?.points_earned !== null && match.tip?.points_earned !== undefined
-            ? ` · +${match.tip.points_earned} Punkte`
-            : ''}
+          Endstand {match.home_score}:{match.away_score}
         </Text>
       ) : null}
 
@@ -321,6 +367,15 @@ const styles = StyleSheet.create({
   scoreInputLocked: { opacity: 0.5 },
   scoreInputSuccess: { borderColor: colors.success, backgroundColor: colors.success + '1A' },
   colon: { color: colors.textMuted, fontSize: fontSizes.xl, fontWeight: '700' },
+  tipStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+  },
+  tipStatusText: { fontSize: fontSizes.xs, fontWeight: '700' },
   finalScore: { color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md, fontSize: fontSizes.sm },
   error: { color: colors.danger, textAlign: 'center', marginBottom: spacing.sm, fontSize: fontSizes.sm },
   submitButton: {
