@@ -60,6 +60,17 @@ export default function ShopScreen() {
           <View style={styles.content}>
             {error ? <Text style={styles.error}>{error}</Text> : null}
 
+            <Pressable style={styles.buyCoinsCard} onPress={() => router.push('/shop/coins')}>
+              <View style={styles.buyCoinsIcon}>
+                <Ionicons name="ellipse" size={22} color={colors.gold} />
+              </View>
+              <View style={styles.buyCoinsText}>
+                <Text style={styles.buyCoinsTitle}>Coins kaufen</Text>
+                <Text style={styles.buyCoinsSubtitle}>Pakete ab 1,99 € – oder gratis am Glücksrad</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.gold} />
+            </Pressable>
+
             <Text style={styles.sectionTitle}>Rahmen</Text>
             {frames.map((item, i) => (
               <PopIn key={item.key} variant="slide" delay={i * 55}>
@@ -159,6 +170,27 @@ const styles = StyleSheet.create({
   content: { padding: spacing.lg },
   error: { color: colors.danger, fontSize: fontSizes.sm, marginBottom: spacing.md },
   sectionTitle: { color: colors.white, fontWeight: '800', fontSize: fontSizes.md, marginTop: spacing.lg, marginBottom: spacing.sm },
+  buyCoinsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.goldDark,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+  },
+  buyCoinsIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: radii.md,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buyCoinsText: { flex: 1 },
+  buyCoinsTitle: { color: colors.gold, fontWeight: '800', fontSize: fontSizes.md },
+  buyCoinsSubtitle: { color: colors.textMuted, fontSize: fontSizes.xs, marginTop: 2 },
   row: {
     flexDirection: 'row',
     alignItems: 'center',

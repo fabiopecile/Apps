@@ -257,6 +257,28 @@ export type OwnedShopItem = {
   purchased_at: string;
 };
 
+export type CoinPackage = {
+  key: string;
+  coins: number;
+  bonus_coins: number;
+  price_cents: number;
+  currency: string;
+  label: string;
+  sort_order: number;
+  active: boolean;
+};
+
+export type CoinPurchase = {
+  id: string;
+  user_id: string;
+  package_key: string;
+  coins_credited: number;
+  price_cents: number;
+  provider: 'stripe' | 'apple' | 'google';
+  provider_ref: string;
+  created_at: string;
+};
+
 export type ReportTargetType = 'post' | 'story' | 'comment' | 'user';
 
 export type Report = {
@@ -338,6 +360,8 @@ export type Database = {
         { reporter_id: string; target_type: ReportTargetType; target_id: string; reason: string }
       >;
       blocks: Table<Block, { blocker_id: string; blocked_id: string }>;
+      coin_packages: Table<CoinPackage, CoinPackage>;
+      coin_purchases: Table<CoinPurchase, Omit<CoinPurchase, 'id' | 'created_at'>>;
     };
     Views: {
       duel_scores: { Row: DuelScore; Relationships: [] };

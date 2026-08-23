@@ -55,8 +55,30 @@ Deno.serve(async (req) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
-    const userId = session.client_reference_id;
-    if (userId) {
+    const userId = session.metadata?.user_id ?? session.client_reference_id;
+
+    // Branch on the session mode. Coin packages are one-off payments and must
+    // never flip is_pro - before this check every completed checkout granted
+    // Pro, so buying coins would have handed out the subscription for free.
+    if (session.mode === 'payment' && session.metadata?.kind === 'coins') {
+      const packageKey = session.metadata?.package_key;
+      if (userId && packageKey) {
+        // Keyed on the session id, so Stripe's webhook retries can't credit
+        // the same purchase twice.
+        const { error } = await supabase.rpc('credit_coin_purchase', {
+          p_user_id: userId,
+          p_package_key: packageKey,
+          p_provider: 'stripe',
+          p_provider_ref: session.id,
+        });
+        if (error) {
+          // Return non-2xx so Stripe retries - the payment went through, the
+          // coins have to follow.
+          console.error('credit_coin_purchase failed', error);
+          return new Response('Crediting failed', { status: 500 });
+        }
+      }
+    } else if (session.mode === 'subscription' && userId) {
       await supabase
         .from('profiles')
         .update({

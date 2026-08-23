@@ -169,6 +169,7 @@ export default function ProfilScreen() {
 
             <View style={styles.settings}>
               <SettingsRow icon="bag-outline" label="Shop" trailingText={`${profile.coins} Coins`} chevron onPress={() => router.push('/shop')} />
+              <SettingsRow icon="ellipse-outline" label="Coins kaufen" chevron onPress={() => router.push('/shop/coins')} />
             </View>
 
             {profile.is_pro ? (
