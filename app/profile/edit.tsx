@@ -15,6 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Avatar } from '@/components/Avatar';
 import { ImageCropper } from '@/components/ImageCropper';
+import { MAX_AVATAR_WIDTH } from '@/lib/imageCrop';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { uploadAvatar } from '@/lib/storage';
@@ -75,6 +76,7 @@ export default function EditProfileScreen() {
         <ImageCropper
           uris={[pendingAvatarUri]}
           fixedRatio={1}
+          maxWidth={MAX_AVATAR_WIDTH}
           title="Profilbild zuschneiden"
           onCancel={() => setPendingAvatarUri(null)}
           onDone={(cropped) => {

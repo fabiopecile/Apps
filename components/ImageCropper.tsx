@@ -24,12 +24,14 @@ interface ImageCropperProps {
   /** Locks the crop to one ratio and hides the format picker (stories are always 9:16). */
   fixedRatio?: number;
   title?: string;
+  /** Caps the uploaded pixel width. Avatars pass a much smaller value than posts. */
+  maxWidth?: number;
 }
 
 // Instagram-style framing: pick one format for the whole post, then drag and
 // zoom each photo inside that frame. What you see in the frame is exactly what
 // gets uploaded - the crop is applied to the file, not just to the preview.
-export function ImageCropper({ uris, onDone, onCancel, fixedRatio, title }: ImageCropperProps) {
+export function ImageCropper({ uris, onDone, onCancel, fixedRatio, title, maxWidth }: ImageCropperProps) {
   const [aspectIndex, setAspectIndex] = useState(1); // 4:5 by default, like the old fixed format
   const [current, setCurrent] = useState(0);
   const [available, setAvailable] = useState({ width: 0, height: 0 });
@@ -154,7 +156,7 @@ export function ImageCropper({ uris, onDone, onCancel, fixedRatio, title }: Imag
     const rect = buildCropRect();
     if (!rect) return;
     setBusy(true);
-    const croppedUri = await cropImage(uri, rect);
+    const croppedUri = await cropImage(uri, rect, maxWidth);
     const nextResults = [...results, { uri: croppedUri, aspectRatio: aspect }];
     setBusy(false);
 

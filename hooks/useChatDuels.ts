@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { supabase } from '@/lib/supabase';
+import { useAuth } from '@/contexts/AuthContext';
 import type { DuelWithDetails, Message } from '@/lib/database.types';
 
 export function useChatDuels(messages: Message[]) {
+  const { session } = useAuth();
   const [duels, setDuels] = useState<Record<string, DuelWithDetails>>({});
   const knownIds = useRef<Set<string>>(new Set());
 
@@ -44,21 +46,41 @@ export function useChatDuels(messages: Message[]) {
   }, [messages, fetchDuels]);
 
   useEffect(() => {
-    // Unique per mount so a still-cleaning-up channel from a previous mount
-    // (React Strict Mode's double-invoke, fast remounts, etc.) can never
-    // collide with this one under the same topic.
+    const userId = session?.user.id;
+    if (!userId) return;
+
+    const handleUpdate = (payload: { new: unknown }) => {
+      const id = (payload.new as { id: string }).id;
+      if (knownIds.current.has(id)) fetchDuels([id]);
+    };
+
+    // Filtered server-side to the duels this user is actually in. Without the
+    // filter every client received every duel update in the app and threw
+    // almost all of them away - fine with a handful of users, wasteful with
+    // many. Realtime filters can't express OR, so it takes two listeners on
+    // the one channel.
+    //
+    // The channel name is unique per mount so a still-cleaning-up channel from
+    // a previous mount (React Strict Mode's double-invoke, fast remounts) can
+    // never collide with this one under the same topic.
     const channel = supabase
       .channel(`chat-duel-updates:${Date.now()}:${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'duels' }, (payload) => {
-        const id = (payload.new as { id: string }).id;
-        if (knownIds.current.has(id)) fetchDuels([id]);
-      })
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'duels', filter: `challenger_id=eq.${userId}` },
+        handleUpdate
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'duels', filter: `opponent_id=eq.${userId}` },
+        handleUpdate
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchDuels]);
+  }, [fetchDuels, session?.user.id]);
 
   return duels;
 }
