@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Modal, View, Text, Image, Pressable, Animated, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
+import { ReportSheet } from '@/components/ReportSheet';
+import { useModeration } from '@/hooks/useModeration';
 import { confirmDestructive } from '@/lib/confirm';
 import { colors, radii, spacing } from '@/constants/theme';
 import type { StoryWithAuthor } from '@/hooks/useStories';
@@ -30,13 +32,18 @@ export function StoryViewer({
   onOpenProfile,
 }: StoryViewerProps) {
   const [index, setIndex] = useState(startIndex);
+  const [reportOpen, setReportOpen] = useState(false);
+  const { report, blockUser } = useModeration();
   const progress = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setIndex(startIndex);
   }, [startIndex]);
 
+  // The story auto-advances, but not while the report sheet is open - the
+  // reported story shouldn't slide out from under the person reporting it.
   useEffect(() => {
+    if (reportOpen) return;
     progress.setValue(0);
     const animation = Animated.timing(progress, {
       toValue: 1,
@@ -48,7 +55,7 @@ export function StoryViewer({
     });
     return () => animation.stop();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [index]);
+  }, [index, reportOpen]);
 
   const goNext = () => {
     if (index < stories.length - 1) setIndex(index + 1);
@@ -126,7 +133,11 @@ export function StoryViewer({
             <Pressable onPress={handleDelete} style={styles.deleteButton} hitSlop={8}>
               <Ionicons name="trash" size={20} color={colors.white} />
             </Pressable>
-          ) : null}
+          ) : (
+            <Pressable onPress={() => setReportOpen(true)} style={styles.deleteButton} hitSlop={8}>
+              <Ionicons name="ellipsis-horizontal" size={20} color={colors.white} />
+            </Pressable>
+          )}
           <Pressable onPress={onClose} style={styles.closeButton} hitSlop={8}>
             <Ionicons name="close" size={26} color={colors.white} />
           </Pressable>
@@ -150,6 +161,20 @@ export function StoryViewer({
 
         <Pressable style={styles.tapLeft} onPress={goPrevious} />
         <Pressable style={styles.tapRight} onPress={goNext} />
+
+        <ReportSheet
+          visible={reportOpen}
+          targetType="story"
+          targetLabel="Diese Story"
+          blockLabel={`@${story.profiles.username} blockieren`}
+          onClose={() => setReportOpen(false)}
+          onSubmit={(reason) => report('story', story.id, reason)}
+          onBlock={async () => {
+            const result = await blockUser(story.user_id);
+            if (!result.error) onClose();
+            return result;
+          }}
+        />
       </View>
     </Modal>
   );

@@ -88,6 +88,17 @@ export default function SignupScreen() {
               loading={loading}
               disabled={!email || !password || !username}
             />
+            <Text style={styles.legal}>
+              Mit der Registrierung akzeptierst du unsere{' '}
+              <Link href="/terms">
+                <Text style={styles.legalLink}>Nutzungsbedingungen</Text>
+              </Link>{' '}
+              und die{' '}
+              <Link href="/privacy">
+                <Text style={styles.legalLink}>Datenschutzerklärung</Text>
+              </Link>
+              .
+            </Text>
           </View>
         )}
 
@@ -108,6 +119,8 @@ const styles = StyleSheet.create({
   logoAccent: { color: colors.red },
   tagline: { color: colors.textMuted, marginBottom: spacing.xl },
   form: { width: '100%', gap: spacing.md },
+  legal: { color: colors.textFaint, fontSize: fontSizes.xs, textAlign: 'center', lineHeight: 17 },
+  legalLink: { color: colors.blue, fontWeight: '600' },
   input: {
     backgroundColor: colors.surface,
     borderWidth: 1,

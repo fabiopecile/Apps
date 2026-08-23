@@ -257,6 +257,24 @@ export type OwnedShopItem = {
   purchased_at: string;
 };
 
+export type ReportTargetType = 'post' | 'story' | 'comment' | 'user';
+
+export type Report = {
+  id: string;
+  reporter_id: string;
+  target_type: ReportTargetType;
+  target_id: string;
+  reason: string;
+  resolved: boolean;
+  created_at: string;
+};
+
+export type Block = {
+  blocker_id: string;
+  blocked_id: string;
+  created_at: string;
+};
+
 export type WheelSpinResult = {
   prize_index: number;
   prize_type: WheelPrizeType;
@@ -315,6 +333,11 @@ export type Database = {
       private_league_members: Table<PrivateLeagueMember, { league_id: string; user_id: string }>;
       shop_items: Table<ShopItem, ShopItem>;
       owned_shop_items: Table<OwnedShopItem, { user_id: string; item_key: string }>;
+      reports: Table<
+        Report,
+        { reporter_id: string; target_type: ReportTargetType; target_id: string; reason: string }
+      >;
+      blocks: Table<Block, { blocker_id: string; blocked_id: string }>;
     };
     Views: {
       duel_scores: { Row: DuelScore; Relationships: [] };
@@ -343,6 +366,14 @@ export type Database = {
       equip_shop_item: {
         Args: { p_key: string };
         Returns: Profile;
+      };
+      delete_own_account: {
+        Args: Record<string, never>;
+        Returns: undefined;
+      };
+      purge_expired_stories: {
+        Args: Record<string, never>;
+        Returns: number;
       };
     };
   };

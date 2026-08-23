@@ -18,6 +18,7 @@ interface PostCardProps {
   onDelete: () => void;
   onToggleFollow: () => void;
   onOpenProfile: () => void;
+  onReport: () => void;
 }
 
 export function PostCard({
@@ -29,6 +30,7 @@ export function PostCard({
   onDelete,
   onToggleFollow,
   onOpenProfile,
+  onReport,
 }: PostCardProps) {
   const lastTap = useRef(0);
   const heartAnim = useRef(new Animated.Value(0)).current;
@@ -100,14 +102,19 @@ export function PostCard({
           </View>
         </Pressable>
         {!isOwnPost ? (
-          <Pressable
-            style={[styles.followButton, isFollowing && styles.followingButton]}
-            onPress={onToggleFollow}
-          >
-            <Text style={[styles.followText, isFollowing && styles.followingText]}>
-              {isFollowing ? 'Gefolgt' : 'Folgen'}
-            </Text>
-          </Pressable>
+          <>
+            <Pressable
+              style={[styles.followButton, isFollowing && styles.followingButton]}
+              onPress={onToggleFollow}
+            >
+              <Text style={[styles.followText, isFollowing && styles.followingText]}>
+                {isFollowing ? 'Gefolgt' : 'Folgen'}
+              </Text>
+            </Pressable>
+            <Pressable onPress={onReport} hitSlop={8}>
+              <Ionicons name="ellipsis-horizontal" size={18} color={colors.textMuted} />
+            </Pressable>
+          </>
         ) : (
           <Pressable onPress={handleDelete} hitSlop={8}>
             <Ionicons name="trash-outline" size={20} color={colors.textMuted} />

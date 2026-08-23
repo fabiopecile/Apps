@@ -17,12 +17,20 @@ export function useStories() {
   const [stories, setStories] = useState<StoryWithAuthor[]>([]);
   const [groups, setGroups] = useState<StoryGroup[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
-    const { data } = await supabase
+    const { data, error: fetchError } = await supabase
       .from('stories')
       .select('*, profiles!stories_user_id_fkey(id, username, avatar_url, equipped_frame_color)')
       .order('created_at', { ascending: true });
+
+    if (fetchError) {
+      setError(fetchError.message);
+      setLoading(false);
+      return;
+    }
+    setError(null);
 
     const rows = ((data ?? []) as unknown) as StoryWithAuthor[];
 
@@ -77,5 +85,5 @@ export function useStories() {
     return { error: error?.message ?? null };
   };
 
-  return { stories, groups, loading, refresh: load, createStory, deleteStory, saveHighlight };
+  return { stories, groups, loading, error, refresh: load, createStory, deleteStory, saveHighlight };
 }

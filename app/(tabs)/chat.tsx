@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useConversations } from '@/hooks/useConversations';
 import { useFriendRequests } from '@/hooks/useFriendRequests';
@@ -12,7 +13,7 @@ import { formatRelativeShort } from '@/lib/dates';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 
 export default function ChatScreen() {
-  const { conversations, loading, refresh } = useConversations();
+  const { conversations, loading, error, refresh } = useConversations();
   const { incoming } = useFriendRequests();
   const router = useRouter();
 
@@ -69,7 +70,9 @@ export default function ChatScreen() {
               </View>
             </Pressable>
           )}
+          ListHeaderComponent={<ErrorBanner message={error} onRetry={refresh} />}
           ListEmptyComponent={
+            error ? null : (
             <View>
               <EmptyState
                 title="Noch keine Chats"
@@ -80,6 +83,7 @@ export default function ChatScreen() {
                 <Text style={styles.startChatText}>Chat starten</Text>
               </Pressable>
             </View>
+            )
           }
         />
       )}

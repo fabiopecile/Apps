@@ -3,7 +3,11 @@ import { Modal, View, Text, TextInput, Pressable, FlatList, KeyboardAvoidingView
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
+import { ReportSheet } from '@/components/ReportSheet';
 import { usePostComments } from '@/hooks/usePostComments';
+import { useModeration } from '@/hooks/useModeration';
+import { useAuth } from '@/contexts/AuthContext';
+import { confirmDestructive } from '@/lib/confirm';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 
 interface CommentsSheetProps {
@@ -13,13 +17,22 @@ interface CommentsSheetProps {
 }
 
 export function CommentsSheet({ postId, onClose, onOpenProfile }: CommentsSheetProps) {
-  const { comments, postComment } = usePostComments(postId);
+  const { comments, error, postComment, deleteComment } = usePostComments(postId);
+  const { report, blockUser } = useModeration();
+  const { session } = useAuth();
   const [draft, setDraft] = useState('');
+  const [reportTarget, setReportTarget] = useState<{ commentId: string; userId: string; username: string } | null>(null);
 
   const handlePost = () => {
     if (!draft.trim()) return;
     postComment(draft);
     setDraft('');
+  };
+
+  const handleDelete = (commentId: string) => {
+    confirmDestructive('Kommentar löschen?', 'Dieser Kommentar wird entfernt.', 'Löschen', () =>
+      deleteComment(commentId)
+    );
   };
 
   return (
@@ -64,10 +77,30 @@ export function CommentsSheet({ postId, onClose, onOpenProfile }: CommentsSheetP
                   </Pressable>
                   <Text style={styles.commentContent}>{item.content}</Text>
                 </View>
+                {item.profiles.id === session?.user.id ? (
+                  <Pressable onPress={() => handleDelete(item.id)} hitSlop={8}>
+                    <Ionicons name="trash-outline" size={16} color={colors.textFaint} />
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    onPress={() =>
+                      setReportTarget({
+                        commentId: item.id,
+                        userId: item.profiles.id,
+                        username: item.profiles.username,
+                      })
+                    }
+                    hitSlop={8}
+                  >
+                    <Ionicons name="ellipsis-horizontal" size={16} color={colors.textFaint} />
+                  </Pressable>
+                )}
               </View>
             )}
             ListEmptyComponent={<EmptyState title="Noch keine Kommentare" subtitle="Sei der Erste!" />}
           />
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <View style={styles.inputRow}>
             <TextInput
@@ -81,6 +114,16 @@ export function CommentsSheet({ postId, onClose, onOpenProfile }: CommentsSheetP
               <Text style={styles.postButtonText}>Posten</Text>
             </Pressable>
           </View>
+
+          <ReportSheet
+            visible={!!reportTarget}
+            targetType="comment"
+            targetLabel="Diesen Kommentar"
+            blockLabel={`@${reportTarget?.username} blockieren`}
+            onClose={() => setReportTarget(null)}
+            onSubmit={(reason) => report('comment', reportTarget!.commentId, reason)}
+            onBlock={() => blockUser(reportTarget!.userId)}
+          />
         </KeyboardAvoidingView>
       </View>
     </Modal>
@@ -108,7 +151,8 @@ const styles = StyleSheet.create({
   },
   title: { color: colors.white, fontWeight: '700', fontSize: fontSizes.lg },
   list: { paddingHorizontal: spacing.lg },
-  commentRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: spacing.md },
+  commentRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
+  error: { color: colors.danger, fontSize: fontSizes.xs, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   commentText: { flex: 1 },
   commentUsername: { color: colors.white, fontWeight: '700', fontSize: fontSizes.sm },
   commentContent: { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 2 },

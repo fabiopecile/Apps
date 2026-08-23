@@ -8,20 +8,25 @@ import { PrimaryButton } from '@/components/PrimaryButton';
 import { StoryAvatar } from '@/components/StoryAvatar';
 import { StoryViewer } from '@/components/StoryViewer';
 import { PopIn } from '@/components/PopIn';
+import { ReportSheet } from '@/components/ReportSheet';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { CommentsSheet } from '@/components/CommentsSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { usePosts } from '@/hooks/usePosts';
 import { useStories } from '@/hooks/useStories';
 import { useFollows } from '@/hooks/useFollows';
+import { useModeration } from '@/hooks/useModeration';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { colors, spacing } from '@/constants/theme';
 
 export default function FeedScreen() {
-  const { posts, loading, refresh, toggleLike, deletePost } = usePosts();
-  const { stories, groups, refresh: refreshStories, deleteStory, saveHighlight } = useStories();
+  const { posts, loading, error, refresh, toggleLike, deletePost } = usePosts();
+  const { stories, groups, error: storiesError, refresh: refreshStories, deleteStory, saveHighlight } = useStories();
   const { isFollowing, toggleFollow, refresh: refreshFollows } = useFollows();
+  const { report, blockUser } = useModeration();
+  const [reportTarget, setReportTarget] = useState<{ postId: string; userId: string } | null>(null);
   const { profile, session } = useAuth();
   const { t } = useTranslation();
   const router = useRouter();
@@ -49,6 +54,13 @@ export default function FeedScreen() {
         refreshControl={<RefreshControl tintColor={colors.red} refreshing={false} onRefresh={refresh} />}
         ListHeaderComponent={
           <View>
+            <ErrorBanner
+              message={error ?? storiesError}
+              onRetry={() => {
+                refresh();
+                refreshStories();
+              }}
+            />
             <View style={styles.ctaWrap}>
               <PrimaryButton label={t('feed.addPost')} onPress={() => router.push('/post/new')} />
             </View>
@@ -92,6 +104,7 @@ export default function FeedScreen() {
               onDelete={() => deletePost(item.id)}
               onToggleFollow={() => toggleFollow(item.user_id)}
               onOpenProfile={() => router.push(`/user/${item.user_id}`)}
+              onReport={() => setReportTarget({ postId: item.id, userId: item.user_id })}
             />
           </PopIn>
         )}
@@ -113,6 +126,19 @@ export default function FeedScreen() {
           onOpenProfile={(userId) => router.push(`/user/${userId}`)}
         />
       ) : null}
+
+      <ReportSheet
+        visible={!!reportTarget}
+        targetType="post"
+        targetLabel="Diesen Beitrag"
+        onClose={() => setReportTarget(null)}
+        onSubmit={(reason) => report('post', reportTarget!.postId, reason)}
+        onBlock={async () => {
+          const result = await blockUser(reportTarget!.userId);
+          if (!result.error) refresh();
+          return result;
+        }}
+      />
 
       <CommentsSheet
         postId={commentsPostId}

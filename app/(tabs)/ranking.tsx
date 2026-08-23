@@ -7,6 +7,7 @@ import { LeaderboardPodium } from '@/components/LeaderboardPodium';
 import { LeaderboardRow } from '@/components/LeaderboardRow';
 import { PopIn } from '@/components/PopIn';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useRanking } from '@/hooks/useRanking';
 import { useAuth } from '@/contexts/AuthContext';
@@ -16,7 +17,7 @@ type Scope = 'gesamt' | 'freunde';
 
 export default function RankingScreen() {
   const [scope, setScope] = useState<Scope>('gesamt');
-  const { ranking, loading } = useRanking(scope);
+  const { ranking, loading, error, refresh } = useRanking(scope);
   const { session } = useAuth();
   const router = useRouter();
 
@@ -43,6 +44,8 @@ export default function RankingScreen() {
 
       {loading ? (
         <LoadingScreen />
+      ) : error ? (
+        <ErrorBanner message={error} onRetry={refresh} />
       ) : ranking.length === 0 ? (
         <EmptyState
           title={scope === 'freunde' ? 'Noch keine Freunde' : 'Noch kein Ranking'}

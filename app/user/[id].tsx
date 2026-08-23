@@ -8,9 +8,11 @@ import { StatRow } from '@/components/StatPill';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { AnimatedBar } from '@/components/AnimatedBar';
+import { ReportSheet } from '@/components/ReportSheet';
 import { useAuth } from '@/contexts/AuthContext';
 import { useUserProfile } from '@/hooks/useUserProfile';
 import { useFollows } from '@/hooks/useFollows';
+import { useModeration } from '@/hooks/useModeration';
 import { openConversationWith } from '@/lib/chat';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { XP_PER_LEVEL } from '@/constants/game';
@@ -21,7 +23,9 @@ export default function UserProfileScreen() {
   const { session } = useAuth();
   const { profile, posts, followerCount, followingCount, loading, refresh } = useUserProfile(id);
   const { isFollowing, toggleFollow } = useFollows();
+  const { report, blockUser } = useModeration();
   const [openingChat, setOpeningChat] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const isMe = !!session && profile?.id === session.user.id;
@@ -65,7 +69,13 @@ export default function UserProfileScreen() {
           <Ionicons name="chevron-back" size={26} color={colors.white} />
         </Pressable>
         <Text style={styles.headerTitle}>{profile.username}</Text>
-        <View style={{ width: 26 }} />
+        {isMe ? (
+          <View style={{ width: 26 }} />
+        ) : (
+          <Pressable onPress={() => setReportOpen(true)} hitSlop={8}>
+            <Ionicons name="ellipsis-horizontal" size={22} color={colors.textMuted} />
+          </Pressable>
+        )}
       </View>
 
       <FlatList
@@ -163,6 +173,20 @@ export default function UserProfileScreen() {
         }
         ListEmptyComponent={<EmptyState title="Noch keine Beiträge" />}
         contentContainerStyle={styles.listContent}
+      />
+
+      <ReportSheet
+        visible={reportOpen}
+        targetType="user"
+        targetLabel={`@${profile.username}`}
+        blockLabel={`@${profile.username} blockieren`}
+        onClose={() => setReportOpen(false)}
+        onSubmit={(reason) => report('user', profile.id, reason)}
+        onBlock={async () => {
+          const result = await blockUser(profile.id);
+          if (!result.error) router.back();
+          return result;
+        }}
       />
     </SafeAreaView>
   );

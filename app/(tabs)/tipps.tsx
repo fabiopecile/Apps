@@ -9,6 +9,7 @@ import { JokerIndicator } from '@/components/JokerIndicator';
 import { MatchTipCard } from '@/components/MatchTipCard';
 import { ConfettiBurst } from '@/components/ConfettiBurst';
 import { EmptyState } from '@/components/EmptyState';
+import { ErrorBanner } from '@/components/ErrorBanner';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useLeagues, useMatchday } from '@/hooks/useTipps';
 import { useDuels } from '@/hooks/useDuels';
@@ -27,7 +28,7 @@ export default function TippsScreen() {
     if (!selectedLeagueId && leagues.length) setSelectedLeagueId(leagues[0].id);
   }, [leagues, selectedLeagueId]);
 
-  const { matchday, matches, loading, submitTip, jokersRemaining } = useMatchday(selectedLeagueId);
+  const { matchday, matches, loading, error, refresh, submitTip, jokersRemaining } = useMatchday(selectedLeagueId);
 
   const pendingInvites = useMemo(
     () => duels.filter((d) => d.status === 'pending' && d.opponent_id === session?.user.id).length,
@@ -77,8 +78,11 @@ export default function TippsScreen() {
               onSuccess={() => setConfettiTrigger((t) => t + 1)}
             />
           )}
+          ListHeaderComponent={<ErrorBanner message={error} onRetry={refresh} />}
           ListEmptyComponent={
-            <EmptyState title="Kein Spieltag verfügbar" subtitle="Für diese Liga wurden noch keine Spiele angelegt." />
+            error ? null : (
+              <EmptyState title="Kein Spieltag verfügbar" subtitle="Für diese Liga wurden noch keine Spiele angelegt." />
+            )
           }
           contentContainerStyle={styles.listContent}
         />

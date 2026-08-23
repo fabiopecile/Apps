@@ -65,6 +65,10 @@ export default function LoginScreen() {
           <PrimaryButton label={t('auth.login')} onPress={handleSubmit} loading={loading} disabled={!email || !password} />
         </View>
 
+        <Link href="/(auth)/forgot-password" style={styles.forgotLink}>
+          <Text style={styles.forgotText}>Passwort vergessen?</Text>
+        </Link>
+
         <Link href="/(auth)/signup" style={styles.link}>
           <Text style={styles.linkText}>
             {t('auth.noAccount')} <Text style={styles.linkAccent}>{t('auth.signup')}</Text>
@@ -100,7 +104,9 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.md,
   },
   error: { color: colors.danger, fontSize: fontSizes.sm, textAlign: 'center' },
-  link: { marginTop: spacing.xl },
+  forgotLink: { marginTop: spacing.md },
+  forgotText: { color: colors.textMuted, fontSize: fontSizes.sm },
+  link: { marginTop: spacing.lg },
   linkText: { color: colors.textMuted },
   linkAccent: { color: colors.blue, fontWeight: '700' },
 });

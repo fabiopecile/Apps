@@ -1,4 +1,5 @@
 import 'react-native-url-polyfill/auto';
+import { Platform } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/database.types';
@@ -23,7 +24,11 @@ export const supabase = createClient<Database>(
       storage: AsyncStorage,
       autoRefreshToken: true,
       persistSession: true,
-      detectSessionInUrl: false,
+      // On web the password-reset link comes back with the recovery tokens in
+      // the URL hash; supabase-js has to pick them up for the reset screen to
+      // have a session to change the password with. Native handles the same
+      // link through the deep-link handler in AuthContext instead.
+      detectSessionInUrl: Platform.OS === 'web',
     },
   }
 );

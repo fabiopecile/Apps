@@ -17,6 +17,7 @@ import { useOwnPosts } from '@/hooks/useOwnPosts';
 import { useBadges } from '@/hooks/useBadges';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/lib/supabase';
+import { confirmDestructive } from '@/lib/confirm';
 import { registerForPushNotifications, clearPushToken } from '@/lib/notifications';
 import { exportStatsPdf } from '@/lib/statsExport';
 import type { Language } from '@/lib/i18n';
@@ -33,6 +34,7 @@ export default function ProfilScreen() {
   const [languagePickerOpen, setLanguagePickerOpen] = useState(false);
   const [reminderHourOpen, setReminderHourOpen] = useState(false);
   const [exportingPdf, setExportingPdf] = useState(false);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const { posts, refresh: refreshPosts } = useOwnPosts(session?.user.id);
   const { allBadges, earnedIds } = useBadges(session?.user.id);
 
@@ -64,6 +66,23 @@ export default function ProfilScreen() {
     setExportingPdf(true);
     await exportStatsPdf(profile, quote);
     setExportingPdf(false);
+  };
+
+  const handleDeleteAccount = () => {
+    confirmDestructive(
+      'Konto löschen?',
+      'Dein Konto, deine Beiträge, Storys und Punkte werden endgültig gelöscht. Das kann nicht rückgängig gemacht werden.',
+      'Endgültig löschen',
+      async () => {
+        setDeleteError(null);
+        const { error } = await supabase.rpc('delete_own_account');
+        if (error) {
+          setDeleteError(error.message);
+          return;
+        }
+        await signOut();
+      }
+    );
   };
 
   const handleNotificationsToggle = async (enabled: boolean) => {
@@ -117,6 +136,18 @@ export default function ProfilScreen() {
                 </View>
               </View>
             </View>
+
+            {profile.display_name || profile.bio ? (
+              <View style={styles.aboutBlock}>
+                {profile.display_name ? <Text style={styles.displayName}>{profile.display_name}</Text> : null}
+                {profile.bio ? <Text style={styles.bio}>{profile.bio}</Text> : null}
+              </View>
+            ) : null}
+
+            <Pressable style={styles.editButton} onPress={() => router.push('/profile/edit')}>
+              <Ionicons name="create-outline" size={16} color={colors.text} />
+              <Text style={styles.editButtonText}>Profil bearbeiten</Text>
+            </Pressable>
 
             <StatRow
               stats={[
@@ -173,7 +204,25 @@ export default function ProfilScreen() {
                 value={profile.notifications_enabled}
                 onValueChange={handleNotificationsToggle}
               />
+              <SettingsRow
+                icon="key-outline"
+                label="Passwort ändern"
+                chevron
+                onPress={() => router.push('/reset-password')}
+              />
+              <SettingsRow
+                icon="ban-outline"
+                label="Blockierte Nutzer"
+                chevron
+                onPress={() => router.push('/profile/blocked')}
+              />
               <SettingsRow icon="shield-checkmark-outline" label={t('profil.privacy')} chevron onPress={() => router.push('/privacy')} />
+              <SettingsRow
+                icon="document-text-outline"
+                label="Nutzungsbedingungen"
+                chevron
+                onPress={() => router.push('/terms')}
+              />
               {profile.is_admin ? (
                 <SettingsRow icon="construct-outline" label="Admin" chevron onPress={() => router.push('/admin')} />
               ) : null}
@@ -226,9 +275,15 @@ export default function ProfilScreen() {
         }
         ListEmptyComponent={tab === 'beitraege' ? <EmptyState title={t('profil.noPosts')} /> : null}
         ListFooterComponent={
-          <Pressable style={styles.signOut} onPress={signOut}>
-            <Text style={styles.signOutText}>{t('profil.signOut')}</Text>
-          </Pressable>
+          <View>
+            <Pressable style={styles.signOut} onPress={signOut}>
+              <Text style={styles.signOutText}>{t('profil.signOut')}</Text>
+            </Pressable>
+            {deleteError ? <Text style={styles.deleteError}>{deleteError}</Text> : null}
+            <Pressable style={styles.deleteAccount} onPress={handleDeleteAccount}>
+              <Text style={styles.deleteAccountText}>Konto löschen</Text>
+            </Pressable>
+          </View>
         }
       />
 
@@ -298,6 +353,26 @@ const styles = StyleSheet.create({
   badgeCard: { width: '30%', backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center', padding: spacing.md, gap: spacing.xs },
   badgeCardLocked: { opacity: 0.4 },
   badgeName: { color: colors.text, fontSize: fontSizes.xs, textAlign: 'center' },
-  signOut: { margin: spacing.lg, padding: spacing.md, alignItems: 'center', borderRadius: radii.lg, borderWidth: 1, borderColor: colors.borderStrong },
+  signOut: { margin: spacing.lg, marginBottom: spacing.sm, padding: spacing.md, alignItems: 'center', borderRadius: radii.lg, borderWidth: 1, borderColor: colors.borderStrong },
   signOutText: { color: colors.danger, fontWeight: '700' },
+  deleteError: { color: colors.danger, fontSize: fontSizes.xs, textAlign: 'center', paddingHorizontal: spacing.lg },
+  deleteAccount: { paddingVertical: spacing.md, marginBottom: spacing.xl, alignItems: 'center' },
+  deleteAccountText: { color: colors.textFaint, fontSize: fontSizes.xs, textDecorationLine: 'underline' },
+  aboutBlock: { paddingHorizontal: spacing.lg, gap: 2 },
+  displayName: { color: colors.text, fontWeight: '700', fontSize: fontSizes.sm },
+  bio: { color: colors.textMuted, fontSize: fontSizes.sm, lineHeight: 19 },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginHorizontal: spacing.lg,
+    marginTop: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+  },
+  editButtonText: { color: colors.text, fontWeight: '700', fontSize: fontSizes.sm },
 });
