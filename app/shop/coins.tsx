@@ -86,7 +86,10 @@ export default function CoinsScreen() {
                     <Text style={styles.cardCoins}>{total.toLocaleString('de-AT')} Coins</Text>
                     <Text style={styles.cardLabel}>
                       {pkg.bonus_coins > 0
-                        ? `${pkg.coins.toLocaleString('de-AT')} + ${pkg.bonus_coins.toLocaleString('de-AT')} gratis`
+                        ? t('coins.bonus', {
+                            base: pkg.coins.toLocaleString('de-AT'),
+                            bonus: pkg.bonus_coins.toLocaleString('de-AT'),
+                          })
                         : pkg.label}
                     </Text>
                   </View>
@@ -104,15 +107,10 @@ export default function CoinsScreen() {
 
         <View style={styles.notice}>
           <Ionicons name="information-circle-outline" size={18} color={colors.textMuted} />
-          <Text style={styles.noticeText}>
-            Coins sind virtuelle Gegenstände ohne Geldwert. Sie lassen sich nicht auszahlen oder übertragen
-            und geben keinen Vorteil beim Tippen – nur Rahmen und Titel.
-          </Text>
+          <Text style={styles.noticeText}>{t('coins.notice')}</Text>
         </View>
 
-        <Text style={styles.freeHint}>
-          Coins gibt es auch gratis: einmal täglich am Glücksrad drehen.
-        </Text>
+        <Text style={styles.freeHint}>{t('coins.freeHint')}</Text>
       </ScrollView>
     </SafeAreaView>
   );
