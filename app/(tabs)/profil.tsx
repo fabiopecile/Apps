@@ -10,7 +10,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { InviteFriendsCard } from '@/components/InviteFriendsCard';
 import { LanguagePickerModal } from '@/components/LanguagePickerModal';
 import { ProCard } from '@/components/ProCard';
-import { ReminderHourModal } from '@/components/ReminderHourModal';
+import { ReminderHourModal, formatLocalHour } from '@/components/ReminderHourModal';
 import { AnimatedBar } from '@/components/AnimatedBar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOwnPosts } from '@/hooks/useOwnPosts';
@@ -146,7 +146,7 @@ export default function ProfilScreen() {
 
             <Pressable style={styles.editButton} onPress={() => router.push('/profile/edit')}>
               <Ionicons name="create-outline" size={16} color={colors.text} />
-              <Text style={styles.editButtonText}>Profil bearbeiten</Text>
+              <Text style={styles.editButtonText}>{t('settings.editProfile')}</Text>
             </Pressable>
 
             <StatRow
@@ -168,23 +168,23 @@ export default function ProfilScreen() {
             <InviteFriendsCard referralCode={profile.referral_code} />
 
             <View style={styles.settings}>
-              <SettingsRow icon="bag-outline" label="Shop" trailingText={`${profile.coins} Coins`} chevron onPress={() => router.push('/shop')} />
-              <SettingsRow icon="ellipse-outline" label="Coins kaufen" chevron onPress={() => router.push('/shop/coins')} />
+              <SettingsRow icon="bag-outline" label={t('settings.shop')} trailingText={`${profile.coins} Coins`} chevron onPress={() => router.push('/shop')} />
+              <SettingsRow icon="ellipse-outline" label={t('settings.buyCoins')} chevron onPress={() => router.push('/shop/coins')} />
             </View>
 
             {profile.is_pro ? (
               <View style={styles.settings}>
-                <SettingsRow icon="trophy-outline" label="Private Ligen" chevron onPress={() => router.push('/leagues')} />
+                <SettingsRow icon="trophy-outline" label={t('settings.privateLeagues')} chevron onPress={() => router.push('/leagues')} />
                 <SettingsRow
                   icon="time-outline"
-                  label="Erinnerungszeit"
-                  trailingText={`${profile.reminder_hour_utc ?? 18}:00 UTC`}
+                  label={t('settings.reminderTime')}
+                  trailingText={`${formatLocalHour(profile.reminder_hour_utc)}:00`}
                   chevron
                   onPress={() => setReminderHourOpen(true)}
                 />
                 <SettingsRow
                   icon="document-text-outline"
-                  label={exportingPdf ? 'Wird erstellt...' : 'Statistik exportieren'}
+                  label={exportingPdf ? t('settings.exportingStats') : t('settings.exportStats')}
                   chevron
                   onPress={handleExportPdf}
                 />
@@ -206,26 +206,32 @@ export default function ProfilScreen() {
                 onValueChange={handleNotificationsToggle}
               />
               <SettingsRow
+                icon="help-circle-outline"
+                label={t('settings.rules')}
+                chevron
+                onPress={() => router.push('/rules')}
+              />
+              <SettingsRow
                 icon="key-outline"
-                label="Passwort ändern"
+                label={t('settings.changePassword')}
                 chevron
                 onPress={() => router.push('/reset-password')}
               />
               <SettingsRow
                 icon="ban-outline"
-                label="Blockierte Nutzer"
+                label={t('settings.blockedUsers')}
                 chevron
                 onPress={() => router.push('/profile/blocked')}
               />
               <SettingsRow icon="shield-checkmark-outline" label={t('profil.privacy')} chevron onPress={() => router.push('/privacy')} />
               <SettingsRow
                 icon="document-text-outline"
-                label="Nutzungsbedingungen"
+                label={t('settings.terms')}
                 chevron
                 onPress={() => router.push('/terms')}
               />
               {profile.is_admin ? (
-                <SettingsRow icon="construct-outline" label="Admin" chevron onPress={() => router.push('/admin')} />
+                <SettingsRow icon="construct-outline" label={t('settings.admin')} chevron onPress={() => router.push('/admin')} />
               ) : null}
             </View>
 
@@ -282,7 +288,7 @@ export default function ProfilScreen() {
             </Pressable>
             {deleteError ? <Text style={styles.deleteError}>{deleteError}</Text> : null}
             <Pressable style={styles.deleteAccount} onPress={handleDeleteAccount}>
-              <Text style={styles.deleteAccountText}>Konto löschen</Text>
+              <Text style={styles.deleteAccountText}>{t('settings.deleteAccount')}</Text>
             </Pressable>
           </View>
         }

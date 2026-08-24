@@ -15,6 +15,7 @@ import { useLeagues, useMatchday } from '@/hooks/useTipps';
 import { useDuels } from '@/hooks/useDuels';
 import { useAuth } from '@/contexts/AuthContext';
 import { colors, fontSizes, spacing } from '@/constants/theme';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function TippsScreen() {
   const { leagues, loading: leaguesLoading } = useLeagues();
@@ -22,6 +23,7 @@ export default function TippsScreen() {
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const router = useRouter();
   const { session, profile } = useAuth();
+  const { t } = useTranslation();
   const { duels } = useDuels();
 
   useEffect(() => {
@@ -42,21 +44,26 @@ export default function TippsScreen() {
       <TopBar />
       <View style={styles.header}>
         <View style={styles.headerText}>
-          <Text style={styles.title}>{matchday ? `Spieltag ${matchday.number}` : 'Spieltag'}</Text>
+          <Text style={styles.title}>{matchday ? t('tipps.matchday', { number: matchday.number }) : t('tipps.matchdayFallback')}</Text>
           <Text style={styles.subtitle}>
             {leagues.find((l) => l.id === selectedLeagueId)?.name ?? ''}
             {matchday ? ` · Tippabgabe bis ${new Date(matchday.deadline).toLocaleString('de-DE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}` : ''}
           </Text>
         </View>
         <View style={styles.headerActions}>
-          <Pressable style={styles.duelsButton} onPress={() => router.push('/duels')}>
-            <Ionicons name="flash" size={16} color={colors.white} />
-            {pendingInvites > 0 ? (
-              <View style={styles.duelsBadge}>
-                <Text style={styles.duelsBadgeText}>{pendingInvites}</Text>
-              </View>
-            ) : null}
-          </Pressable>
+          <View style={styles.headerButtonRow}>
+            <Pressable style={styles.duelsButton} onPress={() => router.push('/rules')}>
+              <Ionicons name="help-circle-outline" size={18} color={colors.white} />
+            </Pressable>
+            <Pressable style={styles.duelsButton} onPress={() => router.push('/duels')}>
+              <Ionicons name="flash" size={16} color={colors.white} />
+              {pendingInvites > 0 ? (
+                <View style={styles.duelsBadge}>
+                  <Text style={styles.duelsBadgeText}>{pendingInvites}</Text>
+                </View>
+              ) : null}
+            </Pressable>
+          </View>
           <JokerIndicator remaining={jokersRemaining} />
         </View>
       </View>
@@ -74,14 +81,16 @@ export default function TippsScreen() {
               match={item}
               jokersRemaining={jokersRemaining}
               isPro={profile?.is_pro}
+              currentUserId={session?.user.id}
               onSubmit={(h, a, j) => submitTip(item.id, h, a, j)}
               onSuccess={() => setConfettiTrigger((t) => t + 1)}
+              onOpenProfile={(userId) => router.push(`/user/${userId}`)}
             />
           )}
           ListHeaderComponent={<ErrorBanner message={error} onRetry={refresh} />}
           ListEmptyComponent={
             error ? null : (
-              <EmptyState title="Kein Spieltag verfügbar" subtitle="Für diese Liga wurden noch keine Spiele angelegt." />
+              <EmptyState title={t('tipps.noMatchday')} subtitle={t('tipps.noMatchdaySubtitle')} />
             )
           }
           contentContainerStyle={styles.listContent}
@@ -108,6 +117,7 @@ const styles = StyleSheet.create({
   title: { color: colors.white, fontSize: fontSizes.xxl, fontWeight: '800', letterSpacing: -0.4 },
   subtitle: { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 2 },
   headerActions: { alignItems: 'flex-end', gap: spacing.sm },
+  headerButtonRow: { flexDirection: 'row', gap: spacing.sm },
   duelsButton: {
     width: 36,
     height: 36,

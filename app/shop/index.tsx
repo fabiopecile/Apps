@@ -11,10 +11,12 @@ import { CountUp } from '@/components/CountUp';
 import { SuccessStamp } from '@/components/SuccessStamp';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { ShopItem } from '@/lib/database.types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function ShopScreen() {
   const router = useRouter();
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const { items, ownedKeys, loading, buyItem, equipItem } = useShop();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -65,8 +67,8 @@ export default function ShopScreen() {
                 <Ionicons name="ellipse" size={22} color={colors.gold} />
               </View>
               <View style={styles.buyCoinsText}>
-                <Text style={styles.buyCoinsTitle}>Coins kaufen</Text>
-                <Text style={styles.buyCoinsSubtitle}>Pakete ab 1,99 € – oder gratis am Glücksrad</Text>
+                <Text style={styles.buyCoinsTitle}>{t('settings.buyCoins')}</Text>
+                <Text style={styles.buyCoinsSubtitle}>{t('coins.shopEntry')}</Text>
               </View>
               <Ionicons name="chevron-forward" size={18} color={colors.gold} />
             </Pressable>

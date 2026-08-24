@@ -20,12 +20,14 @@ import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { uploadAvatar } from '@/lib/storage';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
+import { useTranslation } from '@/hooks/useTranslation';
 
 const BIO_LIMIT = 160;
 
 export default function EditProfileScreen() {
   const router = useRouter();
   const { profile, refreshProfile } = useAuth();
+  const { t } = useTranslation();
 
   const [displayName, setDisplayName] = useState(profile?.display_name ?? '');
   const [bio, setBio] = useState(profile?.bio ?? '');
@@ -77,7 +79,7 @@ export default function EditProfileScreen() {
           uris={[pendingAvatarUri]}
           fixedRatio={1}
           maxWidth={MAX_AVATAR_WIDTH}
-          title="Profilbild zuschneiden"
+          title={t('edit.cropAvatar')}
           onCancel={() => setPendingAvatarUri(null)}
           onDone={(cropped) => {
             setAvatarUri(cropped[0]?.uri ?? null);
@@ -91,7 +93,7 @@ export default function EditProfileScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Profil bearbeiten</Text>
+        <Text style={styles.title}>{t('edit.title')}</Text>
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="close" size={24} color={colors.textMuted} />
         </Pressable>
@@ -110,9 +112,9 @@ export default function EditProfileScreen() {
               <Ionicons name="camera" size={15} color={colors.white} />
             </View>
           </Pressable>
-          <Text style={styles.avatarHint}>Zum Ändern tippen</Text>
+          <Text style={styles.avatarHint}>{t('edit.avatarHint')}</Text>
 
-          <Text style={styles.label}>ANZEIGENAME</Text>
+          <Text style={styles.label}>{t('edit.displayName')}</Text>
           <TextInput
             style={styles.input}
             placeholder={profile.username}
@@ -121,12 +123,12 @@ export default function EditProfileScreen() {
             onChangeText={setDisplayName}
             maxLength={40}
           />
-          <Text style={styles.helper}>Dein Benutzername @{profile.username} bleibt unverändert.</Text>
+          <Text style={styles.helper}>{t('edit.displayNameHelp', { username: profile.username })}</Text>
 
-          <Text style={styles.label}>BIO</Text>
+          <Text style={styles.label}>{t('edit.bio')}</Text>
           <TextInput
             style={[styles.input, styles.bioInput]}
-            placeholder="Erzähl kurz was über dich..."
+            placeholder={t('edit.bioPlaceholder')}
             placeholderTextColor={colors.textFaint}
             value={bio}
             onChangeText={(text) => setBio(text.slice(0, BIO_LIMIT))}
@@ -139,7 +141,7 @@ export default function EditProfileScreen() {
           {error ? <Text style={styles.error}>{error}</Text> : null}
 
           <Pressable style={[styles.saveButton, saving && styles.saveButtonDisabled]} onPress={handleSave} disabled={saving}>
-            <Text style={styles.saveText}>{saving ? 'Wird gespeichert...' : 'Speichern'}</Text>
+            <Text style={styles.saveText}>{saving ? t('common.saving') : t('common.save')}</Text>
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>

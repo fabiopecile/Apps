@@ -16,11 +16,13 @@ import { useModeration } from '@/hooks/useModeration';
 import { openConversationWith } from '@/lib/chat';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { XP_PER_LEVEL } from '@/constants/game';
+import { useTranslation } from '@/hooks/useTranslation';
 
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { session } = useAuth();
+  const { t } = useTranslation();
   const { profile, posts, followerCount, followingCount, loading, refresh } = useUserProfile(id);
   const { isFollowing, toggleFollow } = useFollows();
   const { report, blockUser } = useModeration();
@@ -35,7 +37,7 @@ export default function UserProfileScreen() {
   if (!profile) {
     return (
       <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-        <EmptyState title="Profil nicht gefunden" />
+        <EmptyState title={t('common.notFound')} />
       </SafeAreaView>
     );
   }

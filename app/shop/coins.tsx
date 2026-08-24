@@ -11,6 +11,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { useCoinPackages } from '@/hooks/useCoinPackages';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { CoinPackage } from '@/lib/database.types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 function formatPrice(cents: number, currency: string) {
   return new Intl.NumberFormat('de-AT', { style: 'currency', currency: currency.toUpperCase() }).format(
@@ -21,6 +22,7 @@ function formatPrice(cents: number, currency: string) {
 export default function CoinsScreen() {
   const router = useRouter();
   const { profile } = useAuth();
+  const { t } = useTranslation();
   const { packages, loading, error, refresh, buyPackage } = useCoinPackages();
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [buyError, setBuyError] = useState<string | null>(null);
@@ -47,8 +49,8 @@ export default function CoinsScreen() {
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
         <View>
-          <Text style={styles.title}>Coins kaufen</Text>
-          <CountUp value={profile.coins} style={styles.coins} format={(n) => `${n} Coins verfügbar`} />
+          <Text style={styles.title}>{t('coins.title')}</Text>
+          <CountUp value={profile.coins} style={styles.coins} format={(n) => t('coins.available', { count: n })} />
         </View>
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="close" size={24} color={colors.textMuted} />
@@ -71,7 +73,7 @@ export default function CoinsScreen() {
               >
                 {isBest ? (
                   <View style={styles.bestBadge}>
-                    <Text style={styles.bestBadgeText}>BESTES ANGEBOT</Text>
+                    <Text style={styles.bestBadgeText}>{t('coins.bestValue')}</Text>
                   </View>
                 ) : null}
 

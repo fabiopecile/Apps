@@ -9,6 +9,7 @@ import { useModeration } from '@/hooks/useModeration';
 import { useAuth } from '@/contexts/AuthContext';
 import { confirmDestructive } from '@/lib/confirm';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface CommentsSheetProps {
   postId: string | null;
@@ -20,6 +21,7 @@ export function CommentsSheet({ postId, onClose, onOpenProfile }: CommentsSheetP
   const { comments, error, postComment, deleteComment } = usePostComments(postId);
   const { report, blockUser } = useModeration();
   const { session } = useAuth();
+  const { t } = useTranslation();
   const [draft, setDraft] = useState('');
   const [reportTarget, setReportTarget] = useState<{ commentId: string; userId: string; username: string } | null>(null);
 
@@ -41,7 +43,7 @@ export function CommentsSheet({ postId, onClose, onOpenProfile }: CommentsSheetP
         <Pressable style={StyleSheet.absoluteFill} onPress={onClose} />
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={styles.sheet}>
           <View style={styles.header}>
-            <Text style={styles.title}>Kommentare</Text>
+            <Text style={styles.title}>{t('comments.title')}</Text>
             <Pressable onPress={onClose}>
               <Ionicons name="close" size={22} color={colors.textMuted} />
             </Pressable>
@@ -97,7 +99,7 @@ export function CommentsSheet({ postId, onClose, onOpenProfile }: CommentsSheetP
                 )}
               </View>
             )}
-            ListEmptyComponent={<EmptyState title="Noch keine Kommentare" subtitle="Sei der Erste!" />}
+            ListEmptyComponent={<EmptyState title={t('comments.empty')} subtitle={t('comments.emptySubtitle')} />}
           />
 
           {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -107,11 +109,11 @@ export function CommentsSheet({ postId, onClose, onOpenProfile }: CommentsSheetP
               style={styles.input}
               value={draft}
               onChangeText={setDraft}
-              placeholder="Kommentar schreiben..."
+              placeholder={t('comments.placeholder')}
               placeholderTextColor={colors.textFaint}
             />
             <Pressable onPress={handlePost} style={styles.postButton} disabled={!draft.trim()}>
-              <Text style={styles.postButtonText}>Posten</Text>
+              <Text style={styles.postButtonText}>{t('comments.post')}</Text>
             </Pressable>
           </View>
 

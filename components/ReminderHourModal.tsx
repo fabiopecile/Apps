@@ -16,6 +16,16 @@ interface ReminderHourModalProps {
 // in the device's local time so "20 Uhr" means 20:00 wherever the user is.
 const localOffsetHours = () => -(new Date().getTimezoneOffset() / 60);
 
+/**
+ * The stored hour rendered in the reader's own time zone. Showing the raw UTC
+ * value ("18:00 UTC") made the setting unreadable - in Austria that is 20:00
+ * in summer and 19:00 in winter, and nobody does that conversion in their head.
+ */
+export function formatLocalHour(utcHour: number | null): string {
+  const local = Math.round((utcHour ?? 18) + localOffsetHours());
+  return String(((local % 24) + 24) % 24).padStart(2, '0');
+}
+
 export function ReminderHourModal({ visible, currentUtcHour, onSelect, onClose }: ReminderHourModalProps) {
   const offset = localOffsetHours();
   const currentLocalHour = currentUtcHour === null ? 18 + offset : currentUtcHour + offset;

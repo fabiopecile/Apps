@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
+import { useTranslation } from '@/hooks/useTranslation';
 
 interface ErrorBannerProps {
   message: string | null;
@@ -12,20 +13,22 @@ interface ErrorBannerProps {
  * "there's nothing here yet", which is the more alarming of the two readings.
  */
 export function ErrorBanner({ message, onRetry }: ErrorBannerProps) {
+  // Before the early return - a hook must run on every render.
+  const { t } = useTranslation();
   if (!message) return null;
 
   return (
     <View style={styles.container}>
       <Ionicons name="cloud-offline-outline" size={18} color={colors.danger} />
       <View style={styles.text}>
-        <Text style={styles.title}>Keine Verbindung</Text>
+        <Text style={styles.title}>{t('common.offline')}</Text>
         <Text style={styles.detail} numberOfLines={2}>
           {message}
         </Text>
       </View>
       {onRetry ? (
         <Pressable style={styles.retry} onPress={onRetry} hitSlop={6}>
-          <Text style={styles.retryText}>Erneut</Text>
+          <Text style={styles.retryText}>{t('common.retry')}</Text>
         </Pressable>
       ) : null}
     </View>

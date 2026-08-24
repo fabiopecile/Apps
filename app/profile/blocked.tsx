@@ -9,12 +9,14 @@ import { useModeration } from '@/hooks/useModeration';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import type { Profile } from '@/lib/database.types';
+import { useTranslation } from '@/hooks/useTranslation';
 
 type BlockedProfile = Pick<Profile, 'id' | 'username' | 'display_name' | 'avatar_url'>;
 
 export default function BlockedUsersScreen() {
   const router = useRouter();
   const { blockedIds, unblockUser } = useModeration();
+  const { t } = useTranslation();
   const [profiles, setProfiles] = useState<BlockedProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -51,7 +53,7 @@ export default function BlockedUsersScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Blockierte Nutzer</Text>
+        <Text style={styles.title}>{t('blocked.title')}</Text>
         <Pressable onPress={() => router.back()} hitSlop={8}>
           <Ionicons name="close" size={24} color={colors.textMuted} />
         </Pressable>
@@ -71,15 +73,15 @@ export default function BlockedUsersScreen() {
               <Text style={styles.handle}>@{item.username}</Text>
             </View>
             <Pressable style={styles.unblockButton} onPress={() => handleUnblock(item.id)}>
-              <Text style={styles.unblockText}>Entsperren</Text>
+              <Text style={styles.unblockText}>{t('blocked.unblock')}</Text>
             </Pressable>
           </View>
         )}
         ListEmptyComponent={
           loading ? null : (
             <EmptyState
-              title="Niemand blockiert"
-              subtitle="Blockierte Nutzer siehst du hier und kannst sie jederzeit wieder entsperren."
+              title={t('blocked.empty')}
+              subtitle={t('blocked.emptySubtitle')}
             />
           )
         }

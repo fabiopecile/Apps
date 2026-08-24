@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { formatMatchTime } from '@/lib/dates';
 import { JokerTypeModal } from '@/components/JokerTypeModal';
+import { OtherTipsSection } from '@/components/OtherTipsSection';
 import { SuccessStamp } from '@/components/SuccessStamp';
 import { supabase } from '@/lib/supabase';
 import type { MatchWithTip } from '@/hooks/useTipps';
@@ -19,11 +20,21 @@ interface MatchTipCardProps {
   match: MatchWithTip;
   jokersRemaining: number;
   isPro?: boolean;
+  currentUserId?: string;
   onSubmit: (homeScore: number, awayScore: number, jokerType: JokerType | null) => Promise<{ error: string | null }>;
   onSuccess?: () => void;
+  onOpenProfile?: (userId: string) => void;
 }
 
-export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSuccess }: MatchTipCardProps) {
+export function MatchTipCard({
+  match,
+  jokersRemaining,
+  isPro,
+  currentUserId,
+  onSubmit,
+  onSuccess,
+  onOpenProfile,
+}: MatchTipCardProps) {
   const isLocked = new Date(match.kickoff).getTime() <= Date.now();
   const [homeScore, setHomeScore] = useState(match.tip?.home_score?.toString() ?? '');
   const [awayScore, setAwayScore] = useState(match.tip?.away_score?.toString() ?? '');
@@ -261,11 +272,14 @@ export function MatchTipCard({ match, jokersRemaining, isPro, onSubmit, onSucces
       {error ? <Text style={styles.error}>{error}</Text> : null}
 
       {isLocked ? (
-        <View style={styles.lockedNotice}>
-          <Text style={styles.lockedText}>
-            {match.tip ? 'Tipp abgegeben' : 'Tippabgabe geschlossen'}
-          </Text>
-        </View>
+        <>
+          <View style={styles.lockedNotice}>
+            <Text style={styles.lockedText}>
+              {match.tip ? 'Tipp abgegeben' : 'Tippabgabe geschlossen'}
+            </Text>
+          </View>
+          <OtherTipsSection matchId={match.id} currentUserId={currentUserId} onOpenProfile={onOpenProfile} />
+        </>
       ) : (
         <Pressable
           disabled={!canSubmit}

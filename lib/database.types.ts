@@ -31,6 +31,7 @@ export type Profile = {
   equipped_title: string | null;
   equipped_frame_color: string | null;
   last_wheel_spin_date: string | null;
+  onboarding_done: boolean;
   created_at: string;
 };
 
