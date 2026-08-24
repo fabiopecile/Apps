@@ -13,6 +13,7 @@ export function LeagueTabs({ leagues, selectedId, onSelect }: LeagueTabsProps) {
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      style={styles.scroll}
       contentContainerStyle={styles.container}
     >
       {leagues.map((league) => {
@@ -33,7 +34,17 @@ export function LeagueTabs({ leagues, selectedId, onSelect }: LeagueTabsProps) {
 }
 
 const styles = StyleSheet.create({
-  container: { paddingHorizontal: spacing.lg, gap: spacing.sm, paddingBottom: spacing.md },
+  // A horizontal ScrollView is still a flex child of the column above it, so
+  // it gets shrunk when the list below competes for space - which cut the
+  // league pills in half. Pinning both flex factors makes it size to its own
+  // content and nothing else.
+  scroll: { flexGrow: 0, flexShrink: 0 },
+  container: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.sm,
+    paddingBottom: spacing.md,
+    alignItems: 'center',
+  },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
