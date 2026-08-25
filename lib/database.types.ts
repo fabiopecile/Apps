@@ -136,6 +136,7 @@ export type Conversation = {
   id: string;
   is_group: boolean;
   title: string | null;
+  created_by: string | null;
   created_at: string;
 };
 
@@ -143,6 +144,11 @@ export type ConversationParticipant = {
   conversation_id: string;
   user_id: string;
   last_read_at: string;
+  is_admin: boolean;
+};
+
+export type ConversationMember = ConversationParticipant & {
+  profiles: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
 };
 
 export type Message = {
@@ -383,6 +389,26 @@ export type Database = {
       join_private_league: {
         Args: { p_code: string };
         Returns: PrivateLeague;
+      };
+      create_direct_conversation: {
+        Args: { p_other_user_id: string };
+        Returns: string;
+      };
+      create_group_conversation: {
+        Args: { p_title: string; p_member_ids: string[] };
+        Returns: string;
+      };
+      add_group_member: {
+        Args: { p_conversation_id: string; p_user_id: string };
+        Returns: undefined;
+      };
+      set_group_admin: {
+        Args: { p_conversation_id: string; p_user_id: string; p_is_admin: boolean };
+        Returns: undefined;
+      };
+      is_conversation_admin: {
+        Args: { p_conversation_id: string };
+        Returns: boolean;
       };
       buy_shop_item: {
         Args: { p_key: string };

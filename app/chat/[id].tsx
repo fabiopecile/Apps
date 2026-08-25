@@ -4,12 +4,14 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useMessages } from '@/hooks/useMessages';
+import { useConversationDetail } from '@/hooks/useConversationDetail';
 import { useChatDuels } from '@/hooks/useChatDuels';
 import { useDuels } from '@/hooks/useDuels';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { Avatar } from '@/components/Avatar';
+import { GroupAvatar } from '@/components/GroupAvatar';
 import { ChallengeModal } from '@/components/ChallengeModal';
 import { ChallengeMessageCard } from '@/components/ChallengeMessageCard';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
@@ -22,22 +24,11 @@ export default function ConversationScreen() {
   const { messages, loading, sendMessage } = useMessages(id);
   const chatDuels = useChatDuels(messages);
   const { challengeFromChat, respond } = useDuels();
+  const { conversation, members, others, isGroup, partner } = useConversationDetail(id);
   const [draft, setDraft] = useState('');
-  const [partner, setPartner] = useState<Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'> | null>(null);
   const [challengeModalOpen, setChallengeModalOpen] = useState(false);
   const [challengeError, setChallengeError] = useState<string | null>(null);
   const listRef = useRef<FlatList>(null);
-
-  useEffect(() => {
-    if (!session) return;
-    supabase
-      .from('conversation_participants')
-      .select('profiles(id, username, avatar_url, equipped_frame_color)')
-      .eq('conversation_id', id)
-      .neq('user_id', session.user.id)
-      .maybeSingle()
-      .then(({ data }) => setPartner((data as any)?.profiles ?? null));
-  }, [id, session]);
 
   const handleSend = () => {
     if (!draft.trim()) return;
@@ -48,7 +39,7 @@ export default function ConversationScreen() {
   const handleChallenge = async (type: DuelType) => {
     if (!partner) return;
     setChallengeModalOpen(false);
-    const { error } = await challengeFromChat(partner.id, type, id);
+    const { error } = await challengeFromChat(partner.profiles.id, type, id);
     if (error) setChallengeError(error);
   };
 
@@ -62,21 +53,42 @@ export default function ConversationScreen() {
         </Pressable>
         <Pressable
           style={styles.partnerTap}
-          onPress={() => partner && router.push(`/user/${partner.id}`)}
-          disabled={!partner}
+          onPress={() =>
+            isGroup
+              ? router.push(`/chat/members/${id}`)
+              : partner && router.push(`/user/${partner.profiles.id}`)
+          }
+          disabled={!isGroup && !partner}
         >
-          <Avatar
-            uri={partner?.avatar_url}
-            name={partner?.username}
-            size={32}
-            ringColor={partner?.equipped_frame_color ?? undefined}
-          />
-          <Text style={styles.title}>{partner?.username ?? 'Chat'}</Text>
+          {isGroup ? (
+            <GroupAvatar members={others.map((m) => m.profiles)} size={32} />
+          ) : (
+            <Avatar
+              uri={partner?.profiles.avatar_url}
+              name={partner?.profiles.username}
+              size={32}
+              ringColor={partner?.profiles.equipped_frame_color ?? undefined}
+            />
+          )}
+          <View style={styles.headerText}>
+            <Text style={styles.title} numberOfLines={1}>
+              {isGroup ? (conversation?.title ?? 'Gruppe') : (partner?.profiles.username ?? 'Chat')}
+            </Text>
+            {isGroup ? (
+              <Text style={styles.memberCount}>{members.length} Mitglieder</Text>
+            ) : null}
+          </View>
         </Pressable>
-        <Pressable style={styles.challengeButton} onPress={() => setChallengeModalOpen(true)}>
-          <Ionicons name="trophy" size={14} color={colors.white} />
-          <Text style={styles.challengeButtonText}>Challenge</Text>
-        </Pressable>
+        {isGroup ? (
+          <Pressable style={styles.challengeButton} onPress={() => router.push(`/chat/members/${id}`)}>
+            <Ionicons name="people" size={14} color={colors.white} />
+          </Pressable>
+        ) : (
+          <Pressable style={styles.challengeButton} onPress={() => setChallengeModalOpen(true)}>
+            <Ionicons name="trophy" size={14} color={colors.white} />
+            <Text style={styles.challengeButtonText}>Challenge</Text>
+          </Pressable>
+        )}
       </View>
 
       {challengeError ? <Text style={styles.error}>{challengeError}</Text> : null}
@@ -105,9 +117,24 @@ export default function ConversationScreen() {
               );
             }
 
+            // In a group the bubble alone doesn't say who wrote it.
+            const sender =
+              isGroup && !isMine ? members.find((m) => m.user_id === item.sender_id) : null;
+
             return (
               <View style={[styles.bubbleRow, isMine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}>
+                {sender ? (
+                  <Pressable onPress={() => router.push(`/user/${sender.profiles.id}`)} style={styles.senderAvatar}>
+                    <Avatar
+                      uri={sender.profiles.avatar_url}
+                      name={sender.profiles.username}
+                      size={26}
+                      ringColor={sender.profiles.equipped_frame_color ?? undefined}
+                    />
+                  </Pressable>
+                ) : null}
                 <View style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleTheirs]}>
+                  {sender ? <Text style={styles.senderName}>{sender.profiles.username}</Text> : null}
                   <Text style={styles.bubbleText}>{item.content}</Text>
                 </View>
               </View>
@@ -132,7 +159,7 @@ export default function ConversationScreen() {
 
       <ChallengeModal
         visible={challengeModalOpen}
-        recipientName={partner?.username ?? ''}
+        recipientName={partner?.profiles.username ?? ''}
         onClose={() => setChallengeModalOpen(false)}
         onSelect={handleChallenge}
       />
@@ -153,7 +180,11 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   partnerTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  title: { flex: 1, color: colors.white, fontWeight: '700', fontSize: fontSizes.md },
+  headerText: { flex: 1 },
+  memberCount: { color: colors.textFaint, fontSize: fontSizes.xs, marginTop: 1 },
+  title: { color: colors.white, fontWeight: '700', fontSize: fontSizes.md },
+  senderAvatar: { alignSelf: 'flex-end', marginRight: 6 },
+  senderName: { color: colors.blue, fontSize: fontSizes.xs, fontWeight: '700', marginBottom: 3 },
   challengeButton: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -4,6 +4,7 @@ import { useRouter, useFocusEffect } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
+import { GroupAvatar } from '@/components/GroupAvatar';
 import { EmptyState } from '@/components/EmptyState';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { LoadingScreen } from '@/components/LoadingScreen';
@@ -38,6 +39,9 @@ export default function ChatScreen() {
               </View>
             ) : null}
           </Pressable>
+          <Pressable onPress={() => router.push('/chat/new?group=1')} style={styles.newButton}>
+            <Ionicons name="chatbubbles" size={19} color={colors.white} />
+          </Pressable>
           <Pressable onPress={() => router.push('/chat/new')} style={styles.newButton}>
             <Ionicons name="person-add" size={20} color={colors.white} />
           </Pressable>
@@ -52,14 +56,25 @@ export default function ChatScreen() {
           keyExtractor={(item) => item.id}
           renderItem={({ item }) => (
             <Pressable style={styles.row} onPress={() => router.push(`/chat/${item.id}`)}>
-              <Avatar
-                uri={item.otherUser?.avatar_url}
-                name={item.otherUser?.username}
-                size={52}
-                ringColor={item.otherUser?.equipped_frame_color ?? undefined}
-              />
+              {item.isGroup ? (
+                <GroupAvatar members={item.others} size={52} />
+              ) : (
+                <Avatar
+                  uri={item.otherUser?.avatar_url}
+                  name={item.otherUser?.username}
+                  size={52}
+                  ringColor={item.otherUser?.equipped_frame_color ?? undefined}
+                />
+              )}
               <View style={styles.rowText}>
-                <Text style={styles.username}>{item.otherUser?.username ?? 'Unbekannt'}</Text>
+                <View style={styles.nameRow}>
+                  {item.isGroup ? <Ionicons name="people" size={13} color={colors.textFaint} /> : null}
+                  <Text style={styles.username} numberOfLines={1}>
+                    {item.isGroup
+                      ? (item.title ?? 'Gruppe')
+                      : (item.otherUser?.username ?? 'Unbekannt')}
+                  </Text>
+                </View>
                 <Text style={styles.preview} numberOfLines={1}>
                   {item.lastMessage ?? 'Noch keine Nachrichten'}
                 </Text>
@@ -135,6 +150,7 @@ const styles = StyleSheet.create({
     borderBottomColor: colors.border,
   },
   rowText: { flex: 1 },
+  nameRow: { flexDirection: 'row', alignItems: 'center', gap: 5 },
   username: { color: colors.text, fontWeight: '700', fontSize: fontSizes.md },
   preview: { color: colors.textMuted, fontSize: fontSizes.sm, marginTop: 2 },
   rowMeta: { alignItems: 'flex-end', gap: spacing.xs },
