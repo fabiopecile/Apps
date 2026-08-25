@@ -28,21 +28,42 @@ Trainingsstandorte zentral in einem Jahreskalender verwalten.
 
 - **Next.js 16** (App Router, Server Actions, Server-seitige Validierung)
 - **TypeScript**, **Tailwind CSS v4**
-- **Prisma 6** mit **SQLite** als persistente Datenbank (leicht auf Postgres/MySQL umstellbar)
+- **Prisma 6** mit **PostgreSQL** (z. B. Supabase) als persistente Datenbank
 - Eigene Session-/Auth-Schicht (httpOnly-JWT-Cookie via `jose`, Passwort-Hashing via `bcryptjs`) – kein externer
   Auth-Anbieter nötig
 - `zod` für serverseitige Eingabevalidierung
 
-## Erste Schritte
+## Erste Schritte (lokal)
+
+Voraussetzung: eine erreichbare PostgreSQL-Datenbank, z. B. ein kostenloses [Supabase](https://supabase.com)-Projekt.
 
 ```bash
 npm install
-cp .env.example .env      # SESSION_SECRET in Produktion durch einen zufälligen Wert ersetzen
-npm run db:setup          # Datenbank anlegen/migrieren + Beispieldaten einspielen
+cp .env.example .env      # DATABASE_URL/DIRECT_URL (Supabase) + eigenes SESSION_SECRET eintragen
+npm run db:setup          # Migrationen anwenden + Beispieldaten einspielen
 npm run dev
 ```
 
 Anschließend [http://localhost:3000](http://localhost:3000) öffnen.
+
+## Deployment auf Netlify + Supabase
+
+1. **Supabase-Projekt anlegen** (oder ein bestehendes verwenden) → *Project Settings → Database → Connect* →
+   Connection strings kopieren:
+   - „Transaction pooler" (Port 6543, mit `?pgbouncer=true`) → wird zu `DATABASE_URL`
+   - „Direct connection" (Port 5432) → wird zu `DIRECT_URL`
+2. **Netlify-Site anlegen**: *Add new site → Import an existing project* → dieses GitHub-Repo
+   (`fabiopecile/Apps`) und den gewünschten Branch auswählen. Build-Command und Next.js-Plugin sind bereits über
+   `netlify.toml` konfiguriert.
+3. **Umgebungsvariablen** in Netlify unter *Site configuration → Environment variables* setzen:
+   `DATABASE_URL`, `DIRECT_URL`, `SESSION_SECRET` (langer zufälliger String).
+4. **Deploy anstoßen.** Der Build führt automatisch `prisma migrate deploy` aus und legt damit das Datenbankschema
+   in Supabase an.
+5. **Einmalig Beispieldaten einspielen** (Standorte, Mannschaften, Demo-Benutzer): lokal `.env` auf die
+   Supabase-Verbindung setzen und `npm run db:seed` ausführen. Das passiert bewusst **nicht** automatisch bei
+   jedem Deploy, damit nicht bei jedem Build erneut Demo-Zugänge mit Standardpasswörtern angelegt werden.
+   ⚠️ Für mehr als eine private Testumgebung: Passwörter der Demo-Benutzer nach dem ersten Login unter
+   „Benutzer" ändern (oder gleich eigene Benutzer anlegen und die Demo-Accounts löschen).
 
 ### Demo-Zugänge (aus dem Seed-Skript)
 
@@ -77,7 +98,7 @@ src/lib/                 Session/Auth, Datum-/Zeit-Hilfsfunktionen, Konfliktlogi
 
 ## Hinweis zur Datenbank
 
-Standardmäßig wird eine lokale SQLite-Datei (`prisma/dev.db`) verwendet – ausreichend für einen Verein und ohne
-zusätzliche Infrastruktur lauffähig. Für einen Mehrserver-Betrieb kann in `prisma/schema.prisma` der
-`datasource`-Provider (z. B. auf `postgresql`) umgestellt und `DATABASE_URL` entsprechend gesetzt werden; der
-restliche Code ist davon unabhängig.
+`DATABASE_URL` sollte die **gepoolte** Supabase-Verbindung (Port 6543, `pgbouncer=true`) sein – die Next.js-App
+läuft in kurzlebigen Serverless-/Edge-Funktionen und würde mit einer direkten Verbindung schnell das
+Connection-Limit von Postgres ausschöpfen. `DIRECT_URL` (Port 5432) wird ausschließlich von `prisma migrate`
+für Schemaänderungen verwendet.
