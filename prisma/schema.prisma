@@ -1,0 +1,115 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+model User {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         Role     @default(VIEWER)
+  createdAt    DateTime @default(now())
+}
+
+// Standort, z.B. "Bewegung" oder "Tabor". `group` gruppiert die Standorte in der Oberfläche.
+model Location {
+  id     String  @id @default(cuid())
+  name   String
+  group  String
+  order  Int     @default(0)
+  fields Field[]
+}
+
+// Platz/Feld innerhalb eines Standorts.
+model Field {
+  id            String    @id @default(cuid())
+  locationId    String
+  location      Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  name          String
+  allowMultiple Boolean   @default(false)
+  order         Int       @default(0)
+  bookings      Booking[]
+}
+
+model Team {
+  id            String    @id @default(cuid())
+  name          String    @unique
+  ageGroup      String?
+  trainer       String?
+  trainingGroup String?
+  color         String    @default("#2563eb")
+  archived      Boolean   @default(false)
+  order         Int       @default(0)
+  bookings      Booking[]
+}
+
+// Serie für "Training wiederholen" – erzeugt mehrere Booking-Einträge.
+model Series {
+  id          String    @id @default(cuid())
+  teamId      String
+  fieldId     String
+  weekday     Int
+  startTime   String
+  endTime     String
+  startDate   String
+  endDate     String
+  note        String?
+  createdById String
+  createdAt   DateTime  @default(now())
+  bookings    Booking[]
+}
+
+model Booking {
+  id            String   @id @default(cuid())
+  date          String
+  weekday       Int
+  fieldId       String
+  field         Field    @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  teamId        String
+  team          Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  startTime     String
+  endTime       String
+  note          String?
+  seriesId      String?
+  series        Series?  @relation(fields: [seriesId], references: [id], onDelete: SetNull)
+  createdById   String
+  createdByName String
+  updatedById   String?
+  updatedByName String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([date])
+  @@index([fieldId, date])
+  @@index([teamId])
+  @@index([seriesId])
+}
+
+// Änderungsverlauf, unabhängig von Booking gespeichert, damit er auch nach dem Löschen erhalten bleibt.
+model ActivityLog {
+  id            String   @id @default(cuid())
+  bookingId     String
+  action        String
+  summary       String
+  teamName      String
+  fieldName     String
+  locationName  String
+  date          String
+  changedById   String
+  changedByName String
+  changedAt     DateTime @default(now())
+
+  @@index([bookingId])
+  @@index([date])
+}
