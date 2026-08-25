@@ -167,7 +167,9 @@ export function DayView({ date, bookings, locations, onCreateAt, onBookingClick,
                         e.stopPropagation();
                         onBookingClick(item);
                       }}
-                      className="absolute overflow-hidden rounded-md border border-white/40 px-1.5 py-1 text-left text-[11px] leading-tight text-white shadow-sm transition hover:brightness-95"
+                      className={`absolute overflow-hidden rounded-md px-1.5 py-1 text-left text-[11px] leading-tight text-white shadow-sm transition hover:brightness-95 ${
+                        item.field.allowMultiple ? "border-2 border-dashed border-white/80" : "border border-white/40"
+                      }`}
                       style={{
                         top,
                         height,
@@ -175,13 +177,23 @@ export function DayView({ date, bookings, locations, onCreateAt, onBookingClick,
                         width: `calc(${width}% - 2px)`,
                         backgroundColor: item.team.color,
                       }}
-                      title={`${item.team.name} · ${item.startTime}–${item.endTime}${item.note ? " · " + item.note : ""}`}
+                      title={`${item.team.name} · ${item.startTime}–${item.endTime}${item.note ? " · " + item.note : ""}${
+                        item.field.allowMultiple ? " · Mehrfachbelegung möglich" : ""
+                      }`}
                     >
+                      {item.field.allowMultiple && (
+                        <span
+                          className="absolute right-0.5 top-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-white text-[9px] font-bold leading-none text-brand"
+                          aria-hidden
+                        >
+                          +
+                        </span>
+                      )}
                       <span className="block truncate font-semibold">{item.team.name}</span>
                       <span className="block truncate opacity-90">
                         {item.startTime}–{item.endTime}
                       </span>
-                      {laneCount > 1 && <span className="block truncate opacity-90">⚭ Mehrfach</span>}
+                      {laneCount > 1 && <span className="block truncate opacity-90">⚭ Mehrfach belegt</span>}
                     </button>
                   );
                 })}

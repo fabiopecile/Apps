@@ -92,10 +92,15 @@ export function MonthView({ anchorDate, bookings, onDayClick, onCreateAt, onBook
                         e.stopPropagation();
                         onBookingClick(b);
                       }}
-                      className="truncate rounded px-1 py-0.5 text-left text-[11px] font-medium text-white"
+                      className={`truncate rounded px-1 py-0.5 text-left text-[11px] font-medium text-white ${
+                        b.field.allowMultiple ? "border border-dashed border-white/80" : ""
+                      }`}
                       style={{ backgroundColor: b.team.color }}
-                      title={`${b.team.name} · ${b.field.locationName} ${b.field.name} · ${b.startTime}–${b.endTime}`}
+                      title={`${b.team.name} · ${b.field.locationName} ${b.field.name} · ${b.startTime}–${b.endTime}${
+                        b.field.allowMultiple ? " · Mehrfachbelegung möglich" : ""
+                      }`}
                     >
+                      {b.field.allowMultiple && "+ "}
                       {b.startTime} {b.team.name}
                     </button>
                   ))}

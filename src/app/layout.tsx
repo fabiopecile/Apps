@@ -10,7 +10,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Nachwuchsplaner",
+  title: "TeamPlan",
   description: "Jahresplanung für Trainingszeiten und Platzbelegungen im Nachwuchsbereich.",
 };
 

@@ -31,17 +31,6 @@ export function WeekView({ anchorDate, bookings, onDayClick, onCreateAt, onBooki
         const entries = (byDate.get(date) ?? []).sort((a, b) => a.startTime.localeCompare(b.startTime));
         const isToday = date === today;
 
-        // Mehrfachbelegungen (gleiches Feld + überlappende Zeit) gruppieren, um sie im Blick zu markieren.
-        const multiIds = new Set<string>();
-        for (let a = 0; a < entries.length; a++) {
-          for (let b = a + 1; b < entries.length; b++) {
-            if (entries[a].field.id === entries[b].field.id && entries[a].startTime < entries[b].endTime && entries[b].startTime < entries[a].endTime) {
-              multiIds.add(entries[a].id);
-              multiIds.add(entries[b].id);
-            }
-          }
-        }
-
         return (
           <div key={date} className={`card flex flex-col p-0 ${isToday ? "ring-2 ring-brand" : ""}`}>
             <button
@@ -74,15 +63,18 @@ export function WeekView({ anchorDate, bookings, onDayClick, onCreateAt, onBooki
                   key={b.id}
                   type="button"
                   onClick={() => onBookingClick(b)}
-                  className="flex flex-col rounded-lg border-l-4 bg-surface-muted px-2 py-1.5 text-left transition hover:bg-brand-light"
-                  style={{ borderLeftColor: b.team.color }}
+                  className={`flex flex-col rounded-lg border-l-4 bg-surface-muted px-2 py-1.5 text-left transition hover:bg-brand-light ${
+                    b.field.allowMultiple ? "border-dashed" : ""
+                  }`}
+                  style={{ borderLeftColor: b.team.color, borderLeftWidth: 4 }}
+                  title={b.field.allowMultiple ? "Mehrfachbelegung möglich – weitere Mannschaften können hier eingetragen werden" : undefined}
                 >
                   <span className="text-xs font-semibold text-foreground">
                     {b.startTime}–{b.endTime} · {b.team.name}
                   </span>
                   <span className="text-[11px] text-muted">
                     {b.field.locationName} {b.field.locationName !== b.field.name ? `– ${b.field.name}` : ""}
-                    {multiIds.has(b.id) && <span className="ml-1 font-semibold text-brand">· Mehrfachbelegung</span>}
+                    {b.field.allowMultiple && <span className="ml-1 font-semibold text-brand">· + Mehrfachbelegung möglich</span>}
                   </span>
                 </button>
               ))}

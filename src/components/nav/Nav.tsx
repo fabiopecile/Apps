@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -31,9 +32,8 @@ export function Nav({ session }: { session: SessionPayload }) {
     <header className="no-print sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between gap-3 px-4">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2 font-bold text-foreground">
-            <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand text-white">⚽</span>
-            <span className="hidden sm:inline">Nachwuchsplaner</span>
+          <Link href="/dashboard" className="flex items-center">
+            <Image src="/logo.png" alt="TeamPlan" width={700} height={242} className="h-8 w-auto" priority />
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
             {visibleLinks.map((link) => {
