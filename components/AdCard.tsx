@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, Image, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
@@ -18,6 +18,8 @@ interface AdCardProps {
  * honest, and it is not optional.
  */
 export function AdCard({ ad, onPress, onImpression }: AdCardProps) {
+  const [imageFailed, setImageFailed] = useState(false);
+
   useEffect(() => {
     onImpression();
   }, [onImpression]);
@@ -35,7 +37,20 @@ export function AdCard({ ad, onPress, onImpression }: AdCardProps) {
       </View>
 
       <Pressable onPress={onPress}>
-        <Image source={{ uri: ad.image_url }} style={[styles.image, { aspectRatio: aspect }]} />
+        {imageFailed ? (
+          // An unreachable image URL would otherwise render as a silent empty
+          // block, which looks like a broken app rather than a broken booking.
+          <View style={[styles.image, styles.imageFallback, { aspectRatio: aspect }]}>
+            <Ionicons name="image-outline" size={32} color={colors.textFaint} />
+            <Text style={styles.fallbackText}>Bild nicht erreichbar</Text>
+          </View>
+        ) : (
+          <Image
+            source={{ uri: ad.image_url }}
+            style={[styles.image, { aspectRatio: aspect }]}
+            onError={() => setImageFailed(true)}
+          />
+        )}
       </Pressable>
 
       <Pressable style={styles.cta} onPress={onPress}>
@@ -66,6 +81,8 @@ const styles = StyleSheet.create({
   advertiser: { color: colors.text, fontWeight: '700', fontSize: fontSizes.md },
   sponsored: { color: colors.textFaint, fontSize: fontSizes.xs, marginTop: 1 },
   image: { width: '100%', backgroundColor: colors.surface },
+  imageFallback: { alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
+  fallbackText: { color: colors.textFaint, fontSize: fontSizes.xs },
   cta: {
     flexDirection: 'row',
     alignItems: 'center',
