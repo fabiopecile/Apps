@@ -18,13 +18,6 @@ export default async function LoginPage() {
         <div className="card p-6">
           <LoginForm />
         </div>
-
-        <div className="mt-4 rounded-lg bg-white/10 p-3 text-xs leading-relaxed text-white/90">
-          <p className="font-semibold">Demo-Zugänge</p>
-          <p>Administrator: admin@verein.local / admin123</p>
-          <p>Bearbeiter: trainer@verein.local / trainer123</p>
-          <p>Leser: leser@verein.local / leser123</p>
-        </div>
       </div>
     </main>
   );
