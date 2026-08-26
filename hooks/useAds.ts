@@ -16,6 +16,7 @@ export function useAds(slot: Slot) {
   const { profile, session } = useAuth();
   const [ads, setAds] = useState<Ad[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   // One impression per ad per screen visit, not one per re-render.
   const counted = useRef<Set<string>>(new Set());
 
@@ -28,13 +29,20 @@ export function useAds(slot: Slot) {
       return;
     }
 
-    const { data } = await supabase
+    const { data, error: loadError } = await supabase
       .from('ads')
       .select('*')
+      // An admin can read inactive ads too (their own policy is permissive and
+      // ORs with the public one), so a paused ad would otherwise still show up
+      // in their own feed.
+      .eq('active', true)
       .in('placement', [slot, 'both'])
       .order('priority', { ascending: false })
       .limit(10);
 
+    // Swallowing this made a missing table or a policy problem look exactly
+    // like "no ads booked" - which is the one thing you cannot debug.
+    setError(loadError?.message ?? null);
     setAds((data as Ad[]) ?? []);
     setLoading(false);
   }, [isPro, session, slot]);
@@ -74,7 +82,7 @@ export function useAds(slot: Slot) {
     [slot]
   );
 
-  return { ads, loading, isPro, refresh: load, trackImpression, openAd };
+  return { ads, loading, error, isPro, refresh: load, trackImpression, openAd };
 }
 
 /**

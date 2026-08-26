@@ -28,7 +28,7 @@ export default function FeedScreen() {
   const { stories, groups, error: storiesError, refresh: refreshStories, deleteStory, saveHighlight } = useStories();
   const { isFollowing, toggleFollow, refresh: refreshFollows } = useFollows();
   const { report, blockUser } = useModeration();
-  const { ads, trackImpression, openAd } = useAds('feed');
+  const { ads, error: adsError, trackImpression, openAd } = useAds('feed');
   const {
     ads: storyAds,
     trackImpression: trackStoryImpression,
@@ -78,7 +78,7 @@ export default function FeedScreen() {
         ListHeaderComponent={
           <View>
             <ErrorBanner
-              message={error ?? storiesError}
+              message={error ?? storiesError ?? adsError}
               onRetry={() => {
                 refresh();
                 refreshStories();
