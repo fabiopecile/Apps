@@ -32,9 +32,8 @@ export function Nav({ session }: { session: SessionPayload }) {
     <header className="no-print sticky top-0 z-40 border-b border-border bg-surface/95 backdrop-blur">
       <div className="mx-auto flex h-14 max-w-[1400px] items-center justify-between gap-3 px-4">
         <div className="flex items-center gap-6">
-          <Link href="/dashboard" className="flex items-center gap-2">
+          <Link href="/dashboard" className="flex items-center">
             <Image src="/logo.png" alt="SC Steyr" width={512} height={512} className="h-9 w-9" priority />
-            <span className="hidden font-bold text-foreground sm:inline">TeamPlan</span>
           </Link>
           <nav className="hidden items-center gap-1 md:flex">
             {visibleLinks.map((link) => {
