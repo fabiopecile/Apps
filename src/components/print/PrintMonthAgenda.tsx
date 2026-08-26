@@ -35,7 +35,10 @@ export function PrintMonthAgenda({ anchorDate, bookings }: { anchorDate: string;
                     <td className="w-24 py-0.5 pr-2">
                       {b.startTime}–{b.endTime}
                     </td>
-                    <td className="w-28 py-0.5 pr-2 font-medium">{b.team.name}</td>
+                    <td className="w-28 py-0.5 pr-2 font-medium">
+                      {b.team.name}
+                      {b.type === "SPIEL" ? " (Spiel)" : ""}
+                    </td>
                     <td className="py-0.5 text-slate-600">
                       {b.field.locationName}
                       {b.field.locationName !== b.field.name ? ` – ${b.field.name}` : ""}

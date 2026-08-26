@@ -2,6 +2,7 @@
 
 export type BookingDraft = {
   date: string;
+  type: "TRAINING" | "SPIEL";
   locationId: string;
   fieldId: string;
   teamId: string;

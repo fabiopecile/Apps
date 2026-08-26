@@ -35,6 +35,7 @@ type Props = {
 
 const emptyForm: BookingDraft = {
   date: "",
+  type: "TRAINING",
   locationId: "",
   fieldId: "",
   teamId: "",
@@ -51,7 +52,7 @@ function findLocationForField(locations: LocationDTO[], fieldId: string) {
 function initialFormFor(state: BookingModalState, locations: LocationDTO[]): { form: BookingDraft; draftRestored: boolean } {
   if (state.mode === "edit") return { form: emptyForm, draftRestored: false };
   const draft = loadDraft();
-  if (draft) return { form: draft, draftRestored: true };
+  if (draft) return { form: { ...emptyForm, ...draft }, draftRestored: true };
   const loc = state.defaults.fieldId ? findLocationForField(locations, state.defaults.fieldId) : undefined;
   const field = loc?.fields.find((f) => f.id === state.defaults.fieldId);
   return {
@@ -109,6 +110,7 @@ function BookingModalBody({ state, onClose, locations, teams, canEdit, onMutated
       }
       setForm({
         date: booking.date,
+        type: booking.type,
         locationId: booking.field.locationId,
         fieldId: booking.field.id,
         teamId: booking.team.id,
@@ -172,6 +174,7 @@ function BookingModalBody({ state, onClose, locations, teams, canEdit, onMutated
     startSaving(async () => {
       const input = {
         date: form.date,
+        type: form.type,
         fieldId: form.fieldId,
         teamId: form.teamId,
         startTime: form.startTime,
@@ -261,6 +264,25 @@ function BookingModalBody({ state, onClose, locations, teams, canEdit, onMutated
             </button>
           </div>
         )}
+
+        <div>
+          <label className="field-label">Art *</label>
+          <div className="flex rounded-lg border border-border p-0.5">
+            {(["TRAINING", "SPIEL"] as const).map((t) => (
+              <button
+                key={t}
+                type="button"
+                disabled={readOnly}
+                onClick={() => update("type", t)}
+                className={`flex-1 rounded-md px-3 py-1.5 text-sm font-medium transition-colors disabled:pointer-events-none ${
+                  form.type === t ? "bg-brand text-white" : "text-muted hover:text-foreground"
+                }`}
+              >
+                {t === "TRAINING" ? "Training" : "Spiel"}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="grid grid-cols-2 gap-3">
           <div>

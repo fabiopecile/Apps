@@ -70,6 +70,7 @@ export function WeekView({ anchorDate, bookings, onDayClick, onCreateAt, onBooki
                   title={b.field.allowMultiple ? "Mehrfachbelegung möglich – weitere Mannschaften können hier eingetragen werden" : undefined}
                 >
                   <span className="text-xs font-semibold text-foreground">
+                    {b.type === "SPIEL" && "🏆 "}
                     {b.startTime}–{b.endTime} · {b.team.name}
                   </span>
                   <span className="text-[11px] text-muted">

@@ -56,6 +56,7 @@ export function PrintWeekTable({ anchorDate, bookings, locations }: { anchorDate
                       : entries.map((e) => (
                           <div key={e.id}>
                             {e.startTime}–{e.endTime} {e.team.name}
+                            {e.type === "SPIEL" ? " (Spiel)" : ""}
                           </div>
                         ))}
                   </td>

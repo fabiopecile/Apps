@@ -17,6 +17,7 @@ export type BookingDTO = {
   id: string;
   date: string;
   weekday: number;
+  type: "TRAINING" | "SPIEL";
   startTime: string;
   endTime: string;
   note: string | null;
@@ -34,6 +35,7 @@ function toDTO(b: BookingWithRelations): BookingDTO {
     id: b.id,
     date: b.date,
     weekday: b.weekday,
+    type: b.type,
     startTime: b.startTime,
     endTime: b.endTime,
     note: b.note,
@@ -193,6 +195,7 @@ export async function createBooking(input: BookingInput): Promise<ActionResult<B
       data: {
         date: data.date,
         weekday: weekdayOfDateKey(data.date),
+        type: data.type,
         fieldId: data.fieldId,
         teamId: data.teamId,
         startTime: data.startTime,
@@ -241,6 +244,7 @@ export async function updateBooking(id: string, input: BookingInput): Promise<Ac
       data: {
         date: data.date,
         weekday: weekdayOfDateKey(data.date),
+        type: data.type,
         fieldId: data.fieldId,
         teamId: data.teamId,
         startTime: data.startTime,
@@ -326,6 +330,7 @@ export async function copyBooking(id: string, newDate: string): Promise<ActionRe
       data: {
         date: newDate,
         weekday: weekdayOfDateKey(newDate),
+        type: source.type,
         fieldId: source.fieldId,
         teamId: source.teamId,
         startTime: source.startTime,
@@ -369,6 +374,7 @@ export async function duplicateDay(fromDate: string, toDate: string): Promise<Ac
         data: {
           date: toDate,
           weekday: weekdayOfDateKey(toDate),
+          type: source.type,
           fieldId: source.fieldId,
           teamId: source.teamId,
           startTime: source.startTime,

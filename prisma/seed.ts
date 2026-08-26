@@ -49,11 +49,20 @@ async function main() {
         { name: "Nebenfeld", allowMultiple: false, order: 1 },
       ],
     },
-    { name: "Tabor", group: "Weitere Plätze", order: 1, fields: [{ name: "Platz", allowMultiple: false, order: 0 }] },
-    { name: "Gleink", group: "Weitere Plätze", order: 2, fields: [{ name: "Platz", allowMultiple: false, order: 0 }] },
-    { name: "Stadion", group: "Weitere Plätze", order: 3, fields: [{ name: "Platz", allowMultiple: false, order: 0 }] },
-    { name: "Kunstrasen", group: "Weitere Plätze", order: 4, fields: [{ name: "Platz", allowMultiple: false, order: 0 }] },
-    { name: "Fitnessstudio", group: "Weitere Plätze", order: 5, fields: [{ name: "Raum", allowMultiple: true, order: 0 }] },
+    {
+      name: "Münichholz",
+      group: "Münichholz",
+      order: 1,
+      fields: [
+        { name: "Hauptplatz", allowMultiple: true, order: 0 },
+        { name: "Nebenplatz", allowMultiple: false, order: 1 },
+      ],
+    },
+    { name: "Tabor", group: "Weitere Plätze", order: 2, fields: [{ name: "Platz", allowMultiple: false, order: 0 }] },
+    { name: "Gleink", group: "Weitere Plätze", order: 3, fields: [{ name: "Platz", allowMultiple: false, order: 0 }] },
+    { name: "Stadion", group: "Weitere Plätze", order: 4, fields: [{ name: "Platz", allowMultiple: false, order: 0 }] },
+    { name: "Kunstrasen", group: "Weitere Plätze", order: 5, fields: [{ name: "Platz", allowMultiple: false, order: 0 }] },
+    { name: "Fitnessstudio", group: "Weitere Plätze", order: 6, fields: [{ name: "Raum", allowMultiple: true, order: 0 }] },
   ];
 
   const fieldIds: Record<string, string> = {}; // "Standort/Feld" -> id
@@ -106,20 +115,23 @@ async function main() {
   const today = new Date();
   const monday = addDays(today, -isoWeekday(today));
 
-  type Demo = { dayOffset: number; field: string; team: string; start: string; end: string; note?: string };
+  type Demo = { dayOffset: number; field: string; team: string; start: string; end: string; note?: string; type?: "TRAINING" | "SPIEL" };
   const demoBookings: Demo[] = [
     { dayOffset: 0, field: "Bewegung/Hauptfeld", team: "U15", start: "17:00", end: "18:30" },
     { dayOffset: 0, field: "Bewegung/Hauptfeld", team: "U13", start: "17:00", end: "18:30" },
     { dayOffset: 0, field: "Bewegung/Nebenfeld", team: "U10", start: "17:00", end: "18:15" },
     { dayOffset: 1, field: "Tabor/Platz", team: "U11", start: "16:30", end: "17:45" },
     { dayOffset: 1, field: "Kunstrasen/Platz", team: "U16", start: "18:00", end: "19:30" },
+    { dayOffset: 1, field: "Münichholz/Hauptplatz", team: "U8", start: "17:00", end: "18:00" },
     { dayOffset: 2, field: "Gleink/Platz", team: "U12", start: "17:00", end: "18:15" },
     { dayOffset: 2, field: "Bewegung/Hauptfeld", team: "U18", start: "19:00", end: "20:30" },
-    { dayOffset: 3, field: "Stadion/Platz", team: "Kampfmannschaft", start: "18:30", end: "20:00" },
+    { dayOffset: 3, field: "Stadion/Platz", team: "Kampfmannschaft", start: "18:30", end: "20:00", type: "SPIEL" },
+    { dayOffset: 3, field: "Münichholz/Nebenplatz", team: "U14", start: "17:00", end: "18:15" },
     { dayOffset: 4, field: "Bewegung/Nebenfeld", team: "U14", start: "17:00", end: "18:15" },
     { dayOffset: 4, field: "Fitnessstudio/Raum", team: "U16", start: "18:30", end: "19:30" },
     { dayOffset: 4, field: "Fitnessstudio/Raum", team: "U18", start: "18:30", end: "19:30" },
     { dayOffset: 5, field: "Bewegung/Hauptfeld", team: "U9", start: "10:00", end: "11:00" },
+    { dayOffset: 5, field: "Münichholz/Hauptplatz", team: "U11", start: "10:00", end: "11:30", type: "SPIEL" },
   ];
 
   for (const b of demoBookings) {
@@ -135,6 +147,7 @@ async function main() {
         data: {
           date: dateStr,
           weekday: isoWeekday(date),
+          type: b.type ?? "TRAINING",
           fieldId,
           teamId,
           startTime: b.start,

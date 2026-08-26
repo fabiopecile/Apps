@@ -177,7 +177,7 @@ export function DayView({ date, bookings, locations, onCreateAt, onBookingClick,
                         width: `calc(${width}% - 2px)`,
                         backgroundColor: item.team.color,
                       }}
-                      title={`${item.team.name} · ${item.startTime}–${item.endTime}${item.note ? " · " + item.note : ""}${
+                      title={`${item.type === "SPIEL" ? "Spiel" : "Training"} · ${item.team.name} · ${item.startTime}–${item.endTime}${item.note ? " · " + item.note : ""}${
                         item.field.allowMultiple ? " · Mehrfachbelegung möglich" : ""
                       }`}
                     >
@@ -189,7 +189,10 @@ export function DayView({ date, bookings, locations, onCreateAt, onBookingClick,
                           +
                         </span>
                       )}
-                      <span className="block truncate font-semibold">{item.team.name}</span>
+                      <span className="block truncate font-semibold">
+                        {item.type === "SPIEL" && "🏆 "}
+                        {item.team.name}
+                      </span>
                       <span className="block truncate opacity-90">
                         {item.startTime}–{item.endTime}
                       </span>

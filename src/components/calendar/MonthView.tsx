@@ -96,10 +96,11 @@ export function MonthView({ anchorDate, bookings, onDayClick, onCreateAt, onBook
                         b.field.allowMultiple ? "border border-dashed border-white/80" : ""
                       }`}
                       style={{ backgroundColor: b.team.color }}
-                      title={`${b.team.name} · ${b.field.locationName} ${b.field.name} · ${b.startTime}–${b.endTime}${
+                      title={`${b.type === "SPIEL" ? "Spiel" : "Training"} · ${b.team.name} · ${b.field.locationName} ${b.field.name} · ${b.startTime}–${b.endTime}${
                         b.field.allowMultiple ? " · Mehrfachbelegung möglich" : ""
                       }`}
                     >
+                      {b.type === "SPIEL" && "🏆 "}
                       {b.field.allowMultiple && "+ "}
                       {b.startTime} {b.team.name}
                     </button>

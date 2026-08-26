@@ -11,9 +11,10 @@ export default async function LoginPage() {
     <main className="flex min-h-screen items-center justify-center bg-gradient-to-b from-brand-dark to-brand px-4 py-10">
       <div className="w-full max-w-sm">
         <div className="mb-6 text-center">
-          <div className="mx-auto mb-3 inline-flex rounded-2xl bg-white px-5 py-3 shadow-lg">
-            <Image src="/logo.png" alt="TeamPlan" width={700} height={242} className="h-12 w-auto" priority />
+          <div className="mx-auto mb-3 flex h-20 w-20 items-center justify-center rounded-full bg-white p-1.5 shadow-lg">
+            <Image src="/logo.png" alt="SC Steyr" width={512} height={512} className="h-full w-full" priority />
           </div>
+          <h1 className="text-xl font-bold tracking-tight text-white">TeamPlan</h1>
           <p className="mt-1 text-sm text-white/80">Jahresplanung für Training &amp; Platzbelegung</p>
         </div>
 

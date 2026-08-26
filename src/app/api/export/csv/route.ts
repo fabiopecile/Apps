@@ -28,11 +28,12 @@ export async function GET(request: NextRequest) {
 
   const bookings = await listBookings({ from: dateKey(rangeStart), to: dateKey(rangeEnd), locationId, teamId });
 
-  const header = ["Datum", "Wochentag", "Standort", "Feld", "Mannschaft", "Beginn", "Ende", "Mehrfachbelegung", "Bemerkung"];
+  const header = ["Datum", "Wochentag", "Art", "Standort", "Feld", "Mannschaft", "Beginn", "Ende", "Mehrfachbelegung", "Bemerkung"];
   const weekdayNames = ["Montag", "Dienstag", "Mittwoch", "Donnerstag", "Freitag", "Samstag", "Sonntag"];
   const rows = bookings.map((b) => [
     formatGermanDate(b.date),
     weekdayNames[b.weekday],
+    b.type === "SPIEL" ? "Spiel" : "Training",
     b.field.locationName,
     b.field.name,
     b.team.name,

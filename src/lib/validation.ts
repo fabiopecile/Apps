@@ -4,9 +4,13 @@ const dateKeyRegex = /^\d{4}-\d{2}-\d{2}$/;
 const timeRegex = /^([01]\d|2[0-3]):[0-5]\d$/;
 const hexColorRegex = /^#[0-9a-fA-F]{6}$/;
 
+export const BookingTypeSchema = z.enum(["TRAINING", "SPIEL"]);
+export type BookingType = z.infer<typeof BookingTypeSchema>;
+
 export const BookingInputSchema = z
   .object({
     date: z.string().regex(dateKeyRegex, "Bitte ein gültiges Datum wählen."),
+    type: BookingTypeSchema,
     fieldId: z.string().min(1, "Bitte ein Feld wählen."),
     teamId: z.string().min(1, "Bitte eine Mannschaft wählen."),
     startTime: z.string().regex(timeRegex, "Bitte eine gültige Uhrzeit angeben."),
