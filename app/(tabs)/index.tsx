@@ -162,7 +162,12 @@ export default function FeedScreen() {
           onSaveHighlight={(storyId) => saveHighlight(storyId)}
           onOpenProfile={(userId) => router.push(`/user/${userId}`)}
           onAdImpression={trackStoryImpression}
-          onAdPress={openStoryAd}
+          onAdPress={(ad) => {
+            // The viewer is a full-screen Modal - it has to come down first,
+            // or it would sit on top of whatever the ad navigates to.
+            setStoryIndex(null);
+            openStoryAd(ad);
+          }}
         />
       ) : null}
 

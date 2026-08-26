@@ -114,7 +114,7 @@ export default function AdminAdsScreen() {
 
         <TextInput style={styles.input} placeholder="Firmenname" placeholderTextColor={colors.textFaint} value={advertiser} onChangeText={setAdvertiser} />
         <TextInput style={styles.input} placeholder="Bild-URL" placeholderTextColor={colors.textFaint} value={imageUrl} onChangeText={setImageUrl} autoCapitalize="none" />
-        <TextInput style={styles.input} placeholder="Ziel-URL (wohin der Tipp führt)" placeholderTextColor={colors.textFaint} value={targetUrl} onChangeText={setTargetUrl} autoCapitalize="none" />
+        <TextInput style={styles.input} placeholder="Ziel: /shop/coins oder https://..." placeholderTextColor={colors.textFaint} value={targetUrl} onChangeText={setTargetUrl} autoCapitalize="none" />
         <TextInput style={styles.input} placeholder="Text (optional)" placeholderTextColor={colors.textFaint} value={caption} onChangeText={setCaption} />
         <TextInput style={styles.input} placeholder="Knopfbeschriftung" placeholderTextColor={colors.textFaint} value={ctaLabel} onChangeText={setCtaLabel} />
 
@@ -132,7 +132,8 @@ export default function AdminAdsScreen() {
 
         <Text style={styles.hint}>
           Story-Werbung braucht ein Hochformat (9:16), Feed-Werbung am besten 4:5. Die Bild-URL muss öffentlich
-          erreichbar sein – du kannst sie z. B. in Supabase Storage hochladen.
+          erreichbar sein – lad sie z. B. in Supabase Storage hoch.{'\n\n'}Beim Ziel: Beginnt es mit „/", springt
+          die App direkt dorthin (z. B. /shop/coins, /profil, /rules). Alles andere öffnet den Browser.
         </Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}

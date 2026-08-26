@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Linking } from 'react-native';
+import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Ad, AdPlacement } from '@/lib/database.types';
@@ -58,6 +59,15 @@ export function useAds(slot: Slot) {
       // Count the tap before leaving - once the browser takes over the app may
       // not get another turn.
       await supabase.rpc('log_ad_event', { p_ad_id: ad.id, p_event_type: 'click', p_placement: slot });
+
+      // A target starting with "/" is a screen in this app, not a website.
+      // Own promotions ("Pro werden", "Zum Shop") should jump straight there
+      // instead of kicking the user out into a browser and back.
+      if (ad.target_url.startsWith('/')) {
+        router.push(ad.target_url as never);
+        return;
+      }
+
       const supported = await Linking.canOpenURL(ad.target_url);
       if (supported) await Linking.openURL(ad.target_url);
     },
