@@ -10,13 +10,15 @@ import { StoryViewer } from '@/components/StoryViewer';
 import { PopIn } from '@/components/PopIn';
 import { ReportSheet } from '@/components/ReportSheet';
 import { ErrorBanner } from '@/components/ErrorBanner';
+import { AdCard } from '@/components/AdCard';
 import { CommentsSheet } from '@/components/CommentsSheet';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { usePosts } from '@/hooks/usePosts';
-import { useStories } from '@/hooks/useStories';
+import { useStories, adAsStory } from '@/hooks/useStories';
 import { useFollows } from '@/hooks/useFollows';
 import { useModeration } from '@/hooks/useModeration';
+import { useAds, interleaveAds } from '@/hooks/useAds';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { colors, spacing } from '@/constants/theme';
@@ -26,6 +28,12 @@ export default function FeedScreen() {
   const { stories, groups, error: storiesError, refresh: refreshStories, deleteStory, saveHighlight } = useStories();
   const { isFollowing, toggleFollow, refresh: refreshFollows } = useFollows();
   const { report, blockUser } = useModeration();
+  const { ads, trackImpression, openAd } = useAds('feed');
+  const {
+    ads: storyAds,
+    trackImpression: trackStoryImpression,
+    openAd: openStoryAd,
+  } = useAds('story');
   const [reportTarget, setReportTarget] = useState<{ postId: string; userId: string } | null>(null);
   const { profile, session } = useAuth();
   const { t } = useTranslation();
@@ -45,12 +53,27 @@ export default function FeedScreen() {
 
   if (loading) return <LoadingScreen />;
 
+  // One sponsored post after every fourth organic one. Pro subscribers get an
+  // empty ads array, so this collapses back to the plain post list for them.
+  const feedItems = interleaveAds(posts, ads, 4);
+
+  // A sponsored story sits after the third group, the way Instagram slots one
+  // between people's stories rather than at the front.
+  const storyItems =
+    storyAds.length > 0 && stories.length > 0
+      ? [...stories.slice(0, 3), adAsStory(storyAds[0]), ...stories.slice(3)]
+      : stories;
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <TopBar />
       <FlatList
-        data={posts}
-        keyExtractor={(item) => item.id}
+        data={feedItems}
+        keyExtractor={(entry, index) =>
+          // The same ad can fill more than one slot when there are fewer ads
+          // than gaps, so its id alone would not be unique.
+          entry.kind === 'ad' ? `ad-${entry.ad.id}-${index}` : entry.item.id
+        }
         refreshControl={<RefreshControl tintColor={colors.red} refreshing={false} onRefresh={refresh} />}
         ListHeaderComponent={
           <View>
@@ -86,28 +109,42 @@ export default function FeedScreen() {
                     uri={item.profile.avatar_url}
                     frameColor={item.profile.equipped_frame_color}
                     hasUnseen
-                    onPress={() => setStoryIndex(stories.findIndex((s) => s.id === item.stories[0].id))}
+                    onPress={() => setStoryIndex(storyItems.findIndex((s) => s.id === item.stories[0].id))}
                   />
                 </PopIn>
               )}
             />
           </View>
         }
-        renderItem={({ item, index }) => (
-          <PopIn variant="slide" delay={Math.min(index, 6) * 70}>
-            <PostCard
-              post={item}
-              isOwnPost={item.user_id === session?.user.id}
-              isFollowing={isFollowing(item.user_id)}
-              onToggleLike={() => toggleLike(item)}
-              onOpenComments={() => setCommentsPostId(item.id)}
-              onDelete={() => deletePost(item.id)}
-              onToggleFollow={() => toggleFollow(item.user_id)}
-              onOpenProfile={() => router.push(`/user/${item.user_id}`)}
-              onReport={() => setReportTarget({ postId: item.id, userId: item.user_id })}
-            />
-          </PopIn>
-        )}
+        renderItem={({ item: entry, index }) => {
+          if (entry.kind === 'ad') {
+            return (
+              <PopIn variant="slide" delay={Math.min(index, 6) * 70}>
+                <AdCard
+                  ad={entry.ad}
+                  onPress={() => openAd(entry.ad)}
+                  onImpression={() => trackImpression(entry.ad.id)}
+                />
+              </PopIn>
+            );
+          }
+          const item = entry.item;
+          return (
+            <PopIn variant="slide" delay={Math.min(index, 6) * 70}>
+              <PostCard
+                post={item}
+                isOwnPost={item.user_id === session?.user.id}
+                isFollowing={isFollowing(item.user_id)}
+                onToggleLike={() => toggleLike(item)}
+                onOpenComments={() => setCommentsPostId(item.id)}
+                onDelete={() => deletePost(item.id)}
+                onToggleFollow={() => toggleFollow(item.user_id)}
+                onOpenProfile={() => router.push(`/user/${item.user_id}`)}
+                onReport={() => setReportTarget({ postId: item.id, userId: item.user_id })}
+              />
+            </PopIn>
+          );
+        }}
         ListEmptyComponent={
           <EmptyState title={t('feed.emptyTitle')} subtitle={t('feed.emptySubtitle')} />
         }
@@ -116,7 +153,7 @@ export default function FeedScreen() {
 
       {storyIndex !== null ? (
         <StoryViewer
-          stories={stories}
+          stories={storyItems}
           startIndex={storyIndex}
           currentUserId={session?.user.id}
           isPro={profile?.is_pro}
@@ -124,6 +161,8 @@ export default function FeedScreen() {
           onDelete={(storyId) => deleteStory(storyId)}
           onSaveHighlight={(storyId) => saveHighlight(storyId)}
           onOpenProfile={(userId) => router.push(`/user/${userId}`)}
+          onAdImpression={trackStoryImpression}
+          onAdPress={openStoryAd}
         />
       ) : null}
 

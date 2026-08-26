@@ -88,6 +88,12 @@ export default function AdminScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Pressable style={styles.adsLink} onPress={() => router.push('/admin/ads')}>
+          <Ionicons name="megaphone-outline" size={20} color={colors.gold} />
+          <Text style={styles.adsLinkText}>Werbung verwalten</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.gold} />
+        </Pressable>
+
         <Text style={styles.sectionTitle}>Punkte / XP anpassen</Text>
         <TextInput
           style={styles.input}
@@ -197,6 +203,18 @@ const styles = StyleSheet.create({
   },
   title: { color: colors.white, fontWeight: '800', fontSize: fontSizes.xl, letterSpacing: -0.4 },
   content: { padding: spacing.lg, gap: spacing.sm },
+  adsLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    backgroundColor: colors.goldDark,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    marginBottom: spacing.lg,
+  },
+  adsLinkText: { flex: 1, color: colors.gold, fontWeight: '800', fontSize: fontSizes.md },
   sectionTitle: { color: colors.white, fontWeight: '800', fontSize: fontSizes.md, marginTop: spacing.md, marginBottom: spacing.xs },
   input: {
     backgroundColor: colors.surface,

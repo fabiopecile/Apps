@@ -286,6 +286,33 @@ export type CoinPurchase = {
   created_at: string;
 };
 
+export type AdPlacement = 'feed' | 'story' | 'both';
+
+export type Ad = {
+  id: string;
+  advertiser_name: string;
+  advertiser_avatar_url: string | null;
+  image_url: string;
+  image_aspect_ratio: number | null;
+  caption: string | null;
+  target_url: string;
+  cta_label: string;
+  placement: AdPlacement;
+  active: boolean;
+  starts_at: string | null;
+  ends_at: string | null;
+  priority: number;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type AdStats = {
+  ad_id: string;
+  advertiser_name: string;
+  impressions: number;
+  clicks: number;
+};
+
 export type ReportTargetType = 'post' | 'story' | 'comment' | 'user';
 
 export type Report = {
@@ -367,6 +394,7 @@ export type Database = {
         { reporter_id: string; target_type: ReportTargetType; target_id: string; reason: string }
       >;
       blocks: Table<Block, { blocker_id: string; blocked_id: string }>;
+      ads: Table<Ad, Partial<Ad> & { advertiser_name: string; image_url: string; target_url: string }>;
       coin_packages: Table<CoinPackage, CoinPackage>;
       coin_purchases: Table<CoinPurchase, Omit<CoinPurchase, 'id' | 'created_at'>>;
     };
@@ -405,6 +433,14 @@ export type Database = {
       set_group_admin: {
         Args: { p_conversation_id: string; p_user_id: string; p_is_admin: boolean };
         Returns: undefined;
+      };
+      log_ad_event: {
+        Args: { p_ad_id: string; p_event_type: 'impression' | 'click'; p_placement: 'feed' | 'story' };
+        Returns: undefined;
+      };
+      ad_stats: {
+        Args: Record<string, never>;
+        Returns: AdStats[];
       };
       is_conversation_admin: {
         Args: { p_conversation_id: string };

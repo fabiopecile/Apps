@@ -12,6 +12,9 @@ const STORY_DURATION = 5000;
 
 interface StoryViewerProps {
   stories: StoryWithAuthor[];
+  /** Called when a sponsored story is shown / tapped through. */
+  onAdImpression?: (adId: string) => void;
+  onAdPress?: (ad: NonNullable<StoryWithAuthor['ad']>) => void;
   startIndex: number;
   currentUserId?: string;
   isPro?: boolean;
@@ -30,6 +33,8 @@ export function StoryViewer({
   onDelete,
   onSaveHighlight,
   onOpenProfile,
+  onAdImpression,
+  onAdPress,
 }: StoryViewerProps) {
   const [index, setIndex] = useState(startIndex);
   const [reportOpen, setReportOpen] = useState(false);
@@ -73,9 +78,16 @@ export function StoryViewer({
   };
 
   const story = stories[index];
+  const ad = story?.ad;
+
+  // Counted once per ad the viewer actually lands on, not per render.
+  useEffect(() => {
+    if (ad) onAdImpression?.(ad.id);
+  }, [ad, onAdImpression]);
+
   if (!story) return null;
 
-  const isOwnStory = story.user_id === currentUserId;
+  const isOwnStory = !ad && story.user_id === currentUserId;
 
   const handleDelete = () => {
     confirmDestructive('Story löschen?', 'Diese Story wird endgültig gelöscht.', 'Löschen', () => {
@@ -112,9 +124,12 @@ export function StoryViewer({
           <Pressable
             style={styles.authorTap}
             onPress={() => {
+              // A sponsored story has no profile behind it to open.
+              if (ad) return;
               onClose();
               onOpenProfile(story.user_id);
             }}
+            disabled={!!ad}
           >
             <Avatar
               uri={story.profiles.avatar_url}
@@ -122,14 +137,17 @@ export function StoryViewer({
               size={36}
               ringColor={story.profiles.equipped_frame_color ?? undefined}
             />
-            <Text style={styles.username}>{story.profiles.username}</Text>
+            <View>
+              <Text style={styles.username}>{story.profiles.username}</Text>
+              {ad ? <Text style={styles.sponsored}>Gesponsert</Text> : null}
+            </View>
           </Pressable>
-          {isOwnStory && isPro && !story.is_highlight ? (
+          {!ad && isOwnStory && isPro && !story.is_highlight ? (
             <Pressable onPress={() => onSaveHighlight(story.id)} style={styles.deleteButton} hitSlop={8}>
               <Ionicons name="star-outline" size={20} color={colors.gold} />
             </Pressable>
           ) : null}
-          {isOwnStory ? (
+          {ad ? null : isOwnStory ? (
             <Pressable onPress={handleDelete} style={styles.deleteButton} hitSlop={8}>
               <Ionicons name="trash" size={20} color={colors.white} />
             </Pressable>
@@ -162,6 +180,13 @@ export function StoryViewer({
         <Pressable style={styles.tapLeft} onPress={goPrevious} />
         <Pressable style={styles.tapRight} onPress={goNext} />
 
+        {ad ? (
+          <Pressable style={styles.adCta} onPress={() => onAdPress?.(ad)}>
+            <Text style={styles.adCtaText}>{ad.cta_label}</Text>
+            <Ionicons name="arrow-forward" size={18} color={colors.black} />
+          </Pressable>
+        ) : null}
+
         <ReportSheet
           visible={reportOpen}
           targetType="story"
@@ -188,6 +213,22 @@ const styles = StyleSheet.create({
   header: { position: 'absolute', top: 72, left: spacing.lg, right: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm, zIndex: 20 },
   authorTap: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   username: { color: colors.white, fontWeight: '700' },
+  sponsored: { color: 'rgba(255,255,255,0.7)', fontSize: 11, marginTop: 1 },
+  adCta: {
+    position: 'absolute',
+    left: spacing.lg,
+    right: spacing.lg,
+    bottom: spacing.xxl,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.white,
+    borderRadius: radii.pill,
+    paddingVertical: spacing.md,
+    zIndex: 30,
+  },
+  adCtaText: { color: colors.black, fontWeight: '800', fontSize: 16 },
   deleteButton: { padding: spacing.xs },
   closeButton: { padding: spacing.xs },
   image: { flex: 1, width: '100%', backgroundColor: colors.black },

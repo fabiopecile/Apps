@@ -1,15 +1,42 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
-import type { Profile, Story } from '@/lib/database.types';
+import type { Ad, Profile, Story } from '@/lib/database.types';
 
 export interface StoryWithAuthor extends Story {
   profiles: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
+  /** Set on synthetic entries that are a sponsored story, not a real one. */
+  ad?: Ad;
 }
 
 export interface StoryGroup {
   profile: Pick<Profile, 'id' | 'username' | 'avatar_url' | 'equipped_frame_color'>;
   stories: StoryWithAuthor[];
+}
+
+/**
+ * Turns an ad into something the story viewer can page through like any other
+ * story. It never touches the stories table - the id is prefixed so nothing
+ * downstream mistakes it for a real row and tries to delete it.
+ */
+export function adAsStory(ad: Ad): StoryWithAuthor {
+  return {
+    id: `ad-${ad.id}`,
+    user_id: '',
+    media_url: ad.image_url,
+    media_aspect_ratio: ad.image_aspect_ratio,
+    location: null,
+    is_highlight: false,
+    created_at: ad.created_at,
+    expires_at: ad.ends_at ?? new Date(Date.now() + 86_400_000).toISOString(),
+    profiles: {
+      id: '',
+      username: ad.advertiser_name,
+      avatar_url: ad.advertiser_avatar_url,
+      equipped_frame_color: null,
+    },
+    ad,
+  };
 }
 
 export function useStories() {
