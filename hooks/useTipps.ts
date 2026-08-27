@@ -25,9 +25,18 @@ export function useLeagues() {
   return { leagues, loading };
 }
 
-export function useMatchday(leagueId: string | null) {
+/**
+ * The matches of one matchday, plus everything needed to move between rounds.
+ *
+ * `selectedMatchdayId` is optional: leave it null and the hook shows the round
+ * that is current right now. Passing an id only overrides that choice, so the
+ * default stays "the current round" no matter which league is picked.
+ */
+export function useMatchday(leagueId: string | null, selectedMatchdayId?: string | null) {
   const { session, profile, refreshProfile } = useAuth();
+  const [matchdays, setMatchdays] = useState<Matchday[]>([]);
   const [matchday, setMatchday] = useState<Matchday | null>(null);
+  const [currentMatchdayId, setCurrentMatchdayId] = useState<string | null>(null);
   const [matches, setMatches] = useState<MatchWithTip[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -37,37 +46,47 @@ export function useMatchday(leagueId: string | null) {
     setLoading(true);
     setError(null);
 
-    const { data: matchdays, error: mdError } = await supabase
+    const { data: matchdayRows, error: mdError } = await supabase
       .from('matchdays')
       .select('*')
       .eq('league_id', leagueId);
 
-    if (mdError || !matchdays?.length) {
+    if (mdError || !matchdayRows?.length) {
+      setMatchdays([]);
       setMatchday(null);
+      setCurrentMatchdayId(null);
       setMatches([]);
       setLoading(false);
       if (mdError) setError(mdError.message);
       return;
     }
 
-    // Pick the matchday closest to "now" instead of the highest number —
-    // real fixtures don't always play in strict round order (rescheduled
-    // games for clubs in European competitions, etc.), so relying on the
-    // round number alone can leave a still-open earlier round hidden.
-    const now = Date.now();
-    const upcoming = (matchdays as Matchday[])
-      .filter((m) => new Date(m.deadline).getTime() >= now)
-      .sort((a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime());
-    const currentMatchday =
-      upcoming[0] ??
-      (matchdays as Matchday[]).sort((a, b) => new Date(b.deadline).getTime() - new Date(a.deadline).getTime())[0];
+    // Sorted by deadline, not by number: real fixtures don't always play in
+    // strict round order (rescheduled games for clubs in European
+    // competitions, etc.), so the round number alone is not a timeline.
+    const allMatchdays = (matchdayRows as Matchday[]).sort(
+      (a, b) => new Date(a.deadline).getTime() - new Date(b.deadline).getTime()
+    );
+    setMatchdays(allMatchdays);
 
-    setMatchday(currentMatchday);
+    // The round closest to "now" — the one still open, or the last one played.
+    const now = Date.now();
+    const currentMatchday =
+      allMatchdays.find((m) => new Date(m.deadline).getTime() >= now) ??
+      allMatchdays[allMatchdays.length - 1];
+    setCurrentMatchdayId(currentMatchday.id);
+
+    // A round the user picked by hand wins, but only while it belongs to this
+    // league — after switching leagues the stale id falls back to "current".
+    const activeMatchday =
+      allMatchdays.find((m) => m.id === selectedMatchdayId) ?? currentMatchday;
+
+    setMatchday(activeMatchday);
 
     const { data: matchRows, error: matchError } = await supabase
       .from('matches')
       .select('*, tips(*)')
-      .eq('matchday_id', currentMatchday.id)
+      .eq('matchday_id', activeMatchday.id)
       .order('kickoff', { ascending: true });
 
     if (matchError) {
@@ -84,7 +103,7 @@ export function useMatchday(leagueId: string | null) {
 
     setMatches(mapped);
     setLoading(false);
-  }, [leagueId, session?.user.id]);
+  }, [leagueId, selectedMatchdayId, session?.user.id]);
 
   useEffect(() => {
     load();
@@ -130,5 +149,15 @@ export function useMatchday(leagueId: string | null) {
     return { error: null };
   };
 
-  return { matchday, matches, loading, error, refresh: load, submitTip, jokersRemaining: profile?.jokers_remaining ?? 0 };
+  return {
+    matchday,
+    matchdays,
+    currentMatchdayId,
+    matches,
+    loading,
+    error,
+    refresh: load,
+    submitTip,
+    jokersRemaining: profile?.jokers_remaining ?? 0,
+  };
 }

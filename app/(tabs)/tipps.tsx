@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { TopBar } from '@/components/TopBar';
 import { LeagueTabs } from '@/components/LeagueTabs';
+import { MatchdayPicker } from '@/components/MatchdayPicker';
 import { JokerIndicator } from '@/components/JokerIndicator';
 import { MatchTipCard } from '@/components/MatchTipCard';
 import { ConfettiBurst } from '@/components/ConfettiBurst';
@@ -21,6 +22,9 @@ import { hasPro } from '@/lib/pro';
 export default function TippsScreen() {
   const { leagues, loading: leaguesLoading } = useLeagues();
   const [selectedLeagueId, setSelectedLeagueId] = useState<string | null>(null);
+  // null means "whatever round is current" - that stays the default on every
+  // visit and after every league switch.
+  const [selectedMatchdayId, setSelectedMatchdayId] = useState<string | null>(null);
   const [confettiTrigger, setConfettiTrigger] = useState(0);
   const router = useRouter();
   const { session, profile } = useAuth();
@@ -31,7 +35,15 @@ export default function TippsScreen() {
     if (!selectedLeagueId && leagues.length) setSelectedLeagueId(leagues[0].id);
   }, [leagues, selectedLeagueId]);
 
-  const { matchday, matches, loading, error, refresh, submitTip, jokersRemaining } = useMatchday(selectedLeagueId);
+  const { matchday, matchdays, currentMatchdayId, matches, loading, error, refresh, submitTip, jokersRemaining } =
+    useMatchday(selectedLeagueId, selectedMatchdayId);
+
+  const handleSelectLeague = (leagueId: string) => {
+    setSelectedLeagueId(leagueId);
+    // Another league has its own rounds, so the hand-picked one is meaningless
+    // there - fall back to that league's current round.
+    setSelectedMatchdayId(null);
+  };
 
   const pendingInvites = useMemo(
     () => duels.filter((d) => d.status === 'pending' && d.opponent_id === session?.user.id).length,
@@ -45,10 +57,15 @@ export default function TippsScreen() {
       <TopBar />
       <View style={styles.header}>
         <View style={styles.headerText}>
-          <Text style={styles.title}>{matchday ? t('tipps.matchday', { number: matchday.number }) : t('tipps.matchdayFallback')}</Text>
+          {/* The round moved into the picker below, so the headline names the
+              league and the line under it says how long this round is open. */}
+          <Text style={styles.title}>{leagues.find((l) => l.id === selectedLeagueId)?.name ?? t('tabs.tipps')}</Text>
           <Text style={styles.subtitle}>
-            {leagues.find((l) => l.id === selectedLeagueId)?.name ?? ''}
-            {matchday ? ` · Tippabgabe bis ${new Date(matchday.deadline).toLocaleString('de-DE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}` : ''}
+            {matchday
+              ? new Date(matchday.deadline).getTime() > Date.now()
+                ? `Tippabgabe bis ${new Date(matchday.deadline).toLocaleString('de-DE', { weekday: 'short', hour: '2-digit', minute: '2-digit' })}`
+                : t('tipps.closed')
+              : ''}
           </Text>
         </View>
         <View style={styles.headerActions}>
@@ -69,7 +86,14 @@ export default function TippsScreen() {
         </View>
       </View>
 
-      <LeagueTabs leagues={leagues} selectedId={selectedLeagueId} onSelect={setSelectedLeagueId} />
+      <LeagueTabs leagues={leagues} selectedId={selectedLeagueId} onSelect={handleSelectLeague} />
+
+      <MatchdayPicker
+        matchdays={matchdays}
+        selectedId={matchday?.id ?? null}
+        currentId={currentMatchdayId}
+        onSelect={setSelectedMatchdayId}
+      />
 
       {loading ? (
         <LoadingScreen />

@@ -131,6 +131,19 @@ export function MatchTipCard({
   };
 
   const jokerLabel = jokerType ? JOKER_LABELS[jokerType] : null;
+  const savedJokerLabel = match.tip?.joker_type ? JOKER_LABELS[match.tip.joker_type] : null;
+
+  // Typing a different score doesn't save it - say so, otherwise the numbers in
+  // the boxes and the saved tip above them silently disagree.
+  const hasUnsavedChanges =
+    !isLocked &&
+    !!match.tip &&
+    !justSubmitted &&
+    (homeScore === '' ||
+      awayScore === '' ||
+      Number(homeScore) !== match.tip.home_score ||
+      Number(awayScore) !== match.tip.away_score ||
+      jokerType !== (match.tip.joker_type ?? null));
 
   return (
     <Animated.View
@@ -198,12 +211,39 @@ export function MatchTipCard({
         </Animated.View>
       ) : null}
 
+      {/* The saved tip, right above the boxes it was typed into. The inputs
+          themselves are editable, so once you start typing they no longer tell
+          you what is actually stored - this line always does, because it reads
+          from match.tip and not from the input state. */}
+      {match.tip ? (
+        <View style={styles.savedTipRow}>
+          <Text style={styles.savedTipLabel}>DEIN TIPP</Text>
+          <View
+            style={[
+              styles.savedTipBadge,
+              tipColor ? { borderColor: tipColor, backgroundColor: tipColor + '1A' } : null,
+            ]}
+          >
+            <Text style={[styles.savedTipScore, tipColor ? { color: tipColor } : null]}>
+              {match.tip.home_score}:{match.tip.away_score}
+            </Text>
+            {savedJokerLabel ? (
+              <Text style={styles.savedTipJoker}>
+                {savedJokerLabel.emoji} {savedJokerLabel.label}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.scoreRow}>
         <Animated.View style={{ transform: [{ scale: homeBump }] }}>
           <TextInput
             style={[
               styles.scoreInput,
-              isLocked && styles.scoreInputLocked,
+              // Only dim an empty locked box: dimming a placed tip would hide
+              // the very thing the card is meant to show after kickoff.
+              isLocked && !match.tip && styles.scoreInputLocked,
               tipColor ? { borderColor: tipColor, backgroundColor: tipColor + '1A', color: tipColor } : null,
               justSubmitted && styles.scoreInputSuccess,
             ]}
@@ -225,7 +265,9 @@ export function MatchTipCard({
           <TextInput
             style={[
               styles.scoreInput,
-              isLocked && styles.scoreInputLocked,
+              // Only dim an empty locked box: dimming a placed tip would hide
+              // the very thing the card is meant to show after kickoff.
+              isLocked && !match.tip && styles.scoreInputLocked,
               tipColor ? { borderColor: tipColor, backgroundColor: tipColor + '1A', color: tipColor } : null,
               justSubmitted && styles.scoreInputSuccess,
             ]}
@@ -243,6 +285,13 @@ export function MatchTipCard({
           />
         </Animated.View>
       </View>
+
+      {hasUnsavedChanges ? (
+        <View style={styles.tipStatusRow}>
+          <Ionicons name="alert-circle" size={13} color={colors.gold} />
+          <Text style={[styles.tipStatusText, { color: colors.gold }]}>Änderung noch nicht gespeichert</Text>
+        </View>
+      ) : null}
 
       {tipState !== 'none' ? (
         <View style={styles.tipStatusRow}>
@@ -365,6 +414,27 @@ const styles = StyleSheet.create({
   },
   statsText: { color: colors.text, fontSize: fontSizes.xs, lineHeight: 18 },
   statsTeam: { fontWeight: '700', color: colors.gold },
+  savedTipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  savedTipLabel: { color: colors.textFaint, fontSize: fontSizes.xs, fontWeight: '700', letterSpacing: 0.6 },
+  savedTipBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+  },
+  savedTipScore: { color: colors.white, fontSize: fontSizes.md, fontWeight: '800' },
+  savedTipJoker: { color: colors.gold, fontSize: 10, fontWeight: '800' },
   scoreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md, marginBottom: spacing.lg },
   scoreInput: {
     width: 72,
