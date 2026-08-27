@@ -18,6 +18,28 @@ bevor sich etwas bewegt, und es ist kein Finger und kein Menü im Bild.
 `promo.html?tc=1` blendet oben links eine laufende Sekundenanzeige ein – hilft
 beim Schneiden der Stimme, gehört aber nicht in die finale Aufnahme.
 
+## Zweite Fassung: die echten App-Bildschirme
+
+`promo-app.html` erzählt dieselben 30 Sekunden mit denselben Sprechertexten,
+zeigt aber die App selbst in einem Telefon statt gezeichneter Symbole.
+
+Die Bildschirmfotos in `screens/` sind **echte Aufnahmen der App**, nicht
+nachgebaut: `capture-screens.js` startet den Web-Build, fängt jeden
+Supabase-Aufruf ab und beantwortet ihn mit einem gestellten Spieltag. Die
+Bildschirme sind also die eigenen Komponenten der App in ihren eigenen
+Maßen - nur die Daten sind gestellt.
+
+```
+npx expo export --platform web     # im Wurzelverzeichnis
+node capture-screens.js            # -> screens/*.png
+node build-app-spot.js             # -> promo-app.html
+```
+
+Eigene Bildschirmfotos vom Handy funktionieren genauso: gleiche Dateinamen
+nach `screens/` legen, `build-app-spot.js` laufen lassen. Für den Feed lohnt
+sich das besonders - die beiden Bilder dort sind derzeit gezeichnete
+Platzhalter, keine echten Stadionfotos.
+
 ## Einzelbilder statt Aufnahme
 
 ```

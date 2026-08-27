@@ -1,0 +1,383 @@
+<title>TeamUp11 App-Spot</title>
+
+<style>
+  /* ---------------------------------------------------------------------
+     Der zweite Spot: dieselben 30 Sekunden, dieselbe Zeitachse, dieselben
+     Sprechertexte aus script.md - aber statt gezeichneter Symbole laufen
+     hier die echten App-Bildschirme durch ein Telefon.
+
+     Die Bilder kommen aus capture-screens.js und werden von build-app-spot.js
+     als Base64 eingesetzt. Diese Datei hier ist die Vorlage; die fertige
+     promo-app.html wird erzeugt, nicht von Hand bearbeitet.
+  --------------------------------------------------------------------- */
+
+  {{FONTS}}
+
+  :root {
+    --ground: #0B0B0E;
+    --surface: #131318;
+    --line: #2E2E39;
+    --ink: #F2F2F5;
+    --ink-dim: #9494A0;
+    --red: #E5484D;
+    --blue: #5B8DEF;
+    --gold: #E3B341;
+    --green: #3DD68C;
+    --display: 'Anton', 'Arial Narrow', Impact, sans-serif;
+    --body: 'Barlow', system-ui, -apple-system, sans-serif;
+  }
+
+  body {
+    margin: 0;
+    background: #000;
+    color: var(--ink);
+    font-family: var(--body);
+    overflow: hidden;
+  }
+
+  .shell { position: fixed; inset: 0; display: grid; place-items: center; background: #000; }
+
+  .stage {
+    position: relative;
+    width: 1080px; height: 1920px;
+    background: var(--ground);
+    overflow: hidden;
+    transform-origin: center center;
+    flex: none;
+  }
+
+  .progress { position: absolute; top: 0; left: 0; right: 0; height: 8px; background: rgba(255,255,255,0.08); z-index: 5; }
+  .progress i {
+    display: block; height: 100%; width: 100%;
+    background: var(--red);
+    transform: scaleX(0); transform-origin: left center;
+    animation: sweep 30s linear 0s both;
+  }
+  @keyframes sweep { to { transform: scaleX(1); } }
+
+  .scene {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; justify-content: flex-end;
+    padding: 0 84px 120px;
+    opacity: 0;
+    animation: hold var(--dur) linear var(--t) both;
+  }
+  @keyframes hold {
+    0% { opacity: 0; } 5% { opacity: 1; } 94% { opacity: 1; } 100% { opacity: 0; }
+  }
+
+  .art { flex: 1; display: flex; align-items: center; justify-content: center; }
+
+  /* ------------------------------------------------------------- Telefon */
+  .phone {
+    position: relative;
+    width: 560px;
+    border: 11px solid #24242D;
+    border-radius: 62px;
+    background: #000;
+    overflow: hidden;
+    box-shadow: 0 40px 90px rgba(0,0,0,0.65), 0 0 0 2px rgba(255,255,255,0.05);
+    animation: liftIn .8s cubic-bezier(.2,.8,.25,1) calc(var(--t) + .05s) both;
+  }
+  .phone .glass {
+    position: absolute; inset: 0; z-index: 2; pointer-events: none;
+    background: linear-gradient(115deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0) 38%);
+  }
+  .phone .statusbar {
+    position: relative;
+    height: 58px; background: #000;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 34px;
+    font-size: 20px; font-weight: 700; color: #fff;
+  }
+  .phone .notch {
+    position: absolute; z-index: 3;
+    top: 12px; left: 50%; transform: translateX(-50%);
+    width: 150px; height: 34px; border-radius: 22px;
+    background: #000;
+  }
+  .phone img {
+    display: block; width: 100%; height: auto;
+    /* Der Ausschnitt wandert langsam auf die Stelle zu, um die es in dieser
+       Szene geht - deshalb sitzt der Ursprung pro Szene woanders. */
+    transform-origin: 50% var(--focus, 50%);
+    animation: pan var(--dur) linear var(--t) both;
+  }
+  @keyframes pan {
+    from { transform: scale(var(--s0, 1)); }
+    to   { transform: scale(var(--s1, 1.07)); }
+  }
+  @keyframes liftIn {
+    from { opacity: 0; transform: translateY(90px) scale(.94); }
+    to   { opacity: 1; transform: none; }
+  }
+
+  /* ----------------------------------------------------------------- Text */
+  .eyebrow {
+    font-weight: 700; font-size: 26px; letter-spacing: 0.34em;
+    text-transform: uppercase; color: var(--red);
+    margin: 0 0 24px; padding-left: 22px; border-left: 6px solid var(--red);
+    animation: rise .55s cubic-bezier(.2,.8,.25,1) calc(var(--t) + .2s) both;
+  }
+  .eyebrow.gold { color: var(--gold); border-color: var(--gold); }
+  .eyebrow.blue { color: var(--blue); border-color: var(--blue); }
+  .eyebrow.green { color: var(--green); border-color: var(--green); }
+
+  .line {
+    font-family: var(--display);
+    font-size: 88px; line-height: 1.04; letter-spacing: -0.01em;
+    text-transform: uppercase; margin: 0; text-wrap: balance;
+    animation: rise .6s cubic-bezier(.2,.8,.25,1) calc(var(--t) + .32s) both;
+  }
+  .line.small { font-size: 70px; }
+  .hit-red { color: var(--red); }
+
+  @keyframes rise {
+    from { opacity: 0; transform: translateY(34px); }
+    to   { opacity: 1; transform: none; }
+  }
+  @keyframes pop {
+    from { opacity: 0; transform: scale(.72); }
+    60%  { opacity: 1; transform: scale(1.06); }
+    to   { opacity: 1; transform: scale(1); }
+  }
+
+  /* -------------------------------------------------------------- Endbild */
+  .endcard {
+    position: absolute; inset: 0; z-index: 6;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 26px;
+    background: var(--ground);
+    opacity: 0;
+    animation: hold 3.4s linear 26.6s both;
+  }
+  .endcard .wordmark {
+    font-family: var(--display); font-size: 148px; letter-spacing: .06em;
+    animation: pop .7s cubic-bezier(.2,.9,.25,1) 26.8s both;
+  }
+  .endcard p { margin: 0; font-size: 38px; color: var(--ink-dim); letter-spacing: .05em;
+    animation: rise .6s ease-out 27.3s both; }
+  .endcard .cta {
+    margin-top: 20px; font-family: var(--display); font-size: 40px; letter-spacing: .14em;
+    color: #fff; background: var(--red); padding: 26px 60px; border-radius: 999px;
+    animation: pop .6s cubic-bezier(.2,.9,.25,1) 27.9s both;
+  }
+
+  .wipe { position: absolute; inset: 0; z-index: 4; transform: scaleX(0); transform-origin: left center; }
+  .wipe.w1 { background: var(--gold); animation: wipe .5s ease-in-out 14.85s both; }
+  .wipe.w2 { background: var(--red);  animation: wipe .5s ease-in-out 23.85s both; }
+  @keyframes wipe {
+    0%   { transform: scaleX(0); transform-origin: left center; }
+    45%  { transform: scaleX(1); transform-origin: left center; }
+    55%  { transform: scaleX(1); transform-origin: right center; }
+    100% { transform: scaleX(0); transform-origin: right center; }
+  }
+
+  /* --------------------------------------------------------------- Chrome */
+  .curtain {
+    position: fixed; inset: 0; z-index: 20;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 22px;
+    background: rgba(0,0,0,0.92); text-align: center; padding: 40px;
+  }
+  .curtain[hidden] { display: none; }
+  .curtain h1 { font-family: var(--display); font-size: clamp(38px, 7vw, 68px); margin: 0; letter-spacing: .04em; }
+  .curtain p { margin: 0; max-width: 46ch; color: var(--ink-dim); font-size: 17px; line-height: 1.6; }
+  .curtain .tip {
+    color: var(--gold); border: 1px solid rgba(227,179,65,0.4);
+    border-radius: 12px; padding: 12px 16px; font-size: 15px;
+  }
+  .curtain ol { margin: 0; padding-left: 20px; color: var(--ink-dim); font-size: 16px; line-height: 1.9; text-align: left; max-width: 46ch; }
+  .curtain b { color: var(--ink); }
+  button {
+    font-family: var(--display); font-size: 26px; letter-spacing: .12em;
+    color: #fff; background: var(--red); border: 0; border-radius: 999px;
+    padding: 20px 54px; cursor: pointer;
+  }
+  button:focus-visible { outline: 3px solid var(--gold); outline-offset: 4px; }
+  .again { position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%); z-index: 15; opacity: 0; pointer-events: none; transition: opacity .3s; }
+  .again.on { opacity: 1; pointer-events: auto; }
+  .tc {
+    position: fixed; top: 12px; left: 12px; z-index: 15;
+    font-variant-numeric: tabular-nums; font-size: 15px; color: var(--gold);
+    background: rgba(0,0,0,.7); padding: 6px 12px; border-radius: 6px; display: none;
+  }
+  .tc.on { display: block; }
+</style>
+
+<div class="shell">
+  <div class="stage" id="stage">
+    <div class="progress"><i></i></div>
+
+    <!-- 1 · 0,0-3,2 · „Jeder in deiner Runde hätte es vorher gewusst." -->
+    <section class="scene" style="--t:0s; --dur:3.2s">
+      <div class="art">
+        <div class="phone" style="--t:0s">
+          <div class="statusbar"><span>9:41</span><div class="notch"></div><span>▮▮▮</span></div><div class="glass"></div>
+          <img src="{{SCREEN:02-tipps}}" alt="" style="--t:0s; --focus:32%; --s0:1.06; --s1:1.00">
+        </div>
+      </div>
+      <p class="eyebrow" style="--t:0s">TeamUp11</p>
+      <h2 class="line" style="--t:0s">Jeder hätte<br>es vorher<br>gewusst.</h2>
+    </section>
+
+    <!-- 2 · 3,2-6,2 · „Ab jetzt kann er's beweisen." -->
+    <section class="scene" style="--t:3.2s; --dur:3s">
+      <div class="art">
+        <div class="phone" style="--t:3.2s">
+          <div class="statusbar"><span>9:41</span><div class="notch"></div><span>▮▮▮</span></div><div class="glass"></div>
+          <img src="{{SCREEN:02-tipps}}" alt="" style="--t:3.2s; --focus:44%; --s0:1.00; --s1:1.09">
+        </div>
+      </div>
+      <p class="eyebrow blue" style="--t:3.2s">Jedes Spiel, jede Liga</p>
+      <h2 class="line" style="--t:3.2s">Beweis es.</h2>
+    </section>
+
+    <!-- 3 · 6,2-11,0 · „Exaktes Ergebnis: fünf Punkte…" -->
+    <section class="scene" style="--t:6.2s; --dur:4.8s">
+      <div class="art">
+        <div class="phone" style="--t:6.2s">
+          <div class="statusbar"><span>9:41</span><div class="notch"></div><span>▮▮▮</span></div><div class="glass"></div>
+          <img src="{{SCREEN:05-regeln}}" alt="" style="--t:6.2s; --focus:30%; --s0:1.00; --s1:1.08">
+        </div>
+      </div>
+      <p class="eyebrow green" style="--t:6.2s">Die Regeln</p>
+      <h2 class="line small" style="--t:6.2s">Fünf Punkte<br>für das exakte<br>Ergebnis.</h2>
+    </section>
+
+    <!-- 4 · 11,0-15,0 · „Drei Joker pro Spieltag." -->
+    <section class="scene" style="--t:11s; --dur:4s">
+      <div class="art">
+        <div class="phone" style="--t:11s">
+          <div class="statusbar"><span>9:41</span><div class="notch"></div><span>▮▮▮</span></div><div class="glass"></div>
+          <img src="{{SCREEN:06-regeln-joker}}" alt="" style="--t:11s; --focus:42%; --s0:1.00; --s1:1.08">
+        </div>
+      </div>
+      <p class="eyebrow gold" style="--t:11s">Die Joker</p>
+      <h2 class="line" style="--t:11s">Alles auf<br>ein Spiel.</h2>
+    </section>
+
+    <!-- 5 · 15,3-19,5 · „Kein Pay-to-win. Sondern: Wer besser tippt, gewinnt." -->
+    <section class="scene" style="--t:15.3s; --dur:4.2s">
+      <div class="art">
+        <div class="phone" style="--t:15.3s">
+          <div class="statusbar"><span>9:41</span><div class="notch"></div><span>▮▮▮</span></div><div class="glass"></div>
+          <img src="{{SCREEN:02-tipps}}" alt="" style="--t:15.3s; --focus:24%; --s0:1.00; --s1:1.10">
+        </div>
+      </div>
+      <p class="eyebrow gold" style="--t:15.3s">Der Unterschied</p>
+      <h2 class="line small" style="--t:15.3s">Kein <span class="hit-red">Pay&#8209;to&#8209;win</span>.<br>Sondern:<br>wer besser tippt,<br>gewinnt.</h2>
+    </section>
+
+    <!-- 6 · 19,7-23,8 · „Feed, Storys und Gruppenchat…" -->
+    <section class="scene" style="--t:19.7s; --dur:4.1s">
+      <div class="art">
+        <div class="phone" style="--t:19.7s">
+          <div class="statusbar"><span>9:41</span><div class="notch"></div><span>▮▮▮</span></div><div class="glass"></div>
+          <img src="{{SCREEN:01-feed}}" alt="" style="--t:19.7s; --focus:42%; --s0:1.00; --s1:1.07">
+        </div>
+      </div>
+      <p class="eyebrow" style="--t:19.7s">Feed · Storys · Chat</p>
+      <h2 class="line small" style="--t:19.7s">Weil Reden<br>dazugehört.</h2>
+    </section>
+
+    <!-- 7 · 24,3-26,9 · „Und jeden Monat ein Preis." -->
+    <section class="scene" style="--t:24.3s; --dur:2.6s">
+      <div class="art">
+        <div class="phone" style="--t:24.3s">
+          <div class="statusbar"><span>9:41</span><div class="notch"></div><span>▮▮▮</span></div><div class="glass"></div>
+          <img src="{{SCREEN:03-ranking}}" alt="" style="--t:24.3s; --focus:26%; --s0:1.00; --s1:1.08">
+        </div>
+      </div>
+      <p class="eyebrow gold" style="--t:24.3s">Jeden Monat neu</p>
+      <h2 class="line" style="--t:24.3s">Ab null.<br>Für alle.</h2>
+    </section>
+
+    <div class="wipe w1"></div>
+    <div class="wipe w2"></div>
+
+    <div class="endcard">
+      <div class="wordmark">TEAMUP11</div>
+      <p>Tippen. Posten. Gewinnen.</p>
+      <div class="cta">JETZT LADEN</div>
+    </div>
+  </div>
+</div>
+
+<div class="curtain" id="curtain">
+  <h1>TeamUp11 · App-Spot</h1>
+  <p><b>30 Sekunden, Hochformat, echte App-Bildschirme.</b> Starte erst die Bildschirmaufnahme, dann tippe auf Abspielen.</p>
+  <p class="tip">Zu klein? Diese Seite in <b>Safari</b> öffnen statt in der Vorschau. Abspielen schaltet, wo es geht, automatisch auf Vollbild.</p>
+  <ol>
+    <li>Bildschirmaufnahme starten</li>
+    <li>Auf <b>Abspielen</b> tippen</li>
+    <li>Nach dem Endbild Aufnahme stoppen</li>
+    <li>In CapCut die Stimme darüberlegen</li>
+  </ol>
+  <button id="play" type="button">ABSPIELEN</button>
+</div>
+
+<button class="again" id="again" type="button">NOCHMAL</button>
+<div class="tc" id="tc">0.0 s</div>
+
+<script>
+  var DURATION = 30000;
+  var stage = document.getElementById('stage');
+  var curtain = document.getElementById('curtain');
+  var again = document.getElementById('again');
+  var tc = document.getElementById('tc');
+  var endTimer = null;
+
+  function anims() {
+    return document.getAnimations().filter(function (a) {
+      return a.effect && a.effect.target && stage.contains(a.effect.target);
+    });
+  }
+
+  function fit() {
+    var s = Math.min(window.innerWidth / 1080, window.innerHeight / 1920);
+    stage.style.transform = 'scale(' + s + ')';
+    stage.style.margin = ((1920 * s - 1920) / 2) + 'px ' + ((1080 * s - 1080) / 2) + 'px';
+  }
+  window.addEventListener('resize', fit);
+  fit();
+
+  anims().forEach(function (a) { a.pause(); a.currentTime = 0; });
+
+  function play() {
+    curtain.hidden = true;
+    again.classList.remove('on');
+    anims().forEach(function (a) { a.currentTime = 0; a.play(); });
+    clearTimeout(endTimer);
+    endTimer = setTimeout(function () { again.classList.add('on'); }, DURATION + 600);
+    if (tc.classList.contains('on')) tick();
+  }
+
+  function tick() {
+    var a = anims()[0];
+    if (a) tc.textContent = ((a.currentTime || 0) / 1000).toFixed(1) + ' s';
+    requestAnimationFrame(tick);
+  }
+
+  function goFullscreen() {
+    var el = document.documentElement;
+    var req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req) return Promise.resolve();
+    try { return Promise.resolve(req.call(el)).catch(function () {}); }
+    catch (e) { return Promise.resolve(); }
+  }
+
+  document.getElementById('play').addEventListener('click', function () {
+    goFullscreen().then(function () {
+      requestAnimationFrame(function () { fit(); play(); });
+    });
+  });
+  again.addEventListener('click', play);
+
+  if (/[?&]tc=1/.test(location.search)) tc.classList.add('on');
+
+  window.__seek = function (ms) {
+    curtain.hidden = true;
+    anims().forEach(function (a) { a.pause(); a.currentTime = ms; });
+    return ms;
+  };
+  window.__duration = DURATION;
+</script>
