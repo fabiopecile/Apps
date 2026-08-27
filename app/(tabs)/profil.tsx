@@ -222,6 +222,12 @@ export default function ProfilScreen() {
                 onPress={() => router.push('/rules')}
               />
               <SettingsRow
+                icon="play-circle-outline"
+                label={t('settings.replayIntro')}
+                chevron
+                onPress={() => router.push('/onboarding')}
+              />
+              <SettingsRow
                 icon="key-outline"
                 label={t('settings.changePassword')}
                 chevron

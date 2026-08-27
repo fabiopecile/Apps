@@ -119,11 +119,27 @@ export default function RulesScreen() {
           </Text>
         </Section>
 
+        <Section title="Tipp-Versicherung">
+          <Text style={styles.intro}>
+            Vor Anpfiff kannst du einen Spieltag für 150 Coins versichern. Läuft er schlecht, wirst du auf
+            mindestens 1 Punkt pro getipptem Spiel aufgefüllt. Holst du mehr, greift sie nicht – sie kann
+            dir nur helfen, nie schaden.
+          </Text>
+          <Text style={styles.note}>
+            Bezahlbar ausschließlich mit verdienten Coins. Gekaufte Coins sind davon ausgeschlossen: Punkte
+            gibt es in dieser App nicht für Geld.
+          </Text>
+        </Section>
+
         <Section title="Coins">
           <Text style={styles.intro}>
-            Coins bekommst du für richtige Tipps, am Glücksrad und für eingeladene Freunde. Ausgeben kannst
-            du sie im Shop für Rahmen und Titel – reine Kosmetik. Auf deine Punkte oder deinen Platz in der
-            Rangliste haben sie keinen Einfluss.
+            Coins bekommst du für richtige Tipps (10 pro Treffer), am Glücksrad und für eingeladene Freunde.
+            Ausgeben kannst du sie im Shop für Rahmen und Titel – reine Kosmetik – oder für die
+            Tipp-Versicherung.
+          </Text>
+          <Text style={styles.note}>
+            Gekaufte Coins zählen nur für den Shop. Beim Kauf eines Rahmens werden sie zuerst abgezogen,
+            damit deine verdienten Coins für die Versicherung erhalten bleiben.
           </Text>
         </Section>
 

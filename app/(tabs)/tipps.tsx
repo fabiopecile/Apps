@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { TopBar } from '@/components/TopBar';
 import { LeagueTabs } from '@/components/LeagueTabs';
 import { MatchdayPicker } from '@/components/MatchdayPicker';
+import { InsuranceBar } from '@/components/InsuranceBar';
 import { JokerIndicator } from '@/components/JokerIndicator';
 import { MatchTipCard } from '@/components/MatchTipCard';
 import { ConfettiBurst } from '@/components/ConfettiBurst';
@@ -13,6 +14,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useLeagues, useMatchday } from '@/hooks/useTipps';
+import { useInsurance } from '@/hooks/useInsurance';
 import { useDuels } from '@/hooks/useDuels';
 import { useAuth } from '@/contexts/AuthContext';
 import { colors, fontSizes, spacing } from '@/constants/theme';
@@ -37,6 +39,14 @@ export default function TippsScreen() {
 
   const { matchday, matchdays, currentMatchdayId, matches, loading, error, refresh, submitTip, jokersRemaining } =
     useMatchday(selectedLeagueId, selectedMatchdayId);
+
+  const {
+    insurance,
+    cost: insuranceCost,
+    available: earnedCoinsAvailable,
+    buying: buyingInsurance,
+    buy: buyInsurance,
+  } = useInsurance(matchday?.id ?? null);
 
   const handleSelectLeague = (leagueId: string) => {
     setSelectedLeagueId(leagueId);
@@ -93,6 +103,15 @@ export default function TippsScreen() {
         selectedId={matchday?.id ?? null}
         currentId={currentMatchdayId}
         onSelect={setSelectedMatchdayId}
+      />
+
+      <InsuranceBar
+        matchday={matchday}
+        insurance={insurance}
+        cost={insuranceCost}
+        available={earnedCoinsAvailable}
+        buying={buyingInsurance}
+        onBuy={buyInsurance}
       />
 
       {loading ? (

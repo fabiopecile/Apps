@@ -28,11 +28,26 @@ export type Profile = {
   last_login_date: string | null;
   last_post_xp_date: string | null;
   coins: number;
+  // How much of `coins` was bought rather than earned. Earned coins are
+  // `coins - purchased_coins`, and only those can buy a tip insurance.
+  purchased_coins: number;
   booster_charges: number;
   equipped_title: string | null;
   equipped_frame_color: string | null;
   last_wheel_spin_date: string | null;
   onboarding_done: boolean;
+  created_at: string;
+};
+
+export type TipInsurance = {
+  id: string;
+  user_id: string;
+  matchday_id: string;
+  cost: number;
+  points_per_tip: number;
+  /** Null until the matchday is fully played; 0 means it did not pay out. */
+  points_awarded: number | null;
+  settled_at: string | null;
   created_at: string;
 };
 
@@ -430,6 +445,9 @@ export type Database = {
       monthly_prizes: Table<MonthlyPrize, Partial<MonthlyPrize> & { period: string; title: string }>;
       coin_packages: Table<CoinPackage, CoinPackage>;
       coin_purchases: Table<CoinPurchase, Omit<CoinPurchase, 'id' | 'created_at'>>;
+      // Read-only from the client: buying goes through insure_matchday(),
+      // settling happens in a trigger.
+      tip_insurances: Table<TipInsurance, never>;
     };
     Views: {
       duel_scores: { Row: DuelScore; Relationships: [] };
@@ -474,6 +492,10 @@ export type Database = {
       monthly_ranking: {
         Args: { p_period?: string | null };
         Returns: MonthlyRankingEntry[];
+      };
+      insure_matchday: {
+        Args: { p_matchday_id: string };
+        Returns: TipInsurance;
       };
       log_ad_event: {
         Args: { p_ad_id: string; p_event_type: 'impression' | 'click'; p_placement: 'feed' | 'story' };

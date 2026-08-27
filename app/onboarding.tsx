@@ -1,49 +1,127 @@
-import { useState } from 'react';
-import { View, Text, Pressable, StyleSheet, useWindowDimensions } from 'react-native';
+import { useCallback, useRef, useState, type ComponentType } from 'react';
+import {
+  View,
+  Text,
+  Pressable,
+  FlatList,
+  Animated,
+  StyleSheet,
+  useWindowDimensions,
+  type NativeSyntheticEvent,
+  type NativeScrollEvent,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { PopIn } from '@/components/PopIn';
 import { PrimaryButton } from '@/components/PrimaryButton';
+import {
+  WelcomeArt,
+  TipArt,
+  PointsArt,
+  JokerArt,
+  InsuranceArt,
+  SocialArt,
+  DuelArt,
+  WheelArt,
+  RankingArt,
+  ProArt,
+} from '@/components/onboarding/Illustrations';
+import { useEnter, enterStyle } from '@/components/onboarding/animations';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/lib/supabase';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { useTranslation } from '@/hooks/useTranslation';
 
-interface Step {
-  icon: keyof typeof Ionicons.glyphMap;
-  color: string;
+interface Slide {
+  key: string;
+  art: ComponentType<{ active: boolean }>;
+  eyebrow: string;
+  eyebrowColor: string;
   title: string;
   body: string;
-  action?: { label: string; href: string };
 }
 
-const STEPS: Step[] = [
+// The whole app in ten screens, in the voice of the promo graphics: one idea
+// per slide, one accent colour, nothing that needs a second reading.
+const SLIDES: Slide[] = [
   {
-    icon: 'football-outline',
-    color: colors.red,
+    key: 'welcome',
+    art: WelcomeArt,
+    eyebrow: 'WILLKOMMEN',
+    eyebrowColor: colors.red,
+    title: 'Tippen. Posten.\nGewinnen.',
+    body: 'TeamUp11 ist Tippspiel und soziales Netzwerk in einem. Auf den nächsten Seiten siehst du alles, was drin steckt – in einer Minute durch.',
+  },
+  {
+    key: 'tip',
+    art: TipArt,
+    eyebrow: 'SO GEHT TIPPEN',
+    eyebrowColor: colors.blue,
     title: 'Tippe jedes Spiel',
-    body: 'Trag vor Anpfiff dein Ergebnis ein. Exakt getippt gibt 5 Punkte, richtiger Sieger 3, daneben keine. Nach dem Anpfiff siehst du, was die anderen getippt haben.',
+    body: 'Trag vor Anpfiff dein Ergebnis ein. Ändern kannst du es beliebig oft – jedes Spiel hat seine eigene Deadline, nicht der ganze Spieltag. Danach siehst du, was alle anderen getippt haben.',
   },
   {
-    icon: 'flash-outline',
-    color: colors.gold,
+    key: 'points',
+    art: PointsArt,
+    eyebrow: 'DIE REGELN',
+    eyebrowColor: colors.success,
+    title: '5, 3 oder 0 Punkte',
+    body: 'Exaktes Ergebnis bringt 5 Punkte. Richtiger Sieger bei falschem Ergebnis bringt 3. Daneben bringt nichts. Ein Unentschieden zählt als eigene Tendenz: 1:1 getippt, 2:2 gespielt – das sind 3 Punkte.',
+  },
+  {
+    key: 'joker',
+    art: JokerArt,
+    eyebrow: 'DIE REGELN',
+    eyebrowColor: colors.gold,
     title: 'Setz deine Joker',
-    body: 'Pro Spieltag hast du Joker: verdoppeln, würfeln oder einen Punkt retten. Jedes Level bringt dir einen dazu.',
-    action: { label: 'Alle Regeln ansehen', href: '/rules' },
+    body: 'Pro Spieltag hast du Joker, jeder gilt für ein einzelnes Spiel. Boost verdoppelt deine Punkte, Risiko würfelt zwischen der Hälfte und dem Anderthalbfachen, Sicher rettet dir 1 Punkt bei einem Fehltipp. Jedes Level bringt einen Joker dazu.',
   },
   {
-    icon: 'people-outline',
-    color: colors.blue,
-    title: 'Hol deine Freunde dazu',
-    body: 'Allein ist ein Tippspiel halb so lustig. Lade Freunde ein – für jeden, der sich registriert, bekommst du 100 XP und einen Joker.',
-    action: { label: 'Freunde einladen', href: '/(tabs)/profil' },
+    key: 'insurance',
+    art: InsuranceArt,
+    eyebrow: 'NEU',
+    eyebrowColor: colors.gold,
+    title: 'Versichere\nden Spieltag',
+    body: 'Für 150 Coins bekommst du mindestens 1 Punkt für jedes Spiel, das du getippt hast. Läuft der Spieltag gut, greift sie nicht. Bezahlbar nur mit verdienten Coins – Punkte gibt es hier nie für Geld.',
   },
   {
-    icon: 'gift-outline',
-    color: colors.success,
-    title: 'Jeden Tag etwas holen',
-    body: 'Einmal täglich am Glücksrad drehen und die Login-Serie halten. Coins gibt es auch für jeden richtigen Tipp – im Shop werden daraus Rahmen und Titel.',
+    key: 'social',
+    art: SocialArt,
+    eyebrow: 'DAS SOZIALE',
+    eyebrowColor: colors.red,
+    title: 'Feed und Storys',
+    body: 'Poste aus dem Stadion, folge deinen Freunden, kommentiere und schreib im Chat – auch in Gruppen. Der erste Beitrag am Tag bringt +50 XP, Storys verschwinden nach 24 Stunden.',
+  },
+  {
+    key: 'duel',
+    art: DuelArt,
+    eyebrow: 'GEGENEINANDER',
+    eyebrowColor: colors.blue,
+    title: 'Fordere Freunde\nheraus',
+    body: 'Ein Duell läuft über einen ganzen Spieltag: Wer mehr Punkte holt, gewinnt und bekommt +30 XP. Herausfordern kannst du direkt aus dem Chat heraus.',
+  },
+  {
+    key: 'coins',
+    art: WheelArt,
+    eyebrow: 'JEDEN TAG',
+    eyebrowColor: colors.gold,
+    title: 'Glücksrad\nund Coins',
+    body: 'Einmal täglich drehen und die Login-Serie halten. Coins gibt es auch für jeden richtigen Tipp – 10 Stück pro Treffer. Ausgeben kannst du sie für Rahmen, Titel und die Versicherung.',
+  },
+  {
+    key: 'ranking',
+    art: RankingArt,
+    eyebrow: 'DER WETTBEWERB',
+    eyebrowColor: colors.gold,
+    title: 'Jeden Monat\nvon vorne',
+    body: 'Neben der Gesamtwertung läuft eine Monatswertung, die nur die Punkte dieses Monats zählt. Wer heute anfängt, kann diesen Monat gewinnen – und auf die vordersten Plätze wartet ein Preis.',
+  },
+  {
+    key: 'pro',
+    art: ProArt,
+    eyebrow: 'OPTIONAL',
+    eyebrowColor: colors.gold,
+    title: 'Pro',
+    body: 'Ohne Werbung, mit KI-Statistik zu jeder Partie und eigenem Profilrahmen. Kostenlos spielen geht immer und für immer – Pro ändert nichts an deinen Punkten.',
   },
 ];
 
@@ -52,103 +130,133 @@ export default function OnboardingScreen() {
   const { profile, refreshProfile } = useAuth();
   const { width } = useWindowDimensions();
   const { t } = useTranslation();
+  const listRef = useRef<FlatList<Slide>>(null);
   const [index, setIndex] = useState(0);
   const [finishing, setFinishing] = useState(false);
 
-  const step = STEPS[index];
-  const isLast = index === STEPS.length - 1;
+  const isLast = index === SLIDES.length - 1;
 
-  const finish = async (then?: string) => {
+  const finish = async () => {
     setFinishing(true);
     if (profile) {
       await supabase.from('profiles').update({ onboarding_done: true }).eq('id', profile.id);
       await refreshProfile();
     }
     setFinishing(false);
-    router.replace(then ?? '/(tabs)');
+    router.replace('/(tabs)');
   };
+
+  const goNext = () => {
+    if (isLast) {
+      finish();
+      return;
+    }
+    listRef.current?.scrollToOffset({ offset: (index + 1) * width, animated: true });
+    setIndex(index + 1);
+  };
+
+  // The index has to follow a swipe as well as the button, or the progress bar
+  // and the button label drift apart from what is on screen.
+  const handleScrollEnd = useCallback(
+    (event: NativeSyntheticEvent<NativeScrollEvent>) => {
+      const next = Math.round(event.nativeEvent.contentOffset.x / width);
+      setIndex(Math.max(0, Math.min(SLIDES.length - 1, next)));
+    },
+    [width]
+  );
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
-      <View style={styles.skipRow}>
-        <Pressable onPress={() => finish()} hitSlop={8}>
+      <View style={styles.topRow}>
+        <View style={styles.progress}>
+          {SLIDES.map((slide, i) => (
+            <View key={slide.key} style={[styles.segment, i <= index && styles.segmentFilled]} />
+          ))}
+        </View>
+        <Pressable onPress={finish} hitSlop={10}>
           <Text style={styles.skip}>{t('onboarding.skip')}</Text>
         </Pressable>
       </View>
 
-      <View style={styles.body}>
-        <PopIn key={step.title} style={styles.stepWrap}>
-          <View style={[styles.iconCircle, { borderColor: step.color }]}>
-            <Ionicons name={step.icon} size={44} color={step.color} />
-          </View>
-          <Text style={styles.title}>{step.title}</Text>
-          <Text style={[styles.text, { maxWidth: Math.min(width - spacing.xl * 2, 420) }]}>{step.body}</Text>
-
-          {step.action ? (
-            <Pressable style={styles.actionLink} onPress={() => finish(step.action!.href)}>
-              <Text style={styles.actionText}>{step.action.label}</Text>
-              <Ionicons name="arrow-forward" size={15} color={colors.blue} />
-            </Pressable>
-          ) : null}
-        </PopIn>
-      </View>
+      <FlatList
+        ref={listRef}
+        data={SLIDES}
+        keyExtractor={(item) => item.key}
+        horizontal
+        pagingEnabled
+        showsHorizontalScrollIndicator={false}
+        onMomentumScrollEnd={handleScrollEnd}
+        getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
+        renderItem={({ item, index: i }) => (
+          <SlideView slide={item} width={width} active={i === index} />
+        )}
+      />
 
       <View style={styles.footer}>
-        <View style={styles.dots}>
-          {STEPS.map((s, i) => (
-            <View key={s.title} style={[styles.dot, i === index && styles.dotActive]} />
-          ))}
-        </View>
-
         <PrimaryButton
           label={isLast ? t('onboarding.start') : t('common.next')}
+          variant={isLast ? 'red' : 'blue'}
           loading={finishing}
-          onPress={() => (isLast ? finish() : setIndex((i) => i + 1))}
+          onPress={goNext}
         />
       </View>
     </SafeAreaView>
   );
 }
 
+function SlideView({ slide, width, active }: { slide: Slide; width: number; active: boolean }) {
+  const Art = slide.art;
+  const eyebrow = useEnter(active, 120);
+  const title = useEnter(active, 220);
+  const body = useEnter(active, 340);
+
+  return (
+    <View style={[styles.slide, { width }]}>
+      <View style={styles.artArea}>
+        <Art active={active} />
+      </View>
+
+      <View style={styles.textArea}>
+        <Animated.View style={[styles.eyebrowPill, { borderColor: slide.eyebrowColor }, enterStyle(eyebrow, 10)]}>
+          <Text style={[styles.eyebrow, { color: slide.eyebrowColor }]}>{slide.eyebrow}</Text>
+        </Animated.View>
+        <Animated.Text style={[styles.title, enterStyle(title, 14)]}>{slide.title}</Animated.Text>
+        <Animated.Text style={[styles.body, enterStyle(body, 14)]}>{slide.body}</Animated.Text>
+      </View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.background },
-  skipRow: { alignItems: 'flex-end', padding: spacing.lg },
-  skip: { color: colors.textFaint, fontSize: fontSizes.sm, fontWeight: '600' },
-  body: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: spacing.xl },
-  stepWrap: { alignItems: 'center' },
-  iconCircle: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    borderWidth: 2,
-    backgroundColor: colors.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.xl,
-  },
-  title: {
-    color: colors.text,
-    fontSize: fontSizes.xxl,
-    fontWeight: '800',
-    letterSpacing: -0.6,
-    textAlign: 'center',
-    marginBottom: spacing.md,
-  },
-  text: { color: colors.textMuted, fontSize: fontSizes.md, lineHeight: 23, textAlign: 'center' },
-  actionLink: {
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: spacing.lg,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: radii.pill,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
+    gap: spacing.md,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
-  actionText: { color: colors.blue, fontWeight: '700', fontSize: fontSizes.sm },
-  footer: { padding: spacing.xl, gap: spacing.lg },
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: spacing.sm },
-  dot: { width: 7, height: 7, borderRadius: 4, backgroundColor: colors.borderStrong },
-  dotActive: { backgroundColor: colors.red, width: 22 },
+  // Story-style segments rather than dots: with ten slides, dots stop reading
+  // as progress and start reading as decoration.
+  progress: { flex: 1, flexDirection: 'row', gap: 4 },
+  segment: { flex: 1, height: 3, borderRadius: 2, backgroundColor: colors.surfaceAlt },
+  segmentFilled: { backgroundColor: colors.red },
+  skip: { color: colors.textFaint, fontSize: fontSizes.sm, fontWeight: '600' },
+
+  slide: { flex: 1, paddingHorizontal: spacing.xl },
+  artArea: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 200 },
+  textArea: { gap: spacing.md, paddingBottom: spacing.xl, maxWidth: 460, alignSelf: 'center', width: '100%' },
+  eyebrowPill: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+  },
+  eyebrow: { fontSize: 10, fontWeight: '900', letterSpacing: 1.4 },
+  title: { color: colors.white, fontSize: 34, fontWeight: '900', letterSpacing: -1, lineHeight: 38 },
+  body: { color: colors.textMuted, fontSize: fontSizes.md, lineHeight: 23 },
+
+  footer: { paddingHorizontal: spacing.xl, paddingBottom: spacing.lg, paddingTop: spacing.md },
 });
