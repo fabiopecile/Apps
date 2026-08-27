@@ -1,7 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Avatar } from '@/components/Avatar';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
-import type { Profile } from '@/lib/database.types';
+import type { RankingEntry } from '@/lib/database.types';
 
 export function LeaderboardRow({
   profile,
@@ -9,7 +9,7 @@ export function LeaderboardRow({
   isMe,
   onPress,
 }: {
-  profile: Profile;
+  profile: RankingEntry;
   rank: number;
   isMe: boolean;
   onPress?: () => void;

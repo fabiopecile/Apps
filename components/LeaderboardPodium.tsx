@@ -2,7 +2,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar } from '@/components/Avatar';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
-import type { Profile } from '@/lib/database.types';
+import type { RankingEntry } from '@/lib/database.types';
 
 const ORDER = [1, 0, 2]; // render 2nd, 1st, 3rd like a podium
 
@@ -11,7 +11,7 @@ export function LeaderboardPodium({
   currentUserId,
   onSelect,
 }: {
-  top3: Profile[];
+  top3: RankingEntry[];
   currentUserId?: string;
   onSelect?: (userId: string) => void;
 }) {

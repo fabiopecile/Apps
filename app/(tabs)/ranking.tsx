@@ -10,15 +10,40 @@ import { EmptyState } from '@/components/EmptyState';
 import { ErrorBanner } from '@/components/ErrorBanner';
 import { LoadingScreen } from '@/components/LoadingScreen';
 import { useRanking } from '@/hooks/useRanking';
+import { useMonthlyRanking, formatPeriod } from '@/hooks/useMonthlyRanking';
+import { PrizeCard } from '@/components/PrizeCard';
 import { useAuth } from '@/contexts/AuthContext';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 
-type Scope = 'gesamt' | 'freunde';
+type Scope = 'gesamt' | 'monat' | 'freunde';
 
 export default function RankingScreen() {
-  const [scope, setScope] = useState<Scope>('gesamt');
-  const { ranking, loading, error, refresh } = useRanking(scope);
+  const [scope, setScope] = useState<Scope>('monat');
+  // The monthly board is a different shape - scores derive from this month's
+  // tips, not from the cumulative total on the profile.
+  const monthly = useMonthlyRanking();
+  const { ranking: allTime, loading: allTimeLoading, error: allTimeError, refresh: refreshAllTime } =
+    useRanking(scope === 'monat' ? 'gesamt' : scope);
   const { session } = useAuth();
+
+  const isMonthly = scope === 'monat';
+  const loading = isMonthly ? monthly.loading : allTimeLoading;
+  const error = isMonthly ? monthly.error : allTimeError;
+  const refresh = isMonthly ? monthly.refresh : refreshAllTime;
+
+  // Both boards render the same row shape, so map the monthly entries onto it.
+  const ranking = isMonthly
+    ? monthly.ranking.map((entry) => ({
+        id: entry.id,
+        username: entry.username,
+        display_name: entry.display_name,
+        avatar_url: entry.avatar_url,
+        equipped_frame_color: entry.equipped_frame_color,
+        points: entry.points,
+      }))
+    : allTime;
+
+  const myMonthTips = monthly.ranking.find((e) => e.id === session?.user.id)?.tips_count ?? 0;
   const router = useRouter();
 
   const openProfile = (userId: string) => {
@@ -34,6 +59,9 @@ export default function RankingScreen() {
       <TopBar />
 
       <View style={styles.tabs}>
+        <Pressable style={[styles.tab, scope === 'monat' && styles.tabActive]} onPress={() => setScope('monat')}>
+          <Text style={[styles.tabText, scope === 'monat' && styles.tabTextActive]}>MONAT</Text>
+        </Pressable>
         <Pressable style={[styles.tab, scope === 'gesamt' && styles.tabActive]} onPress={() => setScope('gesamt')}>
           <Text style={[styles.tabText, scope === 'gesamt' && styles.tabTextActive]}>GESAMT</Text>
         </Pressable>
@@ -42,14 +70,30 @@ export default function RankingScreen() {
         </Pressable>
       </View>
 
+      {isMonthly ? (
+        <PrizeCard prize={monthly.prize} periodLabel={formatPeriod(monthly.period)} myTips={myMonthTips} />
+      ) : null}
+
       {loading ? (
         <LoadingScreen />
       ) : error ? (
         <ErrorBanner message={error} onRetry={refresh} />
       ) : ranking.length === 0 ? (
         <EmptyState
-          title={scope === 'freunde' ? 'Noch keine Freunde' : 'Noch kein Ranking'}
-          subtitle={scope === 'freunde' ? 'Folge anderen Spielern, um sie hier zu sehen.' : undefined}
+          title={
+            scope === 'freunde'
+              ? 'Noch keine Freunde'
+              : isMonthly
+                ? 'Diesen Monat noch keine Punkte'
+                : 'Noch kein Ranking'
+          }
+          subtitle={
+            scope === 'freunde'
+              ? 'Folge anderen Spielern, um sie hier zu sehen.'
+              : isMonthly
+                ? 'Sobald die ersten Spiele des Monats gewertet sind, steht hier die Tabelle.'
+                : undefined
+          }
         />
       ) : (
         <FlatList

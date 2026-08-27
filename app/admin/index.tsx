@@ -94,6 +94,12 @@ export default function AdminScreen() {
           <Ionicons name="chevron-forward" size={18} color={colors.gold} />
         </Pressable>
 
+        <Pressable style={styles.adsLink} onPress={() => router.push('/admin/prize')}>
+          <Ionicons name="trophy-outline" size={20} color={colors.gold} />
+          <Text style={styles.adsLinkText}>Monatspreis festlegen</Text>
+          <Ionicons name="chevron-forward" size={18} color={colors.gold} />
+        </Pressable>
+
         <Text style={styles.sectionTitle}>Punkte / XP anpassen</Text>
         <TextInput
           style={styles.input}

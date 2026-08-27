@@ -286,6 +286,37 @@ export type CoinPurchase = {
   created_at: string;
 };
 
+/** The fields a leaderboard row needs, shared by the all-time and monthly boards. */
+export type RankingEntry = Pick<
+  Profile,
+  'id' | 'username' | 'display_name' | 'avatar_url' | 'equipped_frame_color' | 'points'
+>;
+
+export type MonthlyRankingEntry = {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  equipped_frame_color: string | null;
+  equipped_title: string | null;
+  is_pro: boolean;
+  points: number;
+  correct_tips: number;
+  tips_count: number;
+};
+
+export type MonthlyPrize = {
+  period: string;
+  title: string;
+  description: string | null;
+  sponsor_name: string | null;
+  sponsor_url: string | null;
+  image_url: string | null;
+  places: number;
+  min_tips: number;
+  created_at: string;
+};
+
 export type AdPlacement = 'feed' | 'story' | 'both';
 
 export type Ad = {
@@ -395,6 +426,7 @@ export type Database = {
       >;
       blocks: Table<Block, { blocker_id: string; blocked_id: string }>;
       ads: Table<Ad, Partial<Ad> & { advertiser_name: string; image_url: string; target_url: string }>;
+      monthly_prizes: Table<MonthlyPrize, Partial<MonthlyPrize> & { period: string; title: string }>;
       coin_packages: Table<CoinPackage, CoinPackage>;
       coin_purchases: Table<CoinPurchase, Omit<CoinPurchase, 'id' | 'created_at'>>;
     };
@@ -433,6 +465,10 @@ export type Database = {
       set_group_admin: {
         Args: { p_conversation_id: string; p_user_id: string; p_is_admin: boolean };
         Returns: undefined;
+      };
+      monthly_ranking: {
+        Args: { p_period?: string | null };
+        Returns: MonthlyRankingEntry[];
       };
       log_ad_event: {
         Args: { p_ad_id: string; p_event_type: 'impression' | 'click'; p_placement: 'feed' | 'story' };
