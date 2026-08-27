@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { usePrivateLeagues } from '@/hooks/usePrivateLeagues';
 import { EmptyState } from '@/components/EmptyState';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
+import { hasPro } from '@/lib/pro';
 
 export default function PrivateLeaguesScreen() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function PrivateLeaguesScreen() {
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  if (!profile?.is_pro) return <Redirect href="/(tabs)/profil" />;
+  if (!hasPro(profile)) return <Redirect href="/(tabs)/profil" />;
 
   const handleCreate = async () => {
     if (!name.trim()) return;

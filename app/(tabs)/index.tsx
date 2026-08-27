@@ -22,6 +22,7 @@ import { useAds, interleaveAds } from '@/hooks/useAds';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTranslation } from '@/hooks/useTranslation';
 import { colors, spacing } from '@/constants/theme';
+import { hasPro } from '@/lib/pro';
 
 export default function FeedScreen() {
   const { posts, loading, error, refresh, toggleLike, deletePost } = usePosts();
@@ -156,7 +157,7 @@ export default function FeedScreen() {
           stories={storyItems}
           startIndex={storyIndex}
           currentUserId={session?.user.id}
-          isPro={profile?.is_pro}
+          isPro={hasPro(profile)}
           onClose={() => setStoryIndex(null)}
           onDelete={(storyId) => deleteStory(storyId)}
           onSaveHighlight={(storyId) => saveHighlight(storyId)}

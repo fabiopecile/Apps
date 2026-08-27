@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import type { Ad, AdPlacement } from '@/lib/database.types';
+import { hasPro } from '@/lib/pro';
 
 type Slot = Exclude<AdPlacement, 'both'>;
 
@@ -20,7 +21,7 @@ export function useAds(slot: Slot) {
   // One impression per ad per screen visit, not one per re-render.
   const counted = useRef<Set<string>>(new Set());
 
-  const isPro = profile?.is_pro ?? false;
+  const isPro = hasPro(profile);
 
   const load = useCallback(async () => {
     if (isPro || !session) {

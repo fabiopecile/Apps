@@ -9,6 +9,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { uploadImage } from '@/lib/storage';
 import { ImageCropper, type CroppedImage } from '@/components/ImageCropper';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
+import { hasPro } from '@/lib/pro';
 
 const MAX_PRO_PHOTOS = 5;
 const DEFAULT_ASPECT = 4 / 5;
@@ -24,7 +25,7 @@ export default function NewPostScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isPro = !!profile?.is_pro;
+  const isPro = hasPro(profile);
   const aspectRatio = images[0]?.aspectRatio ?? DEFAULT_ASPECT;
   const xpAlreadyEarned = profile?.last_post_xp_date === new Date().toISOString().slice(0, 10);
 

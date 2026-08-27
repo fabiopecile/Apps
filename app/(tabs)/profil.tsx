@@ -23,6 +23,7 @@ import { exportStatsPdf } from '@/lib/statsExport';
 import type { Language } from '@/lib/i18n';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { XP_PER_LEVEL } from '@/constants/game';
+import { hasPro } from '@/lib/pro';
 
 type ProfileTab = 'beitraege' | 'statistik' | 'badges';
 
@@ -48,6 +49,8 @@ export default function ProfilScreen() {
   );
 
   if (!profile) return null;
+
+  const isPro = hasPro(profile);
 
   const quote = profile.tips_count > 0 ? Math.round((profile.correct_tips_count / profile.tips_count) * 100) : 0;
   const xpInLevel = profile.xp % XP_PER_LEVEL;
@@ -104,12 +107,12 @@ export default function ProfilScreen() {
                 uri={profile.avatar_url}
                 name={profile.display_name ?? profile.username}
                 size={88}
-                ringColor={profile.equipped_frame_color ?? (profile.is_pro ? colors.gold : colors.red)}
+                ringColor={profile.equipped_frame_color ?? (isPro ? colors.gold : colors.red)}
               />
               <View style={styles.profileInfo}>
                 <View style={styles.usernameRow}>
                   <Text style={styles.username}>{profile.username}</Text>
-                  {profile.is_pro ? (
+                  {isPro ? (
                     <View style={styles.proBadge}>
                       <Text style={styles.proBadgeText}>PRO</Text>
                     </View>
@@ -163,7 +166,14 @@ export default function ProfilScreen() {
               ]}
             />
 
-            <ProCard isPro={profile.is_pro} />
+            <ProCard isPro={isPro} />
+
+            {/* Only for granted Pro - a paying subscription has no end date to show. */}
+            {!profile.is_pro && profile.pro_until && new Date(profile.pro_until) > new Date() ? (
+              <Text style={styles.proUntil}>
+                Dein Pro läuft bis {new Date(profile.pro_until).toLocaleDateString('de-AT')}
+              </Text>
+            ) : null}
 
             <InviteFriendsCard referralCode={profile.referral_code} />
 
@@ -172,7 +182,7 @@ export default function ProfilScreen() {
               <SettingsRow icon="ellipse-outline" label={t('settings.buyCoins')} chevron onPress={() => router.push('/shop/coins')} />
             </View>
 
-            {profile.is_pro ? (
+            {isPro ? (
               <View style={styles.settings}>
                 <SettingsRow icon="trophy-outline" label={t('settings.privateLeagues')} chevron onPress={() => router.push('/leagues')} />
                 <SettingsRow
@@ -365,6 +375,12 @@ const styles = StyleSheet.create({
   deleteError: { color: colors.danger, fontSize: fontSizes.xs, textAlign: 'center', paddingHorizontal: spacing.lg },
   deleteAccount: { paddingVertical: spacing.md, marginBottom: spacing.xl, alignItems: 'center' },
   deleteAccountText: { color: colors.textFaint, fontSize: fontSizes.xs, textDecorationLine: 'underline' },
+  proUntil: {
+    color: colors.gold,
+    fontSize: fontSizes.xs,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+  },
   aboutBlock: { paddingHorizontal: spacing.lg, gap: 2 },
   displayName: { color: colors.text, fontWeight: '700', fontSize: fontSizes.sm },
   bio: { color: colors.textMuted, fontSize: fontSizes.sm, lineHeight: 19 },

@@ -16,6 +16,7 @@ import { useDuels } from '@/hooks/useDuels';
 import { useAuth } from '@/contexts/AuthContext';
 import { colors, fontSizes, spacing } from '@/constants/theme';
 import { useTranslation } from '@/hooks/useTranslation';
+import { hasPro } from '@/lib/pro';
 
 export default function TippsScreen() {
   const { leagues, loading: leaguesLoading } = useLeagues();
@@ -80,7 +81,7 @@ export default function TippsScreen() {
             <MatchTipCard
               match={item}
               jokersRemaining={jokersRemaining}
-              isPro={profile?.is_pro}
+              isPro={hasPro(profile)}
               currentUserId={session?.user.id}
               onSubmit={(h, a, j) => submitTip(item.id, h, a, j)}
               onSuccess={() => setConfettiTrigger((t) => t + 1)}

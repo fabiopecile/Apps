@@ -5,7 +5,7 @@
 //
 // Deploy: supabase functions deploy team-stats
 // (JWT verification ON - Pro-gated on the client, and this also checks
-// profiles.is_pro server-side before spending any Anthropic API budget)
+// has_pro() server-side before spending any Anthropic API budget)
 // Requires secret ANTHROPIC_API_KEY (same one used by moderate-post).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -55,8 +55,11 @@ Deno.serve(async (req) => {
     });
   }
 
-  const { data: caller } = await supabase.from('profiles').select('is_pro').eq('id', userData.user.id).single();
-  if (!caller?.is_pro) {
+  // has_pro() covers both sources: a paying subscription and a granted
+  // period that has not run out. Reading is_pro alone would lock out prize
+  // winners who never paid.
+  const { data: callerHasPro } = await supabase.rpc('has_pro', { p_user_id: userData.user.id });
+  if (!callerHasPro) {
     return new Response(JSON.stringify({ error: 'Nur für Pro-Nutzer' }), {
       status: 403,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

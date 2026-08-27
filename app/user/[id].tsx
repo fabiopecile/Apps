@@ -17,6 +17,7 @@ import { openConversationWith } from '@/lib/chat';
 import { colors, fontSizes, radii, spacing } from '@/constants/theme';
 import { XP_PER_LEVEL } from '@/constants/game';
 import { useTranslation } from '@/hooks/useTranslation';
+import { hasPro } from '@/lib/pro';
 
 export default function UserProfileScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -43,6 +44,8 @@ export default function UserProfileScreen() {
   }
 
   const quote = profile.tips_count > 0 ? Math.round((profile.correct_tips_count / profile.tips_count) * 100) : 0;
+
+  const isPro = hasPro(profile);
   const xpInLevel = profile.xp % XP_PER_LEVEL;
   const following = isFollowing(profile.id);
 
@@ -91,12 +94,12 @@ export default function UserProfileScreen() {
                 uri={profile.avatar_url}
                 name={profile.display_name ?? profile.username}
                 size={88}
-                ringColor={profile.equipped_frame_color ?? (profile.is_pro ? colors.gold : colors.red)}
+                ringColor={profile.equipped_frame_color ?? (isPro ? colors.gold : colors.red)}
               />
               <View style={styles.profileInfo}>
                 <View style={styles.usernameRow}>
                   <Text style={styles.username}>{profile.username}</Text>
-                  {profile.is_pro ? (
+                  {isPro ? (
                     <View style={styles.proBadge}>
                       <Text style={styles.proBadgeText}>PRO</Text>
                     </View>

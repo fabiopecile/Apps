@@ -27,6 +27,9 @@ export default function AdminScreen() {
   const [sending, setSending] = useState(false);
   const [notifResult, setNotifResult] = useState<string | null>(null);
 
+  const [proTarget, setProTarget] = useState<Profile | null>(null);
+  const [proResult, setProResult] = useState<string | null>(null);
+
   if (!profile?.is_admin) return <Redirect href="/(tabs)/profil" />;
 
   const search = async (text: string) => {
@@ -37,6 +40,26 @@ export default function AdminScreen() {
     }
     const { data } = await supabase.from('profiles').select('*').ilike('username', `%${text.trim()}%`).limit(20);
     setResults((data as Profile[]) ?? []);
+  };
+
+  const grantPro = async (user: Profile, months: number) => {
+    setProResult(null);
+    const { data, error } = await supabase.rpc('grant_pro_months', {
+      p_user_id: user.id,
+      p_months: months,
+    });
+    if (error) {
+      setProResult(error.message);
+      return;
+    }
+    setProResult(
+      data
+        ? `Pro läuft jetzt bis ${new Date(data as string).toLocaleDateString('de-AT')}`
+        : 'Pro zurückgenommen.'
+    );
+    // Keep the panel showing what actually happened rather than the stale row.
+    setProTarget({ ...user, pro_until: (data as string) ?? null });
+    search(query);
   };
 
   const openEditor = (user: Profile) => {
@@ -127,6 +150,13 @@ export default function AdminScreen() {
             <Pressable style={styles.iconButton} onPress={() => openEditor(user)} hitSlop={8}>
               <Ionicons name="create-outline" size={20} color={colors.blue} />
             </Pressable>
+            <Pressable style={styles.iconButton} onPress={() => { setProTarget(user); setProResult(null); }} hitSlop={8}>
+              <Ionicons
+                name="star-outline"
+                size={20}
+                color={proTarget?.id === user.id ? colors.gold : colors.textMuted}
+              />
+            </Pressable>
             <Pressable style={styles.iconButton} onPress={() => setNotifTarget(user)} hitSlop={8}>
               <Ionicons
                 name="notifications-outline"
@@ -136,6 +166,39 @@ export default function AdminScreen() {
             </Pressable>
           </View>
         ))}
+
+        {proTarget ? (
+          <View style={styles.editor}>
+            <Text style={styles.editorTitle}>Pro verschenken an {proTarget.username}</Text>
+            <Text style={styles.label}>
+              {proTarget.pro_until
+                ? `Läuft aktuell bis ${new Date(proTarget.pro_until).toLocaleDateString('de-AT')}`
+                : proTarget.is_pro
+                  ? 'Hat ein laufendes Abo — ein Geschenk läuft parallel und greift danach.'
+                  : 'Hat aktuell kein Pro.'}
+            </Text>
+            <View style={styles.proButtons}>
+              {[1, 3, 6, 12].map((months) => (
+                <Pressable
+                  key={months}
+                  style={styles.proChip}
+                  onPress={() => grantPro(proTarget, months)}
+                >
+                  <Text style={styles.proChipText}>+{months} Mon.</Text>
+                </Pressable>
+              ))}
+            </View>
+            <View style={styles.editorButtons}>
+              <Pressable style={styles.cancelButton} onPress={() => { setProTarget(null); setProResult(null); }}>
+                <Text style={styles.cancelText}>Schließen</Text>
+              </Pressable>
+              <Pressable style={styles.cancelButton} onPress={() => grantPro(proTarget, -120)}>
+                <Text style={styles.cancelText}>Zurücknehmen</Text>
+              </Pressable>
+            </View>
+            {proResult ? <Text style={styles.proResult}>{proResult}</Text> : null}
+          </View>
+        ) : null}
 
         {editingUser ? (
           <View style={styles.editor}>
@@ -256,6 +319,17 @@ const styles = StyleSheet.create({
   },
   editorTitle: { color: colors.white, fontWeight: '700', marginBottom: spacing.xs },
   label: { color: colors.textMuted, fontSize: fontSizes.xs, marginTop: spacing.xs },
+  proButtons: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm, flexWrap: 'wrap' },
+  proChip: {
+    borderRadius: radii.pill,
+    borderWidth: 1,
+    borderColor: colors.gold,
+    backgroundColor: colors.goldDark,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  proChipText: { color: colors.gold, fontWeight: '700', fontSize: fontSizes.xs },
+  proResult: { color: colors.success, fontSize: fontSizes.xs, marginTop: spacing.sm },
   editorButtons: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
   cancelButton: { flex: 1, alignItems: 'center', paddingVertical: spacing.sm, borderRadius: radii.lg, borderWidth: 1, borderColor: colors.borderStrong },
   cancelText: { color: colors.textMuted, fontWeight: '700' },

@@ -22,6 +22,7 @@ export type Profile = {
   is_pro: boolean;
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
+  pro_until: string | null;
   reminder_hour_utc: number | null;
   login_streak: number;
   last_login_date: string | null;
@@ -465,6 +466,10 @@ export type Database = {
       set_group_admin: {
         Args: { p_conversation_id: string; p_user_id: string; p_is_admin: boolean };
         Returns: undefined;
+      };
+      grant_pro_months: {
+        Args: { p_user_id: string; p_months: number };
+        Returns: string | null;
       };
       monthly_ranking: {
         Args: { p_period?: string | null };
