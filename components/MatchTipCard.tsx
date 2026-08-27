@@ -16,6 +16,33 @@ const JOKER_LABELS: Record<JokerType, { emoji: string; label: string }> = {
   safe: { emoji: '🛡️', label: 'SICHER' },
 };
 
+/**
+ * Turns one team-stats call into the text shown in the card.
+ *
+ * Every failure used to collapse into "Keine Daten verfügbar" - a missing
+ * secret, a function that was never deployed and an expired Pro period all
+ * looked identical, which is the one thing you cannot debug. The Edge Function
+ * puts its reason in the response body, and supabase-js hides that body inside
+ * error.context rather than in error.message ("non-2xx status").
+ */
+async function statsMessage(res: { data: any; error: any }): Promise<string> {
+  if (res.data?.summary) return res.data.summary;
+
+  const context = (res.error as any)?.context;
+  if (context && typeof context.json === 'function') {
+    try {
+      const body = await context.json();
+      if (body?.error) return `Nicht verfügbar: ${body.error}`;
+    } catch {
+      // Not JSON - fall through to the status-based messages below.
+    }
+  }
+  if (context?.status === 404) {
+    return 'Nicht verfügbar: Die Funktion "team-stats" ist nicht deployed.';
+  }
+  return `Nicht verfügbar${res.error?.message ? `: ${res.error.message}` : '.'}`;
+}
+
 interface MatchTipCardProps {
   match: MatchWithTip;
   jokersRemaining: number;
@@ -102,8 +129,8 @@ export function MatchTipCard({
       supabase.functions.invoke('team-stats', { body: { team: match.away_team } }),
     ]);
     setStats({
-      home: homeRes.data?.summary ?? 'Keine Daten verfügbar.',
-      away: awayRes.data?.summary ?? 'Keine Daten verfügbar.',
+      home: await statsMessage(homeRes),
+      away: await statsMessage(awayRes),
     });
     setStatsLoading(false);
   };
