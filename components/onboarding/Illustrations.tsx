@@ -188,10 +188,12 @@ export function InsuranceArt({ active }: Props) {
           style={[
             styles.barTopUp,
             {
+              // Order matters: transforms compose left to right, so a
+              // translate listed after a scale gets scaled too and the bar
+              // drifts instead of growing off its left edge. Translate first.
               transform: [
-                { scaleX: fill },
-                // scaleX grows from the middle, so shift it back onto its edge.
                 { translateX: fill.interpolate({ inputRange: [0, 1], outputRange: [-60, 0] }) },
+                { scaleX: fill },
               ],
             },
           ]}
@@ -387,15 +389,16 @@ function RankBar({ bar, active, delay }: { bar: (typeof BARS)[number]; active: b
           {
             backgroundColor: bar.color,
             height: maxHeight * bar.height,
+            // Translate before scale for the same reason as the insurance
+            // bar: the other order scales the offset and the bar floats.
             transform: [
-              { scaleY: grow },
-              // Grow upward from the baseline instead of from the centre.
               {
                 translateY: grow.interpolate({
                   inputRange: [0, 1],
                   outputRange: [(maxHeight * bar.height) / 2, 0],
                 }),
               },
+              { scaleY: grow },
             ],
           },
         ]}

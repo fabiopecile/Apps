@@ -17,7 +17,10 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (session) router.replace('/(tabs)');
+    // Back to the root route, not straight into the tabs: index decides
+    // between the tabs and the intro. Jumping to /(tabs) from here is what
+    // kept the intro from ever running after a login or a sign-up.
+    if (session) router.replace('/');
   }, [session, router]);
 
   const handleSubmit = async () => {

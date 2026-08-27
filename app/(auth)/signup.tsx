@@ -19,7 +19,9 @@ export default function SignupScreen() {
   const [confirmationSent, setConfirmationSent] = useState(false);
 
   useEffect(() => {
-    if (session) router.replace('/(tabs)');
+    // The root route, so a brand new account lands in the intro rather than
+    // in the tabs. See the same note in login.tsx.
+    if (session) router.replace('/');
   }, [session, router]);
 
   const handleSubmit = async () => {
