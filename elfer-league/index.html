@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+<title>ELFER LEAGUE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Saira+Condensed:wght@600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<div id="app">
+
+  <!-- TOP BAR -->
+  <header class="topbar">
+    <button class="icon-btn back-btn" id="backBtn" aria-label="Zurück">‹</button>
+    <div class="brand">ELFER<span>LEAGUE</span></div>
+    <div class="coin-pill"><span class="coin-icon">●</span><span id="coinAmount">0</span></div>
+  </header>
+
+  <main id="views">
+
+    <!-- HOME -->
+    <section class="view" id="view-home" data-view="home">
+      <div class="league-badge-row">
+        <div class="league-badge" id="homeLeagueBadge">
+          <div class="league-badge-ring"></div>
+          <div class="league-badge-name" id="homeLeagueName">Liga 10</div>
+        </div>
+        <div class="league-progress-mini">
+          <div class="progress-dots" id="homeProgressDots"></div>
+          <div class="mini-stats" id="homeMiniStats">0S · 0N</div>
+        </div>
+      </div>
+
+      <div class="char-preview-card" id="goCharacter">
+        <svg id="homeCharacterSvg" class="char-svg" viewBox="0 0 200 260"></svg>
+        <div class="char-preview-label">Dein Charakter ›</div>
+      </div>
+
+      <div class="home-grid">
+        <button class="tile tile-league" id="goLeague">
+          <div class="tile-icon">🏆</div>
+          <div class="tile-title">Liga</div>
+          <div class="tile-sub" id="tileLeagueSub">Liga 10</div>
+        </button>
+        <button class="tile tile-cup" id="goCup">
+          <div class="tile-icon">🥇</div>
+          <div class="tile-title">Weekend Cup</div>
+          <div class="tile-sub" id="tileCupSub">Gesperrt</div>
+        </button>
+        <button class="tile tile-shop" id="goShop">
+          <div class="tile-icon">🛍</div>
+          <div class="tile-title">Shop</div>
+          <div class="tile-sub">Cosmetics</div>
+        </button>
+        <button class="tile tile-stats" id="goStats">
+          <div class="tile-icon">📊</div>
+          <div class="tile-title">Statistik</div>
+          <div class="tile-sub" id="tileStatsSub">0 Siege</div>
+        </button>
+      </div>
+
+      <button class="cta-btn cta-primary big-cta" id="playLeagueBtn">JETZT SPIELEN</button>
+    </section>
+
+    <!-- CHARACTER / SHOP -->
+    <section class="view" id="view-character" data-view="character">
+      <h1 class="view-title">Charakter</h1>
+      <div class="character-stage">
+        <svg id="characterSvg" class="char-svg big" viewBox="0 0 200 260"></svg>
+      </div>
+      <div class="cat-tabs" id="catTabs"></div>
+      <div class="item-scroller" id="itemScroller"></div>
+    </section>
+
+    <!-- LEAGUE -->
+    <section class="view" id="view-league" data-view="league">
+      <h1 class="view-title">Liga</h1>
+      <div class="ladder" id="ladder"></div>
+      <div class="league-panel">
+        <div class="league-panel-head">
+          <div class="league-panel-name" id="lpName">Liga 10</div>
+          <div class="league-panel-record" id="lpRecord">0S · 0N</div>
+        </div>
+        <div class="progress-dots big" id="lpDots"></div>
+        <div class="league-panel-hint" id="lpHint">Gewinne Spiele um aufzusteigen</div>
+      </div>
+      <div class="cup-teaser" id="leagueCupTeaser"></div>
+      <button class="cta-btn cta-primary big-cta" id="playFromLeagueBtn">SPIEL STARTEN</button>
+    </section>
+
+    <!-- WEEKEND CUP -->
+    <section class="view" id="view-cup" data-view="cup">
+      <h1 class="view-title">Weekend Cup</h1>
+      <div class="cup-card">
+        <div class="cup-trophy">🏆</div>
+        <div class="cup-countdown" id="cupCountdown">--:--:--</div>
+        <div class="cup-reqs" id="cupReqs"></div>
+        <div class="cup-run" id="cupRun"></div>
+        <button class="cta-btn cta-primary big-cta" id="playCupBtn">JETZT SPIELEN</button>
+      </div>
+    </section>
+
+    <!-- STATS -->
+    <section class="view" id="view-stats" data-view="stats">
+      <h1 class="view-title">Statistik</h1>
+      <div class="stats-grid" id="statsGrid"></div>
+    </section>
+
+    <!-- MATCH -->
+    <section class="view view-match" id="view-match" data-view="match">
+      <div class="scoreboard">
+        <div class="score-side" id="scoreYou"></div>
+        <div class="score-vs">VS</div>
+        <div class="score-side" id="scoreOpp"></div>
+      </div>
+      <div class="turn-indicator" id="turnIndicator">Du schießt</div>
+
+      <div class="pitch" id="pitch">
+        <div class="crowd"></div>
+        <div class="floodlights"></div>
+        <div class="goal" id="goal">
+          <div class="net"></div>
+          <div class="post post-l"></div>
+          <div class="post post-r"></div>
+          <div class="post post-top"></div>
+          <div class="keeper" id="keeper">
+            <div class="kbody"></div><div class="karm karm-l"></div><div class="karm karm-r"></div>
+          </div>
+          <div class="aim-overlay" id="aimOverlay"></div>
+          <div class="aim-cursor" id="aimCursor"></div>
+        </div>
+        <div class="ball" id="ball"></div>
+        <div class="player-rig" id="playerRig">
+          <svg id="matchCharacterSvg" class="char-svg match-char" viewBox="0 0 200 260"></svg>
+        </div>
+        <div class="result-flash" id="resultFlash"></div>
+        <div class="defend-zones" id="defendZones"></div>
+        <div class="tell-indicator" id="tellIndicator"></div>
+      </div>
+
+      <div class="power-meter-wrap" id="powerMeterWrap">
+        <div class="power-meter"><div class="power-fill" id="powerFill"></div><div class="power-target" id="powerTarget"></div></div>
+        <div class="power-hint">Tippe um Kraft festzulegen</div>
+      </div>
+
+      <div class="confetti-layer" id="confettiLayer"></div>
+    </section>
+
+    <!-- MATCH END -->
+    <section class="view" id="view-matchend" data-view="matchend">
+      <div class="matchend-card">
+        <div class="matchend-result" id="matchendResult">SIEG</div>
+        <div class="matchend-score" id="matchendScore">3 : 2</div>
+        <div class="matchend-rewards" id="matchendRewards"></div>
+        <div class="matchend-league" id="matchendLeague"></div>
+        <button class="cta-btn cta-primary big-cta" id="matchendContinue">WEITER</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
