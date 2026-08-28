@@ -3,50 +3,14 @@ import { PlayerSetup } from '../../components/PlayerSetup'
 import { usePlayers } from '../../lib/storage'
 import { Screen } from '../../components/Screen'
 import { Button, Card as UiCard, Pill } from '../../components/ui'
-import {
-  buildDeck,
-  handValue,
-  isBlackjack,
-  isRed,
-  shuffleDeck,
-  type Card,
-} from './deck'
+import { Hand } from './CardViews'
+import { buildDeck, handValue, isBlackjack, shuffleDeck, type Card } from './deck'
 
 type Status = 'playing' | 'stand' | 'bust' | 'blackjack'
 type Outcome = 'win' | 'lose' | 'push'
 type Phase = 'setup' | 'playing' | 'results'
 
 type Tally = { wins: number; losses: number; pushes: number }
-
-function CardFace({ card, hidden }: { card: Card; hidden?: boolean }) {
-  if (hidden) {
-    return (
-      <div className="flex h-16 w-11 items-center justify-center rounded-lg border border-white/20 bg-gradient-to-br from-violet-700 to-violet-900 text-lg">
-        🂠
-      </div>
-    )
-  }
-  return (
-    <div
-      className={`flex h-16 w-11 flex-col items-center justify-center rounded-lg border border-white/20 bg-white font-bold ${
-        isRed(card.suit) ? 'text-rose-600' : 'text-slate-900'
-      }`}
-    >
-      <span className="text-sm leading-none">{card.rank}</span>
-      <span className="text-lg leading-none">{card.suit}</span>
-    </div>
-  )
-}
-
-function Hand({ cards, hideSecond = false }: { cards: Card[]; hideSecond?: boolean }) {
-  return (
-    <div className="flex gap-1.5">
-      {cards.map((c, i) => (
-        <CardFace key={i} card={c} hidden={hideSecond && i === 1} />
-      ))}
-    </div>
-  )
-}
 
 export function Blackjack() {
   const [players, setPlayers] = usePlayers()

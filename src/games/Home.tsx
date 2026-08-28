@@ -2,6 +2,13 @@ import { Link } from 'react-router-dom'
 
 const games = [
   {
+    to: '/liga',
+    emoji: '🏆',
+    title: 'Weekend League',
+    desc: 'Online gegen andere: Fr–So, 20 Spiele pro Minigame, Liga-Aufstieg & Belohnungen.',
+    gradient: 'from-indigo-600/40 to-blue-900/40',
+  },
+  {
     to: '/impostor',
     emoji: '🕵️',
     title: 'Impostor',
