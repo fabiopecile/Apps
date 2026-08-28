@@ -52,13 +52,33 @@ function GameLeagueCard({ game, stats }: { game: LeagueGame; stats: WeekendStats
         </p>
       )}
       <p className="text-xs text-white/50">Belohnung: {division.reward}</p>
-      <Button
-        onClick={() => navigate(label.to)}
-        disabled={!isActive || full}
-        className="!bg-violet-500 hover:!bg-violet-400"
-      >
-        {full ? 'Für dieses Wochenende erledigt' : isActive ? 'Online spielen' : 'Nur Fr–So spielbar'}
-      </Button>
+      {game === 'blackjack' ? (
+        <div className="flex gap-3">
+          <Button
+            onClick={() => navigate(label.to)}
+            disabled={!isActive || full}
+            variant="secondary"
+            className="flex-1"
+          >
+            {full ? 'Erledigt' : isActive ? 'Vs. Dealer' : 'Nur Fr–So'}
+          </Button>
+          <Button
+            onClick={() => navigate('/blackjack/live')}
+            disabled={!isActive || full}
+            className="flex-1 !bg-violet-500 hover:!bg-violet-400"
+          >
+            {full ? 'Erledigt' : isActive ? 'Live 1v1 ⚡' : 'Nur Fr–So'}
+          </Button>
+        </div>
+      ) : (
+        <Button
+          onClick={() => navigate(label.to)}
+          disabled={!isActive || full}
+          className="!bg-violet-500 hover:!bg-violet-400"
+        >
+          {full ? 'Für dieses Wochenende erledigt' : isActive ? 'Online spielen' : 'Nur Fr–So spielbar'}
+        </Button>
+      )}
     </Card>
   )
 }

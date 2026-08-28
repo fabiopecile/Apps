@@ -1,5 +1,6 @@
 import { Route, Routes } from 'react-router-dom'
 import { Blackjack } from './games/blackjack/Blackjack'
+import { BlackjackLive } from './games/blackjack/BlackjackLive'
 import { BlackjackOnline } from './games/blackjack/BlackjackOnline'
 import { Home } from './games/Home'
 import { Impostor } from './games/impostor/Impostor'
@@ -21,6 +22,7 @@ function App() {
       <Route path="/zeitgefuehl/online" element={<TimingOnline />} />
       <Route path="/blackjack" element={<Blackjack />} />
       <Route path="/blackjack/online" element={<BlackjackOnline />} />
+      <Route path="/blackjack/live" element={<BlackjackLive />} />
       <Route path="/wahrheit-oder-pflicht" element={<TruthOrDare />} />
       <Route path="/reaktionstest" element={<ReactionTest />} />
       <Route path="/reaktionstest/online" element={<ReactionOnline />} />

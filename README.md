@@ -21,6 +21,14 @@ bei Blackjack ist wie gewohnt der Dealer der Gegner, aber die Siege zählen für
 Je mehr Siege, desto höher die Liga (Bronze → Silber → Gold → Platin → Diamant → Elite) mit
 jeweils eigener kosmetischer Belohnung.
 
+Blackjack hat zusätzlich einen **Live-1v1-Modus** (`/blackjack/live`): Zwei Accounts werden über
+Supabase-Realtime-Kanäle automatisch an einen gemeinsamen Tisch gematcht (Presence-basiertes
+Matchmaking, keine zusätzliche Datenbanktabelle nötig) und spielen live nacheinander gegen denselben
+Dealer – man sieht die Karten des Gegners in Echtzeit. Der Spieler mit der kleineren Nutzer-ID
+übernimmt deterministisch die Rolle des „Hosts" (verteilt die Karten, wertet Züge aus, sendet den
+Spielstand per Broadcast); verlässt der Gegner den Tisch, wird das über Presence sofort erkannt.
+Beide Ergebnisse zählen unabhängig für die Weekend League.
+
 Der Online-Modus braucht ein kostenloses [Supabase](https://supabase.com)-Projekt als Backend:
 
 1. Projekt auf supabase.com anlegen.
