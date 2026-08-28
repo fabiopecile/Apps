@@ -63,7 +63,13 @@ export default function RulesScreen() {
 
         <Section title="Joker">
           <Text style={styles.intro}>
-            Pro Spieltag hast du eine begrenzte Zahl an Jokern. Du setzt sie vor Anpfiff auf ein einzelnes Spiel.
+            Du setzt einen Joker vor Anpfiff auf ein einzelnes Spiel. Jede Woche wirst du auf mindestens
+            3 Joker aufgefüllt – wer mehr gesammelt hat, behält sie. Ziehst du einen Joker vor Anpfiff
+            wieder zurück, bekommst du ihn gutgeschrieben.
+          </Text>
+          <Text style={styles.note}>
+            Zusätzliche Joker gibt es für jedes Level, für jeden siebten Tag deiner Login-Serie, für jeden
+            eingeladenen Freund und am Glücksrad.
           </Text>
 
           <View style={styles.jokerCard}>

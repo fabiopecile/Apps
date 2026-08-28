@@ -73,7 +73,7 @@ const SLIDES: Slide[] = [
     eyebrow: 'DIE REGELN',
     eyebrowColor: colors.gold,
     title: 'Setz deine Joker',
-    body: 'Pro Spieltag hast du Joker, jeder gilt für ein einzelnes Spiel. Boost verdoppelt deine Punkte, Risiko würfelt zwischen der Hälfte und dem Anderthalbfachen, Sicher rettet dir 1 Punkt bei einem Fehltipp. Jedes Level bringt einen Joker dazu.',
+    body: 'Jede Woche hast du mindestens 3 Joker, jeder gilt für ein einzelnes Spiel. Boost verdoppelt deine Punkte, Risiko würfelt zwischen der Hälfte und dem Anderthalbfachen, Sicher rettet dir 1 Punkt bei einem Fehltipp. Für jedes Level kommt einer dazu – gesammelte Joker verfallen nie.',
   },
   {
     key: 'insurance',
