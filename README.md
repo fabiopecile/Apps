@@ -2,6 +2,15 @@
 
 Eine Sammlung von Handy-Partyspielen zum gemeinsamen Spielen mit Freunden – ein Gerät wird herumgereicht.
 
+## Live-Vorschau
+
+Jeder Push auf diesen Branch (oder `main`) baut die App automatisch und deployed sie über GitHub
+Actions nach GitHub Pages (siehe `.github/workflows/deploy-preview.yml`). Einmalig muss dafür in
+den Repo-Einstellungen unter **Settings → Pages → Source** „GitHub Actions" ausgewählt werden –
+danach ist die App live unter `https://<username>.github.io/<repo>/` erreichbar und aktualisiert
+sich bei jedem Push automatisch. Das Routing läuft über Hash-URLs (`#/blackjack` usw.), damit es
+ohne Server-Konfiguration auf GitHub Pages funktioniert.
+
 ## Spiele
 
 - **Impostor** – Alle außer einer Person bekommen ein geheimes Wort. Wer errät, wer den Impostor spielt?
