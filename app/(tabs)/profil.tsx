@@ -15,6 +15,7 @@ import { AnimatedBar } from '@/components/AnimatedBar';
 import { useAuth } from '@/contexts/AuthContext';
 import { useOwnPosts } from '@/hooks/useOwnPosts';
 import { useBadges } from '@/hooks/useBadges';
+import { BadgeIcon } from '@/components/BadgeIcon';
 import { useTranslation } from '@/hooks/useTranslation';
 import { supabase } from '@/lib/supabase';
 import { confirmDestructive } from '@/lib/confirm';
@@ -268,20 +269,36 @@ export default function ProfilScreen() {
             ) : null}
 
             {tab === 'badges' ? (
-              <View style={styles.badgeGrid}>
-                {allBadges.map((badge) => {
-                  const earned = earnedIds.has(badge.id);
-                  return (
-                    <View key={badge.id} style={[styles.badgeCard, !earned && styles.badgeCardLocked]}>
-                      <Ionicons
-                        name={earned ? 'medal' : 'lock-closed'}
-                        size={24}
-                        color={earned ? colors.gold : colors.textFaint}
-                      />
-                      <Text style={styles.badgeName}>{badge.name}</Text>
-                    </View>
-                  );
-                })}
+              <View>
+                {allBadges.length > 0 ? (
+                  <Text style={styles.badgeCount}>
+                    {earnedIds.size} von {allBadges.length} freigeschaltet
+                  </Text>
+                ) : null}
+                <View style={styles.badgeGrid}>
+                  {allBadges.map((badge) => {
+                    const earned = earnedIds.has(badge.id);
+                    return (
+                      <View
+                        key={badge.id}
+                        style={[styles.badgeCard, earned ? styles.badgeCardEarned : styles.badgeCardLocked]}
+                      >
+                        <BadgeIcon
+                          name={badge.icon}
+                          size={30}
+                          // Gesperrt ist dasselbe Symbol in Grau, nicht ein
+                          // Schloss: so sieht man vorher, was es zu holen gibt.
+                          color={earned ? colors.gold : colors.textFaint}
+                          accent={earned ? colors.gold : colors.textFaint}
+                        />
+                        <Text style={[styles.badgeName, earned && styles.badgeNameEarned]}>{badge.name}</Text>
+                        <Text style={styles.badgeHint} numberOfLines={2}>
+                          {badge.description}
+                        </Text>
+                      </View>
+                    );
+                  })}
+                </View>
                 {allBadges.length === 0 ? <EmptyState title={t('profil.noBadges')} /> : null}
               </View>
             ) : null}
@@ -372,10 +389,31 @@ const styles = StyleSheet.create({
   statDetailRow: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: spacing.sm, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: colors.border },
   statDetailLabel: { color: colors.textMuted, fontSize: fontSizes.sm },
   statDetailValue: { color: colors.white, fontWeight: '700', fontSize: fontSizes.sm },
+  badgeCount: {
+    color: colors.textMuted,
+    fontSize: fontSizes.xs,
+    fontWeight: '700',
+    letterSpacing: 0.4,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+  },
   badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', padding: spacing.lg, gap: spacing.md },
-  badgeCard: { width: '30%', backgroundColor: colors.card, borderRadius: radii.md, borderWidth: 1, borderColor: colors.border, alignItems: 'center', padding: spacing.md, gap: spacing.xs },
-  badgeCardLocked: { opacity: 0.4 },
-  badgeName: { color: colors.text, fontSize: fontSizes.xs, textAlign: 'center' },
+  badgeCard: {
+    width: '30%',
+    backgroundColor: colors.card,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    gap: spacing.xs,
+  },
+  badgeCardEarned: { borderColor: colors.gold, backgroundColor: colors.goldDark },
+  badgeCardLocked: { opacity: 0.55 },
+  badgeName: { color: colors.textMuted, fontSize: fontSizes.xs, fontWeight: '700', textAlign: 'center' },
+  badgeNameEarned: { color: colors.white },
+  badgeHint: { color: colors.textFaint, fontSize: 10, lineHeight: 13, textAlign: 'center' },
   signOut: { margin: spacing.lg, marginBottom: spacing.sm, padding: spacing.md, alignItems: 'center', borderRadius: radii.lg, borderWidth: 1, borderColor: colors.borderStrong },
   signOutText: { color: colors.danger, fontWeight: '700' },
   deleteError: { color: colors.danger, fontSize: fontSizes.xs, textAlign: 'center', paddingHorizontal: spacing.lg },

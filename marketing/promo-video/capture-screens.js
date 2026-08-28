@@ -55,6 +55,7 @@ function person(id, username, name, points, correct, tips) {
     equipped_title: null,
     equipped_frame_color: null,
     last_wheel_spin_date: null,
+    language: 'de',
     onboarding_done: true,
     created_at: agoHours(900),
     referral_code: 'FABIO11',
@@ -151,6 +152,18 @@ const PRIZE = {
   created_at: agoHours(300),
 };
 
+const BADGES = [
+  ['first_tip', 'Erster Tipp', 'Deinen ersten Tipp abgegeben', 'flag', 1],
+  ['insured', 'Vorsorger', 'Einen Spieltag versichert', 'shield', 2],
+  ['hot_streak', 'Heiße Serie', '5 richtige Tipps hintereinander', 'flame', 3],
+  ['sniper', 'Scharfschütze', '10 exakte Ergebnisse getroffen', 'target', 4],
+  ['regular', 'Stammgast', '30 Tage Login-Serie gehalten', 'calendar', 5],
+  ['social_butterfly', 'Stimmungsmacher', '10 Beiträge geschrieben', 'bubbles', 6],
+  ['ambassador', 'Botschafter', '3 Freunde eingeladen', 'network', 7],
+  ['climber', 'Aufsteiger', 'Level 10 erreicht', 'chevrons', 8],
+  ['top_3', 'Podium', 'Am Monatsende unter den ersten drei', 'podium', 9],
+].map((b) => ({ id: 'bd-' + b[0], code: b[0], name: b[1], description: b[2], icon: b[3], sort_order: b[4] }));
+
 const RANKING = [PEOPLE[1], PEOPLE[0], PEOPLE[2], PEOPLE[3], PEOPLE[4]].map((p, i) => ({
   id: p.id,
   username: p.username,
@@ -199,7 +212,10 @@ function answer(url) {
   if (p.endsWith('/rest/v1/blocks')) return [];
   if (p.endsWith('/rest/v1/conversations')) return [];
   if (p.endsWith('/rest/v1/conversation_participants')) return [];
-  if (p.endsWith('/rest/v1/badges') || p.endsWith('/rest/v1/user_badges')) return [];
+  if (p.endsWith('/rest/v1/badges')) return BADGES;
+  if (p.endsWith('/rest/v1/user_badges')) {
+    return BADGES.slice(0, 5).map((b) => ({ badge_id: b.id, user_id: ME, earned_at: agoHours(40) }));
+  }
   if (p.includes('/rest/v1/rpc/monthly_ranking')) return RANKING;
   if (p.includes('/rest/v1/rpc/')) return [];
 
@@ -229,6 +245,8 @@ const SHOTS = [
   { name: '04-profil', path: '/(tabs)/profil' },
   { name: '05-regeln', path: '/rules' },
   { name: '06-regeln-joker', path: '/rules', scroll: 620 },
+  { name: '07-badges', path: '/(tabs)/profil', tapBadges: true },
+  { name: '08-badges-unten', path: '/(tabs)/profil', tapBadges: true, scroll: 420 },
 ];
 
 (async () => {
@@ -287,6 +305,10 @@ const SHOTS = [
   for (const shot of SHOTS) {
     await page.goto('http://127.0.0.1:8099' + shot.path);
     await page.waitForTimeout(2200);
+    if (shot.tapBadges) {
+      await page.getByText('BADGES', { exact: true }).click();
+      await page.waitForTimeout(900);
+    }
     if (shot.scroll) {
       await page.mouse.move(WIDTH / 2, HEIGHT / 2);
       await page.mouse.wheel(0, shot.scroll);

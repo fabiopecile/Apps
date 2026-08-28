@@ -181,7 +181,9 @@ export type Badge = {
   code: string;
   name: string;
   description: string | null;
+  /** Name einer selbst gezeichneten Form aus components/BadgeIcon.tsx. */
   icon: string;
+  sort_order: number;
 };
 
 export type UserBadge = {

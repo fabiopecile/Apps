@@ -9,7 +9,9 @@ export function useBadges(userId?: string) {
 
   useEffect(() => {
     Promise.all([
-      supabase.from('badges').select('*'),
+      // Nach sort_order, damit die leicht erreichbaren Badges vorne stehen -
+      // ein Raster in zufälliger Reihenfolge liest sich nicht als Weg.
+      supabase.from('badges').select('*').order('sort_order', { ascending: true }),
       userId ? supabase.from('user_badges').select('badge_id').eq('user_id', userId) : Promise.resolve({ data: [] }),
     ]).then(([badgesRes, earnedRes]) => {
       setAllBadges((badgesRes.data as Badge[]) ?? []);
