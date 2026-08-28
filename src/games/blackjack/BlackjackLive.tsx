@@ -3,10 +3,11 @@ import { useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { AuthGate } from '../../auth/AuthGate'
+import { OutcomeBanner } from '../../components/OutcomeBanner'
 import { Screen } from '../../components/Screen'
 import { Button, Card as UiCard, Pill } from '../../components/ui'
 import { MAX_GAMES_PER_WEEKEND } from '../../league/divisions'
-import { fetchWeekendStats, submitBlackjackResult, type Outcome } from '../../league/service'
+import { fetchWeekendStats, submitBlackjackResult } from '../../league/service'
 import { getWeekendInfo } from '../../league/weekend'
 import { supabase } from '../../lib/supabase'
 import { Hand } from './CardViews'
@@ -29,11 +30,6 @@ type Stage =
   | 'abandoned'
   | 'error'
 
-const outcomeLabel: Record<Outcome, { text: string; color: string }> = {
-  win: { text: 'Gewonnen! 🎉', color: 'text-emerald-400' },
-  lose: { text: 'Verloren', color: 'text-rose-400' },
-  draw: { text: 'Unentschieden (Push)', color: 'text-yellow-300' },
-}
 
 function LiveContent() {
   const { profile } = useAuth()
@@ -351,9 +347,7 @@ function LiveContent() {
 
         {stage === 'result' && myOutcome && (
           <>
-            <p className={`text-xl font-bold ${outcomeLabel[myOutcome].color}`}>
-              {outcomeLabel[myOutcome].text}
-            </p>
+            <OutcomeBanner outcome={myOutcome} drawText="Unentschieden (Push)" />
             <div className="flex w-full max-w-xs flex-col gap-3">
               <Button onClick={playAgain} className="!bg-emerald-500 hover:!bg-emerald-400">
                 Nochmal spielen

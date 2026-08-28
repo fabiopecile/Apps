@@ -2,18 +2,13 @@ import { useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { AuthGate } from '../../auth/AuthGate'
+import { OutcomeBanner } from '../../components/OutcomeBanner'
 import { Screen } from '../../components/Screen'
 import { Button, Card, Pill } from '../../components/ui'
 import { randomInt } from '../../lib/random'
 import { submitScoreResult, type Outcome } from '../../league/service'
 
 type Phase = 'ready' | 'running' | 'submitting' | 'result' | 'error'
-
-const outcomeLabel: Record<Outcome, { text: string; color: string }> = {
-  win: { text: 'Gewonnen! 🎉', color: 'text-emerald-400' },
-  lose: { text: 'Verloren', color: 'text-rose-400' },
-  draw: { text: 'Unentschieden', color: 'text-yellow-300' },
-}
 
 function OnlineTimingContent() {
   const { profile } = useAuth()
@@ -95,9 +90,7 @@ function OnlineTimingContent() {
 
       {phase === 'result' && result && (
         <>
-          <p className={`text-xl font-bold ${outcomeLabel[result.outcome].color}`}>
-            {outcomeLabel[result.outcome].text}
-          </p>
+          <OutcomeBanner outcome={result.outcome} />
           <Card className="flex w-full max-w-sm flex-col gap-2">
             <div className="flex items-center justify-between">
               <span className="text-white/60">Du</span>

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { AuthGate } from '../../auth/AuthGate'
+import { OutcomeBanner } from '../../components/OutcomeBanner'
 import { Screen } from '../../components/Screen'
 import { Button, Card as UiCard, Pill } from '../../components/ui'
 import { submitBlackjackResult, type Outcome as LeagueOutcome } from '../../league/service'
@@ -10,12 +11,6 @@ import { buildDeck, handValue, isBlackjack, shuffleDeck, type Card } from './dec
 
 type Status = 'playing' | 'stand' | 'bust' | 'blackjack'
 type Phase = 'playing' | 'submitting' | 'result' | 'error'
-
-const outcomeLabel: Record<LeagueOutcome, { text: string; color: string }> = {
-  win: { text: 'Gewonnen! 🎉', color: 'text-emerald-400' },
-  lose: { text: 'Verloren', color: 'text-rose-400' },
-  draw: { text: 'Unentschieden (Push)', color: 'text-yellow-300' },
-}
 
 function deal() {
   let d = shuffleDeck(buildDeck())
@@ -141,9 +136,7 @@ function OnlineBlackjackContent() {
           <>
             <Hand cards={player} />
             <p className="text-2xl font-extrabold">{handValue(player)}</p>
-            <p className={`text-xl font-bold ${outcomeLabel[leagueOutcome].color}`}>
-              {outcomeLabel[leagueOutcome].text}
-            </p>
+            <OutcomeBanner outcome={leagueOutcome} drawText="Unentschieden (Push)" />
             <div className="flex w-full max-w-xs flex-col gap-3">
               <Button onClick={playAgain} className="!bg-emerald-500 hover:!bg-emerald-400">
                 Nächste Hand

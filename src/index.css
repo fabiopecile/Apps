@@ -31,3 +31,28 @@ textarea {
   -webkit-user-select: text;
   user-select: text;
 }
+
+@keyframes blob-float-a {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(6%, 8%) scale(1.15); }
+}
+
+@keyframes blob-float-b {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-8%, -6%) scale(1.1); }
+}
+
+.blob-a {
+  animation: blob-float-a 16s ease-in-out infinite;
+}
+
+.blob-b {
+  animation: blob-float-b 20s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blob-a,
+  .blob-b {
+    animation: none;
+  }
+}
