@@ -4,12 +4,12 @@ Eine Sammlung von Handy-Partyspielen zum gemeinsamen Spielen mit Freunden – ei
 
 ## Live-Vorschau
 
-Jeder Push auf diesen Branch (oder `main`) baut die App automatisch und deployed sie über GitHub
-Actions nach GitHub Pages (siehe `.github/workflows/deploy-preview.yml`). Einmalig muss dafür in
-den Repo-Einstellungen unter **Settings → Pages → Source** „GitHub Actions" ausgewählt werden –
-danach ist die App live unter `https://<username>.github.io/<repo>/` erreichbar und aktualisiert
-sich bei jedem Push automatisch. Das Routing läuft über Hash-URLs (`#/blackjack` usw.), damit es
-ohne Server-Konfiguration auf GitHub Pages funktioniert.
+Deployt über [Netlify](https://netlify.com) (siehe `netlify.toml`: Build-Command `npm run build`,
+Publish-Ordner `dist`). Repo in Netlify importieren (funktioniert auch privat im kostenlosen
+Tarif) – Build-Einstellungen werden automatisch aus `netlify.toml` übernommen. Danach gibt es eine
+feste Produktions-URL für `main` sowie eine eigene Deploy-Preview-URL pro Branch/Pull-Request, die
+sich bei jedem Push automatisch aktualisiert. Das Routing läuft über Hash-URLs (`#/blackjack`
+usw.), damit Unterseiten auch bei einem harten Reload ohne Server-Konfiguration funktionieren.
 
 ## Spiele
 
