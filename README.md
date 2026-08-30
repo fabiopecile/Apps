@@ -20,6 +20,12 @@ usw.), damit Unterseiten auch bei einem harten Reload ohne Server-Konfiguration 
 - **Wahrheit oder Pflicht** – Zufällige Fragen und Aufgaben in mehreren Kategorien.
 - **Reaktionstest** – Wer hat die schnellsten Reflexe?
 
+### Zum Vorglühen
+
+- **Ich hab noch nie** – Der Klassiker, mit Kategorien von harmlos bis spicy.
+- **Wer würde eher** – Eine Aussage, alle zeigen gleichzeitig auf jemanden.
+- **Kings Cup** – Karte ziehen, App zeigt die Regel dazu, viertes Königskarte = Kings Cup austrinken.
+
 ## Weekend League (Online-Modus)
 
 Zeitgefühl, Reaktionstest und Blackjack haben zusätzlich einen Online-Modus mit echten Accounts:

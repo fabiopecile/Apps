@@ -56,6 +56,30 @@ const games = [
   },
 ]
 
+const pregameGames = [
+  {
+    to: '/ich-hab-noch-nie',
+    emoji: '🙈',
+    title: 'Ich hab noch nie',
+    desc: 'Der Klassiker zum Vorglühen.',
+    accent: 'from-pink-400 to-rose-700',
+  },
+  {
+    to: '/wer-wuerde-eher',
+    emoji: '👉',
+    title: 'Wer würde eher',
+    desc: 'Alle zeigen gleichzeitig.',
+    accent: 'from-fuchsia-400 to-purple-700',
+  },
+  {
+    to: '/kingscup',
+    emoji: '👑',
+    title: 'Kings Cup',
+    desc: 'Karte ziehen, Regel befolgen.',
+    accent: 'from-amber-400 to-orange-700',
+  },
+]
+
 const container: Variants = {
   hidden: {},
   show: { transition: { staggerChildren: 0.06, delayChildren: 0.2 } },
@@ -64,6 +88,35 @@ const container: Variants = {
 const item: Variants = {
   hidden: { opacity: 0, y: 16, scale: 0.96 },
   show: { opacity: 1, y: 0, scale: 1, transition: { type: 'spring', stiffness: 320, damping: 26 } },
+}
+
+type GameTile = { to: string; emoji: string; title: string; desc: string; accent: string }
+
+function GameGrid({ games }: { games: GameTile[] }) {
+  return (
+    <motion.div variants={container} initial="hidden" animate="show" className="grid grid-cols-2 gap-3">
+      {games.map((g) => (
+        <MotionLink
+          key={g.to}
+          to={g.to}
+          variants={item}
+          whileTap={{ scale: 0.96 }}
+          whileHover={{ scale: 1.03, y: -3 }}
+          className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-black/20 backdrop-blur-sm"
+        >
+          <div
+            className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${g.accent} text-xl shadow-md`}
+          >
+            {g.emoji}
+          </div>
+          <div>
+            <h2 className="font-bold leading-tight">{g.title}</h2>
+            <p className="mt-0.5 text-xs leading-snug text-white/50">{g.desc}</p>
+          </div>
+        </MotionLink>
+      ))}
+    </motion.div>
+  )
 }
 
 export function Home() {
@@ -132,34 +185,17 @@ export function Home() {
         >
           Partyspiele
         </motion.h3>
+        <GameGrid games={games} />
 
-        <motion.div
-          variants={container}
-          initial="hidden"
-          animate="show"
-          className="grid grid-cols-2 gap-3"
+        <motion.h3
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.2 }}
+          className="mb-3 mt-7 text-xs font-semibold uppercase tracking-widest text-white/40"
         >
-          {games.map((g) => (
-            <MotionLink
-              key={g.to}
-              to={g.to}
-              variants={item}
-              whileTap={{ scale: 0.96 }}
-              whileHover={{ scale: 1.03, y: -3 }}
-              className="flex flex-col gap-3 rounded-3xl border border-white/10 bg-white/[0.04] p-4 shadow-lg shadow-black/20 backdrop-blur-sm"
-            >
-              <div
-                className={`flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br ${g.accent} text-xl shadow-md`}
-              >
-                {g.emoji}
-              </div>
-              <div>
-                <h2 className="font-bold leading-tight">{g.title}</h2>
-                <p className="mt-0.5 text-xs leading-snug text-white/50">{g.desc}</p>
-              </div>
-            </MotionLink>
-          ))}
-        </motion.div>
+          🍻 Zum Vorglühen
+        </motion.h3>
+        <GameGrid games={pregameGames} />
       </div>
     </div>
   )

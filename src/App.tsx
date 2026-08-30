@@ -4,7 +4,10 @@ import { BlackjackLive } from './games/blackjack/BlackjackLive'
 import { BlackjackOnline } from './games/blackjack/BlackjackOnline'
 import { Home } from './games/Home'
 import { Impostor } from './games/impostor/Impostor'
+import { KingsCup } from './games/kingscup/KingsCup'
 import { League } from './games/league/League'
+import { MostLikely } from './games/mostlikely/MostLikely'
+import { NeverHaveI } from './games/neverhavei/NeverHaveI'
 import { ReactionOnline } from './games/reaction/ReactionOnline'
 import { ReactionTest } from './games/reaction/ReactionTest'
 import { TimingGame } from './games/timing/TimingGame'
@@ -26,6 +29,9 @@ function App() {
       <Route path="/wahrheit-oder-pflicht" element={<TruthOrDare />} />
       <Route path="/reaktionstest" element={<ReactionTest />} />
       <Route path="/reaktionstest/online" element={<ReactionOnline />} />
+      <Route path="/ich-hab-noch-nie" element={<NeverHaveI />} />
+      <Route path="/wer-wuerde-eher" element={<MostLikely />} />
+      <Route path="/kingscup" element={<KingsCup />} />
       <Route path="/liga" element={<League />} />
     </Routes>
   )
