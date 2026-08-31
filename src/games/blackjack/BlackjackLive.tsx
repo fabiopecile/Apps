@@ -17,6 +17,8 @@ import { computePartner, hostIdFor, tableIdFor } from './matchmaking'
 
 const LOBBY_TOPIC = 'blackjack-lobby'
 const CONNECT_TIMEOUT_MS = 12000
+const DEAL_STEP_MS = 350
+const DEAL_REVEAL_STEPS = 4 // my card 1, opponent card 1, my card 2, opponent card 2
 
 type PresenceMeta = { username: string; joinedAt: number }
 
@@ -42,6 +44,8 @@ function LiveContent() {
   const [round, setRound] = useState(0) // bump to restart matchmaking effects
   const [matchToken, setMatchToken] = useState(0) // bump exactly once per paired match
   const [isHost, setIsHost] = useState(false) // mirrors isHostRef, for rendering only
+  const [dealingRevealCount, setDealingRevealCount] = useState(0)
+  const [showDealing, setShowDealing] = useState(false)
 
   const lobbyRef = useRef<RealtimeChannel | null>(null)
   const tableRef = useRef<RealtimeChannel | null>(null)
@@ -50,12 +54,44 @@ function LiveContent() {
   const partnerIdRef = useRef<string | null>(null)
   const dealtRef = useRef(false)
   const submittedRef = useRef(false)
+  // Purely local reveal animation for the opening deal — the network state
+  // is already fully resolved the moment liveState arrives, this just
+  // staggers how much of it we show before the Hit/Stand UI appears.
+  const initialDealShownRef = useRef(false)
   // Mirrors `liveState` so channel callbacks always read the latest value
   // without needing to resubscribe whenever state changes.
   const liveStateRef = useRef<LiveState | null>(null)
   useEffect(() => {
     liveStateRef.current = liveState
   }, [liveState])
+
+  // The very first liveState of a match is the opening deal — stage a local
+  // reveal animation for it instead of showing both full hands instantly.
+  useEffect(() => {
+    if (liveState && !initialDealShownRef.current) {
+      initialDealShownRef.current = true
+      setDealingRevealCount(0)
+      setShowDealing(true)
+    }
+  }, [liveState])
+
+  useEffect(() => {
+    if (!showDealing) return
+    if (dealingRevealCount >= DEAL_REVEAL_STEPS) {
+      setShowDealing(false)
+      return
+    }
+    const timer = setTimeout(() => setDealingRevealCount((c) => c + 1), DEAL_STEP_MS)
+    return () => clearTimeout(timer)
+  }, [showDealing, dealingRevealCount])
+
+  // Reset the reveal animation whenever a brand new match starts. By the time
+  // a new match can start, the previous deal animation has always already
+  // finished (showDealing/dealingRevealCount are back at their defaults) —
+  // only the "have we shown this match's deal yet" flag needs clearing.
+  useEffect(() => {
+    initialDealShownRef.current = false
+  }, [matchToken])
 
   const profileId = profile?.id
   const username = profile?.username
@@ -311,6 +347,28 @@ function LiveContent() {
   const myStatus = isHost ? liveState.hostStatus : liveState.guestStatus
   const myOutcome = isHost ? liveState.hostOutcome : liveState.guestOutcome
   const isMyTurn = liveState.phase === 'turn' && liveState.turn === (isHost ? 'host' : 'guest')
+
+  if (showDealing) {
+    const revealedMine = dealingRevealCount >= 3 ? 2 : dealingRevealCount >= 1 ? 1 : 0
+    const revealedOpp = dealingRevealCount >= 4 ? 2 : dealingRevealCount >= 2 ? 1 : 0
+    return (
+      <div className="flex flex-1 flex-col gap-3">
+        <UiCard className="flex flex-col items-center gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Dealer</h2>
+          <Hand cards={liveState.dealerHand} hideSecond />
+        </UiCard>
+        <UiCard className="flex flex-col items-center gap-2">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">{opponentName}</h2>
+          <Hand cards={oppHand.slice(0, revealedOpp)} />
+        </UiCard>
+        <div className="flex flex-1 flex-col items-center justify-center gap-3">
+          <Pill>Du</Pill>
+          <Hand cards={myHand.slice(0, revealedMine)} />
+          <p className="text-white/50">Karten werden ausgeteilt…</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-1 flex-col gap-3">

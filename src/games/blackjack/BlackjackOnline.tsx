@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../auth/AuthContext'
 import { AuthGate } from '../../auth/AuthGate'
@@ -10,7 +10,10 @@ import { Hand } from './CardViews'
 import { buildDeck, handValue, isBlackjack, shuffleDeck, type Card } from './deck'
 
 type Status = 'playing' | 'stand' | 'bust' | 'blackjack'
-type Phase = 'playing' | 'submitting' | 'result' | 'error'
+type Phase = 'dealing' | 'playing' | 'submitting' | 'result' | 'error'
+
+const DEAL_ORDER: ('player' | 'dealer')[] = ['player', 'dealer', 'player', 'dealer']
+const DEAL_STEP_MS = 350
 
 function deal() {
   let d = shuffleDeck(buildDeck())
@@ -27,12 +30,29 @@ function deal() {
 function OnlineBlackjackContent() {
   const { profile } = useAuth()
   const navigate = useNavigate()
-  const [phase, setPhase] = useState<Phase>('playing')
+  const [phase, setPhase] = useState<Phase>('dealing')
   const [{ deck, player, dealer }, setGame] = useState(deal)
+  const [dealStep, setDealStep] = useState(0)
   const [error, setError] = useState('')
   const [leagueOutcome, setLeagueOutcome] = useState<LeagueOutcome | null>(null)
 
   const value = handValue(player)
+
+  useEffect(() => {
+    if (phase !== 'dealing') return
+    if (dealStep >= DEAL_ORDER.length) {
+      setPhase('playing')
+      return
+    }
+    const timer = setTimeout(() => setDealStep((s) => s + 1), DEAL_STEP_MS)
+    return () => clearTimeout(timer)
+  }, [phase, dealStep])
+
+  const revealedSoFar = DEAL_ORDER.slice(0, dealStep)
+  const visiblePlayer =
+    phase === 'dealing' ? player.slice(0, revealedSoFar.filter((s) => s === 'player').length) : player
+  const visibleDealer =
+    phase === 'dealing' ? dealer.slice(0, revealedSoFar.filter((s) => s === 'dealer').length) : dealer
 
   function hit() {
     const [card, ...rest] = deck
@@ -88,18 +108,29 @@ function OnlineBlackjackContent() {
   function playAgain() {
     setGame(deal())
     setLeagueOutcome(null)
-    setPhase('playing')
+    setDealStep(0)
+    setPhase('dealing')
   }
 
   return (
     <div className="flex flex-1 flex-col gap-4">
       <UiCard className="flex flex-col items-center gap-2">
         <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">Dealer</h2>
-        <Hand cards={dealer} hideSecond={phase === 'playing'} />
-        {phase !== 'playing' && <p className="text-xl font-extrabold">{handValue(dealer)}</p>}
+        <Hand cards={visibleDealer} hideSecond={phase === 'dealing' || phase === 'playing'} />
+        {phase !== 'dealing' && phase !== 'playing' && (
+          <p className="text-xl font-extrabold">{handValue(dealer)}</p>
+        )}
       </UiCard>
 
       <div className="flex flex-1 flex-col items-center justify-center gap-4">
+        {phase === 'dealing' && (
+          <>
+            <Pill>⚡ Weekend League</Pill>
+            <Hand cards={visiblePlayer} />
+            <p className="text-white/50">Karten werden ausgeteilt…</p>
+          </>
+        )}
+
         {phase === 'playing' && (
           <>
             <Pill>⚡ Weekend League</Pill>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PlayerSetup } from '../../components/PlayerSetup'
 import { usePlayers } from '../../lib/storage'
 import { Screen } from '../../components/Screen'
@@ -8,9 +8,22 @@ import { buildDeck, handValue, isBlackjack, shuffleDeck, type Card } from './dec
 
 type Status = 'playing' | 'stand' | 'bust' | 'blackjack'
 type Outcome = 'win' | 'lose' | 'push'
-type Phase = 'setup' | 'playing' | 'results'
+type Phase = 'setup' | 'dealing' | 'playing' | 'results'
 
 type Tally = { wins: number; losses: number; pushes: number }
+
+type DealTarget = { kind: 'dealer' } | { kind: 'player'; player: string }
+
+function buildDealOrder(players: string[]): DealTarget[] {
+  const order: DealTarget[] = []
+  for (let round = 0; round < 2; round++) {
+    for (const p of players) order.push({ kind: 'player', player: p })
+    order.push({ kind: 'dealer' })
+  }
+  return order
+}
+
+const DEAL_STEP_MS = 350
 
 export function Blackjack() {
   const [players, setPlayers] = usePlayers()
@@ -22,6 +35,15 @@ export function Blackjack() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [outcomes, setOutcomes] = useState<Record<string, Outcome>>({})
   const [tally, setTally] = useState<Record<string, Tally>>({})
+  const [dealStep, setDealStep] = useState(0)
+
+  const pendingRef = useRef<{
+    hands: Record<string, Card[]>
+    dealer: Card[]
+    status: Record<string, Status>
+    deck: Card[]
+    order: DealTarget[]
+  } | null>(null)
 
   const validPlayers = players.map((p) => p.trim()).filter(Boolean).slice(0, 4)
 
@@ -52,25 +74,62 @@ export function Blackjack() {
       newStatus[p] = isBlackjack(newHands[p]) ? 'blackjack' : 'playing'
     }
 
-    setDeck(d)
-    setHands(newHands)
-    setDealerHand(newDealer)
-    setStatus(newStatus)
+    pendingRef.current = {
+      hands: newHands,
+      dealer: newDealer,
+      status: newStatus,
+      deck: d,
+      order: buildDealOrder(validPlayers),
+    }
+    setHands(Object.fromEntries(validPlayers.map((p) => [p, []])))
+    setDealerHand([])
     setOutcomes({})
     setTally((prev) => {
       const next = { ...prev }
       for (const p of validPlayers) if (!next[p]) next[p] = { wins: 0, losses: 0, pushes: 0 }
       return next
     })
-
-    const firstPlaying = validPlayers.findIndex((p) => newStatus[p] === 'playing')
-    if (firstPlaying === -1) {
-      resolveRound(newHands, newStatus, newDealer, d)
-    } else {
-      setCurrentIndex(firstPlaying)
-      setPhase('playing')
-    }
+    setDealStep(0)
+    setPhase('dealing')
   }
+
+  // Reveal the already-computed round one card at a time for a dealing animation.
+  useEffect(() => {
+    if (phase !== 'dealing') return
+    const pending = pendingRef.current
+    if (!pending) return
+
+    if (dealStep >= pending.order.length) {
+      setHands(pending.hands)
+      setDealerHand(pending.dealer)
+      setStatus(pending.status)
+      setDeck(pending.deck)
+      const firstPlaying = validPlayers.findIndex((p) => pending.status[p] === 'playing')
+      if (firstPlaying === -1) {
+        resolveRound(pending.hands, pending.status, pending.dealer, pending.deck)
+      } else {
+        setCurrentIndex(firstPlaying)
+        setPhase('playing')
+      }
+      return
+    }
+
+    const timer = setTimeout(() => {
+      const dealtSoFar = pending.order.slice(0, dealStep + 1)
+      setDealerHand(pending.dealer.slice(0, dealtSoFar.filter((s) => s.kind === 'dealer').length))
+      setHands((prev) => {
+        const next = { ...prev }
+        for (const p of validPlayers) {
+          const count = dealtSoFar.filter((s) => s.kind === 'player' && s.player === p).length
+          next[p] = pending.hands[p].slice(0, count)
+        }
+        return next
+      })
+      setDealStep((s) => s + 1)
+    }, DEAL_STEP_MS)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [phase, dealStep])
 
   function advanceOrResolve(nextHands: Record<string, Card[]>, nextStatus: Record<string, Status>, d: Card[]) {
     const nextIndex = validPlayers.findIndex(
@@ -181,6 +240,26 @@ export function Blackjack() {
               Karten geben
             </Button>
           </div>
+        </div>
+      )}
+
+      {phase === 'dealing' && (
+        <div className="flex flex-1 flex-col gap-4">
+          <UiCard className="flex flex-col items-center gap-2">
+            <h2 className="text-sm font-semibold uppercase tracking-wide text-white/60">
+              Dealer
+            </h2>
+            <Hand cards={dealerHand} />
+          </UiCard>
+          <div className="flex flex-1 flex-col justify-center gap-3 overflow-y-auto">
+            {validPlayers.map((p) => (
+              <UiCard key={p} className="flex flex-col items-center gap-2">
+                <p className="font-bold">{p}</p>
+                <Hand cards={hands[p] ?? []} />
+              </UiCard>
+            ))}
+          </div>
+          <p className="text-center text-white/50">Karten werden ausgeteilt…</p>
         </div>
       )}
 

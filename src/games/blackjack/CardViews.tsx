@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion'
 import { isRed, type Card } from './deck'
 
 export function CardFace({ card, hidden }: { card: Card; hidden?: boolean }) {
@@ -24,7 +25,14 @@ export function Hand({ cards, hideSecond = false }: { cards: Card[]; hideSecond?
   return (
     <div className="flex gap-1.5">
       {cards.map((c, i) => (
-        <CardFace key={i} card={c} hidden={hideSecond && i === 1} />
+        <motion.div
+          key={i}
+          initial={{ opacity: 0, y: -40, rotate: -10, scale: 0.7 }}
+          animate={{ opacity: 1, y: 0, rotate: 0, scale: 1 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 24 }}
+        >
+          <CardFace card={c} hidden={hideSecond && i === 1} />
+        </motion.div>
       ))}
     </div>
   )
