@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Platform } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { StatusBar } from 'expo-status-bar';
 import { Stack } from 'expo-router';
@@ -33,21 +34,35 @@ export default function RootLayout() {
   });
   const hasHydrated = useBeerpongStore((s) => s.hasHydrated);
   const [bootDone, setBootDone] = useState(false);
+  // On web, useFonts() can resolve before the browser has actually finished
+  // parsing the font file, which briefly shows fallback "tofu" glyphs for
+  // custom fonts like Orbitron. Wait for document.fonts.ready too.
+  const [webFontsReady, setWebFontsReady] = useState(Platform.OS !== 'web');
+
+  useEffect(() => {
+    if (Platform.OS !== 'web') return;
+    const fonts = (globalThis as { document?: { fonts?: { ready?: Promise<unknown> } } }).document?.fonts;
+    if (fonts?.ready) {
+      fonts.ready.then(() => setWebFontsReady(true));
+    } else {
+      setWebFontsReady(true);
+    }
+  }, []);
 
   useEffect(() => {
     if (fontError) throw fontError;
   }, [fontError]);
 
   useEffect(() => {
-    if (fontsLoaded && hasHydrated) {
+    if (fontsLoaded && hasHydrated && webFontsReady) {
       SplashScreen.hideAsync().catch(() => {});
       void preloadSounds();
       const timer = setTimeout(() => setBootDone(true), 1100);
       return () => clearTimeout(timer);
     }
-  }, [fontsLoaded, hasHydrated]);
+  }, [fontsLoaded, hasHydrated, webFontsReady]);
 
-  if (!fontsLoaded || !hasHydrated) {
+  if (!fontsLoaded || !hasHydrated || !webFontsReady) {
     return null;
   }
 

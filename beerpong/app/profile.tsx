@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontFamily: fonts.displayBlack,
+    fontFamily: fonts.numeric,
     fontSize: 28,
     color: colors.neon,
   },

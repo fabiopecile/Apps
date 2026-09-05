@@ -60,7 +60,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   value: {
-    fontFamily: fonts.displayBlack,
+    fontFamily: fonts.numeric,
     color: colors.neon,
   },
   label: {

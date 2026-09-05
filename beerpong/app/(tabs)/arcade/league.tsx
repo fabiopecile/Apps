@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
     marginRight: spacing.md,
   },
   avatarText: {
-    fontFamily: fonts.displayBlack,
+    fontFamily: fonts.numeric,
     fontSize: 16,
   },
   opponentInfo: {

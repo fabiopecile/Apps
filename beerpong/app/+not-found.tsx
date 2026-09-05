@@ -28,7 +28,7 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   title: {
-    fontFamily: fonts.displayBlack,
+    fontFamily: fonts.numeric,
     fontSize: 48,
     color: colors.neon,
   },

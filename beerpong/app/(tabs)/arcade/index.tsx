@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { GridBackground } from '@/components/ui/GridBackground';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
@@ -42,7 +43,7 @@ export default function ArcadeScreen() {
   const { level, progress } = selectCareerProgress(arcade.careerXP);
 
   const startX = tableWidth / 2;
-  const startY = TABLE_HEIGHT - 24;
+  const startY = TABLE_HEIGHT - 40;
   const cupsRemaining = aliveFlags.filter(Boolean).length;
 
   const handleResult = (result: { cupIndex: number | null; hit: boolean }) => {
@@ -123,6 +124,14 @@ export default function ArcadeScreen() {
         </View>
 
         <View style={[styles.table, { width: tableWidth, height: TABLE_HEIGHT }]}>
+          <LinearGradient
+            colors={['#151b12', '#0d100b', '#0a0a0a']}
+            style={StyleSheet.absoluteFill}
+            pointerEvents="none"
+          />
+          <View style={styles.tableCenterLine} pointerEvents="none" />
+          <View style={[styles.tableRail, styles.tableRailLeft]} pointerEvents="none" />
+          <View style={[styles.tableRail, styles.tableRailRight]} pointerEvents="none" />
           <CupPyramid cups={cups} aliveFlags={aliveFlags} accent={opponent.color} />
           <ThrowBall
             startX={startX}
@@ -138,7 +147,9 @@ export default function ArcadeScreen() {
           <FlashOverlay ref={flashRef} />
         </View>
 
-        <Text style={styles.hint}>Nach oben wischen: Richtung = Ziel, Weite = Kraft</Text>
+        <Text style={styles.hint} selectable={false}>
+          Nach oben wischen: Richtung = Ziel, Weite = Kraft
+        </Text>
 
         <View style={styles.statsRow}>
           <Stat label="Cups übrig" value={`${cupsRemaining}/${CUP_COUNT}`} />
@@ -169,8 +180,12 @@ export default function ArcadeScreen() {
 function Stat({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.statBox}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
+      <Text style={styles.statValue} selectable={false}>
+        {value}
+      </Text>
+      <Text style={styles.statLabel} selectable={false}>
+        {label}
+      </Text>
     </View>
   );
 }
@@ -219,6 +234,27 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundCard,
     overflow: 'hidden',
   },
+  tableCenterLine: {
+    position: 'absolute',
+    top: '52%',
+    left: '8%',
+    right: '8%',
+    height: 1,
+    backgroundColor: colors.neonFaint,
+  },
+  tableRail: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    width: 6,
+    backgroundColor: 'rgba(255,255,255,0.04)',
+  },
+  tableRailLeft: {
+    left: 0,
+  },
+  tableRailRight: {
+    right: 0,
+  },
   hint: {
     textAlign: 'center',
     fontFamily: fonts.bodyRegular,
@@ -237,7 +273,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statValue: {
-    fontFamily: fonts.displayBlack,
+    fontFamily: fonts.numeric,
     fontSize: 22,
     color: colors.neon,
   },
