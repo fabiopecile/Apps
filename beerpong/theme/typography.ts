@@ -2,6 +2,11 @@ export const fonts = {
   display: 'Orbitron_700Bold',
   displayBlack: 'Orbitron_900Black',
   displayMedium: 'Orbitron_500Medium',
+  // Orbitron draws a slashed zero, which reads as an icon rather than "0" at
+  // large sizes — use it for logo/wordmark text only, never bare numbers.
+  // Numeric displays (scores, stats) use this instead: same condensed/black
+  // weight family, but with unambiguous digits.
+  numeric: 'BarlowCondensed_900Black',
   heading: 'BarlowCondensed_700Bold',
   headingBlack: 'BarlowCondensed_900Black',
   label: 'BarlowCondensed_600SemiBold',

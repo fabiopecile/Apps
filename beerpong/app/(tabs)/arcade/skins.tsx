@@ -7,6 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { GridBackground } from '@/components/ui/GridBackground';
 import { Card } from '@/components/ui/Card';
 import { GlowButton } from '@/components/ui/GlowButton';
+import { BallArt } from '@/components/arcade/BallArt';
 import { SKINS, type SkinType } from '@/lib/skins';
 import { useBeerpongStore } from '@/lib/store';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
@@ -66,9 +67,29 @@ export default function SkinsScreen() {
 
             return (
               <Card style={styles.skinCard} highlighted={equipped}>
-                <View style={[styles.swatch, { borderColor: item.accent }, equipped && glow('medium', item.accent)]}>
-                  <View style={[styles.swatchInner, { backgroundColor: item.accent }]} />
-                </View>
+                {item.type === 'ball' ? (
+                  <View
+                    style={[
+                      styles.ballSwatchRing,
+                      { borderColor: item.accent },
+                      glow(equipped ? 'medium' : 'soft', item.accent),
+                    ]}
+                  >
+                    <View style={styles.ballSwatch}>
+                      <BallArt accent={item.accent} />
+                    </View>
+                  </View>
+                ) : (
+                  <View
+                    style={[
+                      styles.tableSwatch,
+                      { borderColor: item.accent, backgroundColor: `${item.accent}22` },
+                      glow(equipped ? 'medium' : 'soft', item.accent),
+                    ]}
+                  >
+                    <View style={[styles.tableSwatchLine, { backgroundColor: item.accent }]} />
+                  </View>
+                )}
                 <Text style={styles.skinName}>{item.name}</Text>
                 <Text style={styles.skinDescription}>{item.description}</Text>
 
@@ -165,19 +186,34 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 6,
   },
-  swatch: {
+  ballSwatchRing: {
     width: 64,
     height: 64,
     borderRadius: 32,
     borderWidth: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
+    padding: 4,
+    backgroundColor: colors.backgroundElevated,
     marginBottom: spacing.xs,
   },
-  swatchInner: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+  ballSwatch: {
+    flex: 1,
+    borderRadius: 24,
+    overflow: 'hidden',
+  },
+  tableSwatch: {
+    width: 72,
+    height: 48,
+    borderRadius: radius.sm,
+    borderWidth: 2,
+    justifyContent: 'center',
+    marginBottom: spacing.xs,
+    overflow: 'hidden',
+  },
+  tableSwatchLine: {
+    height: 2,
+    width: '70%',
+    alignSelf: 'center',
+    opacity: 0.8,
   },
   skinName: {
     fontFamily: fonts.label,

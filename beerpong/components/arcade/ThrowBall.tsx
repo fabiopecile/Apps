@@ -9,10 +9,11 @@ import Animated, {
   Easing,
 } from 'react-native-reanimated';
 import Svg, { Line } from 'react-native-svg';
-import { colors, glow } from '@/theme';
+import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
+import { BallArt } from './BallArt';
 
-const BALL_SIZE = 30;
+const BALL_SIZE = 28;
 const DRAG_POWER_DIVISOR = 150;
 const DRAG_AIM_DIVISOR = 120;
 
@@ -159,19 +160,13 @@ export function ThrowBall({
         </Svg>
       ) : null}
 
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.ball, { width: BALL_SIZE, height: BALL_SIZE, backgroundColor: accent }, trailStyle]}
-      />
+      <Animated.View pointerEvents="none" style={[styles.ball, { width: BALL_SIZE, height: BALL_SIZE }, trailStyle]}>
+        <BallArt accent={accent} />
+      </Animated.View>
       <GestureDetector gesture={pan}>
-        <Animated.View
-          style={[
-            styles.ball,
-            { width: BALL_SIZE, height: BALL_SIZE, backgroundColor: accent },
-            glow('medium', accent),
-            ballStyle,
-          ]}
-        />
+        <Animated.View style={[styles.ball, { width: BALL_SIZE, height: BALL_SIZE }, glow('medium', accent), ballStyle]}>
+          <BallArt accent={accent} />
+        </Animated.View>
       </GestureDetector>
     </>
   );
@@ -180,8 +175,5 @@ export function ThrowBall({
 const styles = StyleSheet.create({
   ball: {
     position: 'absolute',
-    borderRadius: BALL_SIZE,
-    borderWidth: 2,
-    borderColor: colors.background,
   },
 });
