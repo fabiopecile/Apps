@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -11,9 +11,9 @@ import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
 import { BallArt } from './BallArt';
 
-const BALL_SIZE = 28;
-const AIM_DURATION = 700;
-const FLIGHT_DURATION = 520;
+const BALL_SIZE = 30;
+const AIM_DURATION = 750;
+const FLIGHT_DURATION = 560;
 
 interface OpponentResult {
   cupIndex: number;
@@ -47,6 +47,17 @@ export function OpponentThrow({
   const ballOpacity = useSharedValue(0);
   const trailOpacity = useSharedValue(0);
   const [aimTarget, setAimTarget] = useState<{ x: number; y: number } | null>(null);
+  const aimTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const flightTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const clearTimers = () => {
+    if (aimTimer.current) clearTimeout(aimTimer.current);
+    if (flightTimer.current) clearTimeout(flightTimer.current);
+    aimTimer.current = null;
+    flightTimer.current = null;
+  };
+
+  useEffect(() => clearTimers, []);
 
   useEffect(() => {
     if (turnToken <= 0) return;
@@ -55,31 +66,30 @@ export function OpponentThrow({
     if (alive.length === 0) return;
     const target = alive[Math.floor(Math.random() * alive.length)];
 
+    clearTimers();
     ballX.value = startX;
     ballY.value = startY;
     ballOpacity.value = withTiming(1, { duration: 150 });
     setAimTarget({ x: target.x, y: target.y });
 
     const hit = Math.random() < accuracy;
-    const landX = hit ? target.x : target.x + (Math.random() - 0.5) * 70;
-    const landY = hit ? target.y : target.y + 30 + Math.random() * 20;
+    const landX = hit ? target.x : target.x + (Math.random() - 0.5) * 80;
+    const landY = hit ? target.y : target.y + 30 + Math.random() * 24;
 
-    const aimTimer = setTimeout(() => {
+    aimTimer.current = setTimeout(() => {
       setAimTarget(null);
       trailOpacity.value = withTiming(1, { duration: 60 });
       ballX.value = withTiming(landX, { duration: FLIGHT_DURATION, easing: Easing.out(Easing.quad) });
       ballY.value = withTiming(landY, { duration: FLIGHT_DURATION, easing: Easing.out(Easing.quad) });
 
-      const flightTimer = setTimeout(() => {
+      flightTimer.current = setTimeout(() => {
         trailOpacity.value = withTiming(0, { duration: 200 });
         ballOpacity.value = withTiming(0, { duration: 220 });
         onResult({ cupIndex: target.index, hit });
       }, FLIGHT_DURATION + 30);
-
-      return () => clearTimeout(flightTimer);
     }, AIM_DURATION);
 
-    return () => clearTimeout(aimTimer);
+    return clearTimers;
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turnToken]);
 
@@ -95,7 +105,7 @@ export function OpponentThrow({
     opacity: trailOpacity.value * 0.35,
     transform: [
       { translateX: ballX.value - BALL_SIZE / 2 },
-      { translateY: ballY.value - BALL_SIZE / 2 + 10 },
+      { translateY: ballY.value - BALL_SIZE / 2 - 12 },
       { scale: 1.15 },
     ],
   }));
@@ -117,10 +127,10 @@ export function OpponentThrow({
         </Svg>
       ) : null}
 
-      <Animated.View pointerEvents="none" style={[styles.ball, { width: BALL_SIZE, height: BALL_SIZE }, trailStyle]}>
+      <Animated.View pointerEvents="none" style={[styles.ball, trailStyle]}>
         <BallArt accent={accent} />
       </Animated.View>
-      <Animated.View pointerEvents="none" style={[styles.ball, { width: BALL_SIZE, height: BALL_SIZE }, glow('medium', accent), ballStyle]}>
+      <Animated.View pointerEvents="none" style={[styles.ball, glow('medium', accent), ballStyle]}>
         <BallArt accent={accent} />
       </Animated.View>
     </>
@@ -130,5 +140,9 @@ export function OpponentThrow({
 const styles = StyleSheet.create({
   ball: {
     position: 'absolute',
+    width: BALL_SIZE,
+    height: BALL_SIZE,
+    // Keeps the neon glow round instead of casting a square halo on web.
+    borderRadius: BALL_SIZE / 2,
   },
 });

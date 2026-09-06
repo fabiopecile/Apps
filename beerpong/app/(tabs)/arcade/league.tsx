@@ -11,6 +11,7 @@ import { colors, fonts, radius, spacing } from '@/theme';
 
 export default function LeagueScreen() {
   const defeatedIds = useBeerpongStore((s) => s.arcade.defeatedOpponentIds);
+  const currentOpponentId = useBeerpongStore((s) => s.currentOpponentId);
   const setCurrentOpponentId = useBeerpongStore((s) => s.setCurrentOpponentId);
 
   const challenge = (opponent: Opponent) => {
@@ -37,8 +38,9 @@ export default function LeagueScreen() {
           contentContainerStyle={styles.listContent}
           renderItem={({ item, index }) => {
             const defeated = defeatedIds.includes(item.id);
+            const isCurrent = item.id === currentOpponentId;
             return (
-              <Card style={styles.opponentCard} highlighted={defeated}>
+              <Card style={styles.opponentCard} highlighted={defeated || isCurrent}>
                 <View style={[styles.avatar, { borderColor: item.color }]}>
                   <Text style={[styles.avatarText, { color: item.color }]}>{index + 1}</Text>
                 </View>
@@ -55,16 +57,19 @@ export default function LeagueScreen() {
                     ))}
                   </View>
                 </View>
-                {defeated ? (
-                  <View style={styles.defeatedBadge}>
-                    <Ionicons name="checkmark-circle" size={16} color={colors.neon} />
-                    <Text style={styles.defeatedText}>Besiegt</Text>
-                  </View>
-                ) : (
+                <View style={styles.opponentActions}>
+                  {defeated ? (
+                    <View style={styles.defeatedBadge}>
+                      <Ionicons name="checkmark-circle" size={14} color={colors.neon} />
+                      <Text style={styles.defeatedText}>Besiegt</Text>
+                    </View>
+                  ) : null}
                   <Pressable style={styles.challengeButton} onPress={() => challenge(item)}>
-                    <Text style={styles.challengeText}>Fordern</Text>
+                    <Text style={styles.challengeText}>
+                      {isCurrent ? 'Aktiv' : defeated ? 'Nochmal' : 'Fordern'}
+                    </Text>
                   </Pressable>
-                )}
+                </View>
               </Card>
             );
           }}
@@ -123,6 +128,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 2,
     marginTop: 4,
+  },
+  opponentActions: {
+    alignItems: 'flex-end',
+    gap: 6,
   },
   challengeButton: {
     paddingHorizontal: spacing.md,

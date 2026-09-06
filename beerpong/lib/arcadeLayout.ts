@@ -6,51 +6,106 @@ export interface CupSpec {
   height: number;
 }
 
-// Classic 4-3-2-1 beer pong rack (10 cups), back row (farthest from the net)
-// to the single front cup (closest to the net).
-const ROWS = [
-  { count: 4, y: 2, width: 24 },
-  { count: 3, y: 38, width: 30 },
-  { count: 2, y: 80, width: 36 },
-  { count: 1, y: 130, width: 42 },
-];
+interface RowSpec {
+  count: number;
+  width: number;
+}
 
 const CUP_ASPECT = 1.25; // height = width * CUP_ASPECT, like a real Solo cup
 
-// One rack's own bounding height, the gap between the two racks where both
-// balls live, and the resulting total table height (opponent rack on top,
-// player's own rack mirrored at the bottom).
-export const RACK_HEIGHT = 190;
-export const NET_ZONE = 100;
-export const TABLE_HEIGHT = RACK_HEIGHT * 2 + NET_ZONE;
+// Rows always run from the far end of a rack to the end nearest the viewer,
+// growing as they come closer, so a rack reads as receding down the table.
+// The opponent's rack sits at the far end (apex points back at you), your own
+// rack sits right in front of you (apex points away, down the table).
+const OPPONENT_ROWS: RowSpec[] = [
+  { count: 4, width: 34 },
+  { count: 3, width: 40 },
+  { count: 2, width: 48 },
+  { count: 1, width: 56 },
+];
 
-export function generateCupLayout(width: number): CupSpec[] {
+const PLAYER_ROWS: RowSpec[] = [
+  { count: 1, width: 46 },
+  { count: 2, width: 54 },
+  { count: 3, width: 61 },
+  { count: 4, width: 68 },
+];
+
+const OPPONENT_ROW_GAP = 14;
+const PLAYER_ROW_GAP = 16;
+const OPPONENT_COLUMN_GAP = 16;
+const PLAYER_COLUMN_GAP = 18;
+
+function rackHeight(rows: RowSpec[], rowGap: number): number {
+  return rows.reduce((sum, row, i) => sum + row.width * CUP_ASPECT + (i > 0 ? rowGap : 0), 0);
+}
+
+export const OPPONENT_RACK_TOP = 26;
+export const OPPONENT_RACK_HEIGHT = rackHeight(OPPONENT_ROWS, OPPONENT_ROW_GAP);
+export const NET_Y = OPPONENT_RACK_TOP + OPPONENT_RACK_HEIGHT + 74;
+// Both balls rest mid-table. Thanks to the camera pan, the same stretch of
+// table reads as "near you" on your turn and "far away" on the opponent's.
+export const PLAYER_BALL_Y = NET_Y + 46;
+export const OPPONENT_BALL_Y = NET_Y + 90;
+export const PLAYER_RACK_TOP = NET_Y + 128;
+export const PLAYER_RACK_HEIGHT = rackHeight(PLAYER_ROWS, PLAYER_ROW_GAP);
+export const TABLE_HEIGHT = PLAYER_RACK_TOP + PLAYER_RACK_HEIGHT + 28;
+
+// The window you actually look through. The table is taller than this, so the
+// camera pans between the two ends depending on whose turn it is: on your turn
+// you see the opponent's rack far up the table, on theirs you see your own.
+export const VIEWPORT_HEIGHT = 430;
+export const CAMERA_PAN = TABLE_HEIGHT - VIEWPORT_HEIGHT;
+
+function buildRack(
+  tableWidth: number,
+  rows: RowSpec[],
+  columnGap: number,
+  rowGap: number,
+  top: number
+): CupSpec[] {
   const cups: CupSpec[] = [];
   let index = 0;
-  for (const row of ROWS) {
-    const gap = 10;
-    const rowWidth = row.count * row.width + (row.count - 1) * gap;
-    const startX = width / 2 - rowWidth / 2;
+  let y = top;
+  for (const row of rows) {
     const height = row.width * CUP_ASPECT;
+    const rowWidth = row.count * row.width + (row.count - 1) * columnGap;
+    const startX = tableWidth / 2 - rowWidth / 2;
     for (let i = 0; i < row.count; i++) {
       cups.push({
         index,
-        x: startX + i * (row.width + gap) + row.width / 2,
-        y: row.y + height / 2,
+        x: startX + i * (row.width + columnGap) + row.width / 2,
+        y: y + height / 2,
         width: row.width,
         height,
       });
       index += 1;
     }
+    y += height + rowGap;
   }
   return cups;
 }
 
-// Mirrors a rack (generated with generateCupLayout) so its 4-wide row sits at
-// the far edge and its single cup faces the net, for the rack on the other
-// side of the table.
-export function mirrorRack(cups: CupSpec[]): CupSpec[] {
-  return cups.map((c) => ({ ...c, y: TABLE_HEIGHT - c.y }));
+/** The rack you throw at, at the far end of the table. */
+export function generateOpponentRack(tableWidth: number): CupSpec[] {
+  return buildRack(
+    tableWidth,
+    OPPONENT_ROWS,
+    OPPONENT_COLUMN_GAP,
+    OPPONENT_ROW_GAP,
+    OPPONENT_RACK_TOP
+  );
 }
 
-export const CUP_COUNT = ROWS.reduce((sum, r) => sum + r.count, 0);
+/** Your own rack, right in front of you, that the opponent throws at. */
+export function generatePlayerRack(tableWidth: number): CupSpec[] {
+  return buildRack(
+    tableWidth,
+    PLAYER_ROWS,
+    PLAYER_COLUMN_GAP,
+    PLAYER_ROW_GAP,
+    PLAYER_RACK_TOP
+  );
+}
+
+export const CUP_COUNT = OPPONENT_ROWS.reduce((sum, r) => sum + r.count, 0);

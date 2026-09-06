@@ -4,7 +4,8 @@ import Animated, { useAnimatedStyle, useSharedValue, withSequence, withTiming } 
 import { colors } from '@/theme';
 
 export interface FlashOverlayHandle {
-  flash: (color?: string) => void;
+  /** `intensity` is the peak opacity — keep it low over large surfaces. */
+  flash: (color?: string, intensity?: number) => void;
 }
 
 export const FlashOverlay = forwardRef<FlashOverlayHandle>((_props, ref) => {
@@ -12,10 +13,10 @@ export const FlashOverlay = forwardRef<FlashOverlayHandle>((_props, ref) => {
   const tint = useSharedValue<string>(colors.neon);
 
   useImperativeHandle(ref, () => ({
-    flash: (color = colors.neon) => {
+    flash: (color = colors.neon, intensity = 0.4) => {
       tint.value = color;
       opacity.value = withSequence(
-        withTiming(0.45, { duration: 60 }),
+        withTiming(intensity, { duration: 60 }),
         withTiming(0, { duration: 260 })
       );
     },
