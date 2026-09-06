@@ -5,6 +5,7 @@ import Animated, {
   runOnJS,
   useAnimatedStyle,
   useSharedValue,
+  withSequence,
   withTiming,
   Easing,
 } from 'react-native-reanimated';
@@ -17,10 +18,12 @@ const BALL_SIZE = 30;
 const DRAG_POWER_DIVISOR = 150;
 const DRAG_AIM_DIVISOR = 120;
 
-interface ThrowResult {
+export interface ThrowResult {
   cupIndex: number | null;
   hit: boolean;
   power: number;
+  /** True when the ball caught the rim and kicked out. */
+  rimOut: boolean;
 }
 
 interface ThrowBallProps {
@@ -29,7 +32,8 @@ interface ThrowBallProps {
   cups: CupSpec[];
   aliveFlags: boolean[];
   accent: string;
-  opponentDifficulty: number;
+  /** 0-1: how likely your throws are to drop. */
+  skill: number;
   onResult: (result: ThrowResult) => void;
   disabled?: boolean;
   /** Fades the ball out while the opponent is throwing. */
@@ -42,7 +46,7 @@ export function ThrowBall({
   cups,
   aliveFlags,
   accent,
-  opponentDifficulty,
+  skill,
   onResult,
   disabled,
   hidden,
@@ -56,6 +60,7 @@ export function ThrowBall({
   const [flying, setFlying] = useState(false);
   const flyingRef = useRef(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const setFlyingState = (value: boolean) => {
     flyingRef.current = value;
@@ -69,6 +74,7 @@ export function ThrowBall({
   useEffect(
     () => () => {
       if (resetTimer.current) clearTimeout(resetTimer.current);
+      if (resultTimer.current) clearTimeout(resultTimer.current);
     },
     []
   );
@@ -103,55 +109,73 @@ export function ThrowBall({
     }, alive[0]);
   };
 
-  const throwBall = (dx: number, dy: number) => {
-    const power = Math.max(0, Math.min(1, Math.abs(dy) / DRAG_POWER_DIVISOR));
-    const aimRatio = Math.max(-1, Math.min(1, dx / DRAG_AIM_DIVISOR));
-    const target = pickTarget(aimRatio);
-
-    if (!target || power < 0.12) {
-      onResult({ cupIndex: null, hit: false, power });
-      return;
-    }
-
-    const hitChance = Math.max(
-      0.12,
-      Math.min(0.92, 0.55 + power * 0.3 - (opponentDifficulty - 1) * 0.045)
-    );
-    const roll = Math.random();
-    const hit = roll < hitChance;
-    const isCritical = Math.abs(hitChance - roll) < 0.08;
-
-    setFlyingState(true);
-    trailOpacity.value = withTiming(1, { duration: 60 });
-
-    const targetX = hit ? target.x : target.x + (Math.random() - 0.5) * 70;
-    const targetY = hit ? target.y : target.y - 30 - Math.random() * 20;
-
-    const mainDuration = isCritical ? 620 : 460;
-    ballScale.value = withTiming(0.55, { duration: mainDuration, easing: Easing.out(Easing.quad) });
-    ballX.value = withTiming(targetX, { duration: mainDuration, easing: Easing.out(Easing.quad) });
-    ballY.value = withTiming(
-      targetY,
-      { duration: mainDuration, easing: Easing.out(Easing.quad) },
-      (finished) => {
-        if (finished) {
-          trailOpacity.value = withTiming(0, { duration: 200 });
-          runOnJS(finishThrow)(target.index, hit, power);
-        }
-      }
-    );
-  };
-
-  const finishThrow = (cupIndex: number, hit: boolean, power: number) => {
+  const finishThrow = (cupIndex: number, hit: boolean, power: number, rimOut: boolean) => {
     setFlyingState(false);
     setAimLine(null);
-    onResult({ cupIndex, hit, power });
+    onResult({ cupIndex, hit, power, rimOut });
     if (resetTimer.current) clearTimeout(resetTimer.current);
     resetTimer.current = setTimeout(() => {
       ballX.value = withTiming(startX, { duration: 260 });
       ballY.value = withTiming(startY, { duration: 260 });
       ballScale.value = withTiming(1, { duration: 260 });
     }, 220);
+  };
+
+  const scheduleResult = (cupIndex: number, hit: boolean, power: number, delay: number) => {
+    if (resultTimer.current) clearTimeout(resultTimer.current);
+    resultTimer.current = setTimeout(() => finishThrow(cupIndex, hit, power, true), delay);
+  };
+
+  const throwBall = (dx: number, dy: number) => {
+    const power = Math.max(0, Math.min(1, Math.abs(dy) / DRAG_POWER_DIVISOR));
+    const aimRatio = Math.max(-1, Math.min(1, dx / DRAG_AIM_DIVISOR));
+    const target = pickTarget(aimRatio);
+
+    if (!target || power < 0.12) {
+      onResult({ cupIndex: null, hit: false, power, rimOut: false });
+      return;
+    }
+
+    const hitChance = Math.max(0.1, Math.min(0.94, skill + power * 0.28));
+    const roll = Math.random();
+    const hit = roll < hitChance;
+    const isCritical = Math.abs(hitChance - roll) < 0.08;
+    // A miss either rims out — the ball catches the lip and kicks away — or
+    // sails wide of the rack entirely.
+    const rimOut = !hit && Math.random() < 0.55;
+
+    setFlyingState(true);
+    trailOpacity.value = withTiming(1, { duration: 60 });
+
+    const easing = Easing.out(Easing.quad);
+    const mainDuration = isCritical ? 620 : 460;
+    const landX = hit || rimOut ? target.x : target.x + (Math.random() - 0.5) * 90;
+    const landY = hit ? target.y : rimOut ? target.y - 8 : target.y - 34 - Math.random() * 24;
+
+    ballScale.value = withTiming(hit ? 0.5 : 0.62, { duration: mainDuration, easing });
+    ballX.value = withTiming(landX, { duration: mainDuration, easing });
+    ballY.value = withTiming(landY, { duration: mainDuration, easing }, (finished) => {
+      if (!finished) return;
+      if (rimOut) {
+        // Catch the lip, kick sideways, then drop away past the rack.
+        const kickX = landX + (Math.random() < 0.5 ? -1 : 1) * (34 + Math.random() * 30);
+        const kickY = landY - 24;
+        ballScale.value = withSequence(
+          withTiming(0.74, { duration: 90 }),
+          withTiming(0.5, { duration: 320 })
+        );
+        ballX.value = withTiming(kickX, { duration: 380, easing: Easing.out(Easing.quad) });
+        ballY.value = withSequence(
+          withTiming(kickY, { duration: 140, easing: Easing.out(Easing.quad) }),
+          withTiming(kickY + 80, { duration: 260, easing: Easing.in(Easing.quad) })
+        );
+        trailOpacity.value = withTiming(0, { duration: 380 });
+        runOnJS(scheduleResult)(target.index, hit, power, 420);
+        return;
+      }
+      trailOpacity.value = withTiming(0, { duration: 200 });
+      runOnJS(finishThrow)(target.index, hit, power, false);
+    });
   };
 
   const pan = Gesture.Pan()
