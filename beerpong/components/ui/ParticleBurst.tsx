@@ -28,7 +28,8 @@ function Particle({
   originY: SharedValue<number>;
   trigger: SharedValue<number>;
 }) {
-  const progress = useSharedValue(0);
+  // Rests at 1 (fully faded out); a burst resets it to 0 and plays it forward.
+  const progress = useSharedValue(1);
   const angle = useMemo(
     () => (index / PARTICLE_COUNT) * Math.PI * 2 + (Math.random() - 0.5) * 0.5,
     [index]
@@ -40,7 +41,10 @@ function Particle({
   useAnimatedReaction(
     () => trigger.value,
     (current, previous) => {
-      if (current !== previous) {
+      // trigger starts at 0 and only counts up from an actual burst(); without
+      // the guard the first reaction (previous === null) fires a stray burst
+      // at the origin as soon as the screen mounts.
+      if (current > 0 && current !== previous) {
         progress.value = 0;
         progress.value = withTiming(1, { duration: 650, easing: Easing.out(Easing.cubic) });
       }

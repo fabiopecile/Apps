@@ -49,20 +49,25 @@ export default function RootLayout() {
     }
   }, []);
 
+  // A failed font download shouldn't take the whole app down — fall back to
+  // system fonts and carry on.
   useEffect(() => {
-    if (fontError) throw fontError;
+    if (fontError) {
+      console.warn('[beerpong] Schriftarten konnten nicht geladen werden:', fontError);
+    }
   }, [fontError]);
+  const fontsReady = fontsLoaded || fontError != null;
 
   useEffect(() => {
-    if (fontsLoaded && hasHydrated && webFontsReady) {
+    if (fontsReady && hasHydrated && webFontsReady) {
       SplashScreen.hideAsync().catch(() => {});
       void preloadSounds();
       const timer = setTimeout(() => setBootDone(true), 1100);
       return () => clearTimeout(timer);
     }
-  }, [fontsLoaded, hasHydrated, webFontsReady]);
+  }, [fontsReady, hasHydrated, webFontsReady]);
 
-  if (!fontsLoaded || !hasHydrated || !webFontsReady) {
+  if (!fontsReady || !hasHydrated || !webFontsReady) {
     return null;
   }
 
