@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useId, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -17,7 +17,7 @@ interface CupProps {
   accent: string;
 }
 
-// A stylized red Solo-cup profile, drawn once per cup on a 100x125 viewBox.
+// A stylized green Solo-cup profile, drawn once per cup on a 100x125 viewBox.
 // Tapered trapezoid body + a rim ellipse for the open top, shaded with a
 // left-to-right gradient to fake a cylindrical highlight.
 function CupArt({ id, accent }: { id: string; accent: string }) {
@@ -25,14 +25,14 @@ function CupArt({ id, accent }: { id: string; accent: string }) {
     <Svg width="100%" height="100%" viewBox="0 0 100 125">
       <Defs>
         <LinearGradient id={`body-${id}`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#ff8177" />
-          <Stop offset="0.45" stopColor="#e2231b" />
-          <Stop offset="1" stopColor="#7a0d0d" />
+          <Stop offset="0" stopColor="#baffa0" />
+          <Stop offset="0.45" stopColor="#39c823" />
+          <Stop offset="1" stopColor="#0b5c08" />
         </LinearGradient>
         <LinearGradient id={`rim-${id}`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#ffb3ac" />
-          <Stop offset="0.5" stopColor="#ff5c50" />
-          <Stop offset="1" stopColor="#b32c22" />
+          <Stop offset="0" stopColor="#ddffc8" />
+          <Stop offset="0.5" stopColor="#5cec3c" />
+          <Stop offset="1" stopColor="#1f8a12" />
         </LinearGradient>
       </Defs>
 
@@ -43,12 +43,12 @@ function CupArt({ id, accent }: { id: string; accent: string }) {
       <Path d="M9,18 L91,18 L76,116 L24,116 Z" fill={`url(#body-${id})`} />
 
       {/* subtle sheen stripe */}
-      <Path d="M22,26 L30,22 L23,110 L17,109 Z" fill="#ffffff" opacity={0.16} />
+      <Path d="M22,26 L30,22 L23,110 L17,109 Z" fill="#ffffff" opacity={0.18} />
 
       {/* rim */}
       <Ellipse cx={50} cy={18} rx={41} ry={10} fill={`url(#rim-${id})`} />
-      <Ellipse cx={50} cy={18} rx={41} ry={10} fill="none" stroke={accent} strokeWidth={2} opacity={0.85} />
-      <Ellipse cx={50} cy={18} rx={31} ry={6.4} fill="#5c0b0b" opacity={0.9} />
+      <Ellipse cx={50} cy={18} rx={41} ry={10} fill="none" stroke={accent} strokeWidth={2} opacity={0.9} />
+      <Ellipse cx={50} cy={18} rx={31} ry={6.4} fill="#0d3d09" opacity={0.9} />
     </Svg>
   );
 }
@@ -59,7 +59,7 @@ function Cup({ spec, alive, accent }: CupProps) {
   const rotate = useSharedValue(0);
   const dropY = useSharedValue(0);
   const tiltDirection = useMemo(() => (Math.random() > 0.5 ? 1 : -1), []);
-  const svgId = `${spec.index}`;
+  const svgId = useId();
 
   useEffect(() => {
     if (!alive) {
