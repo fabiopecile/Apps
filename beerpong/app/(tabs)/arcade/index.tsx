@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,19 +13,35 @@ import { ParticleBurst, type ParticleBurstHandle } from '@/components/ui/Particl
 import { FlashOverlay, type FlashOverlayHandle } from '@/components/ui/FlashOverlay';
 import { CupPyramid } from '@/components/arcade/CupPyramid';
 import { ThrowBall } from '@/components/arcade/ThrowBall';
-import { generateCupLayout, TABLE_HEIGHT, CUP_COUNT } from '@/lib/arcadeLayout';
+import { OpponentThrow } from '@/components/arcade/OpponentThrow';
+import {
+  generateCupLayout,
+  mirrorRack,
+  RACK_HEIGHT,
+  NET_ZONE,
+  TABLE_HEIGHT,
+  CUP_COUNT,
+} from '@/lib/arcadeLayout';
 import { LEAGUE_OPPONENTS } from '@/lib/opponents';
 import { SKINS } from '@/lib/skins';
 import { selectCareerProgress, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { colors, fonts, spacing, radius } from '@/theme';
 
+type Turn = 'player' | 'opponent';
+type RoundResult = 'win' | 'lose' | null;
+
 export default function ArcadeScreen() {
   const { width } = useWindowDimensions();
   const tableWidth = width - spacing.lg * 2;
-  const cups = useMemo(() => generateCupLayout(tableWidth), [tableWidth]);
-  const [aliveFlags, setAliveFlags] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
-  const [roundWon, setRoundWon] = useState(false);
+  const opponentCups = useMemo(() => generateCupLayout(tableWidth), [tableWidth]);
+  const playerCups = useMemo(() => mirrorRack(opponentCups), [opponentCups]);
+
+  const [opponentAlive, setOpponentAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
+  const [playerAlive, setPlayerAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
+  const [turn, setTurn] = useState<Turn>('player');
+  const [roundResult, setRoundResult] = useState<RoundResult>(null);
+  const [opponentTurnToken, setOpponentTurnToken] = useState(0);
 
   const arcade = useBeerpongStore((s) => s.arcade);
   const coins = useBeerpongStore((s) => s.coins);
@@ -42,133 +58,212 @@ export default function ArcadeScreen() {
   const ballSkin = SKINS.find((s) => s.id === arcade.equippedBall) ?? SKINS[0];
   const { level, progress } = selectCareerProgress(arcade.careerXP);
 
-  const startX = tableWidth / 2;
-  const startY = TABLE_HEIGHT - 40;
-  const cupsRemaining = aliveFlags.filter(Boolean).length;
+  const playerBallStart = { x: tableWidth / 2, y: RACK_HEIGHT + NET_ZONE - 22 };
+  const opponentBallStart = { x: tableWidth / 2, y: RACK_HEIGHT + 22 };
+  const opponentRemaining = opponentAlive.filter(Boolean).length;
+  const playerRemaining = playerAlive.filter(Boolean).length;
 
-  const handleResult = (result: { cupIndex: number | null; hit: boolean }) => {
-    arcadeRecordThrow(result.hit);
-    if (result.cupIndex == null) {
-      feedback.miss();
-      return;
-    }
-    if (result.hit) {
-      const cup = cups[result.cupIndex];
-      feedback.cupHit();
-      flashRef.current?.flash(ballSkin.accent);
-      particleRef.current?.burst(cup.x, cup.y);
-      setAliveFlags((prev) => {
-        const next = [...prev];
-        next[result.cupIndex as number] = false;
-        return next;
-      });
-    } else {
-      feedback.miss();
-    }
+  const resetRound = () => {
+    setOpponentAlive(Array(CUP_COUNT).fill(true));
+    setPlayerAlive(Array(CUP_COUNT).fill(true));
+    setRoundResult(null);
+    setTurn('player');
   };
 
   useEffect(() => {
-    setAliveFlags(Array(CUP_COUNT).fill(true));
-    setRoundWon(false);
+    resetRound();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentOpponentId]);
 
-  useEffect(() => {
-    if (cupsRemaining === 0 && !roundWon) {
-      setRoundWon(true);
-      feedback.victory();
-      arcadeRecordMatch(opponent.id, true);
+  const sendOpponentToThrow = () => {
+    setTimeout(() => {
+      setTurn('opponent');
+      setOpponentTurnToken((t) => t + 1);
+    }, 500);
+  };
+
+  const handlePlayerResult = (result: { cupIndex: number | null; hit: boolean }) => {
+    arcadeRecordThrow(result.hit);
+    if (result.cupIndex == null) {
+      feedback.miss();
+      sendOpponentToThrow();
+      return;
     }
-  }, [cupsRemaining, roundWon]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!result.hit) {
+      feedback.miss();
+      sendOpponentToThrow();
+      return;
+    }
+    const cup = opponentCups[result.cupIndex];
+    feedback.cupHit();
+    flashRef.current?.flash(ballSkin.accent);
+    particleRef.current?.burst(cup.x, cup.y);
+    setOpponentAlive((prev) => {
+      const next = [...prev];
+      next[result.cupIndex as number] = false;
+      const remaining = next.filter(Boolean).length;
+      if (remaining === 0) {
+        setTimeout(() => {
+          setRoundResult('win');
+          feedback.victory();
+          arcadeRecordMatch(opponent.id, true);
+        }, 400);
+      } else {
+        sendOpponentToThrow();
+      }
+      return next;
+    });
+  };
+
+  const handleOpponentResult = (result: { cupIndex: number; hit: boolean }) => {
+    if (!result.hit) {
+      setTurn('player');
+      return;
+    }
+    const cup = playerCups[result.cupIndex];
+    flashRef.current?.flash(colors.danger);
+    particleRef.current?.burst(cup.x, cup.y);
+    setPlayerAlive((prev) => {
+      const next = [...prev];
+      next[result.cupIndex] = false;
+      const remaining = next.filter(Boolean).length;
+      if (remaining === 0) {
+        setTimeout(() => {
+          setRoundResult('lose');
+          arcadeRecordMatch(opponent.id, false);
+        }, 400);
+      } else {
+        setTurn('player');
+      }
+      return next;
+    });
+  };
 
   const nextOpponent = () => {
     const idx = LEAGUE_OPPONENTS.findIndex((o) => o.id === opponent.id);
     const next = LEAGUE_OPPONENTS[(idx + 1) % LEAGUE_OPPONENTS.length];
     setCurrentOpponentId(next.id);
-    setAliveFlags(Array(CUP_COUNT).fill(true));
-    setRoundWon(false);
   };
 
-  const retryRack = () => {
-    setAliveFlags(Array(CUP_COUNT).fill(true));
-    setRoundWon(false);
-  };
+  const turnStatusText =
+    roundResult != null
+      ? ''
+      : turn === 'player'
+        ? 'Dein Wurf — nach oben wischen'
+        : `${opponent.nickname} zielt …`;
 
   return (
     <View style={styles.container}>
       <GridBackground />
       <SafeAreaView style={styles.safe}>
-        <ScreenHeader
-          title="ARCADE"
-          subtitle={`vs. ${opponent.nickname} · Lvl ${level}`}
-          right={
-            <View style={styles.coinChip}>
-              <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
-              <Text style={styles.coinText}>{coins}</Text>
-            </View>
-          }
-        />
-
-        <View style={styles.progressWrap}>
-          <ProgressBar progress={progress} />
-        </View>
-
-        <View style={styles.navRow}>
-          <Pressable style={styles.navButton} onPress={() => router.push('/(tabs)/arcade/league')}>
-            <Ionicons name="trophy" size={16} color={colors.neon} />
-            <Text style={styles.navButtonText}>Liga</Text>
-          </Pressable>
-          <Pressable style={styles.navButton} onPress={() => router.push('/(tabs)/arcade/skins')}>
-            <Ionicons name="color-palette" size={16} color={colors.neon} />
-            <Text style={styles.navButtonText}>Skins</Text>
-          </Pressable>
-        </View>
-
-        <View style={[styles.table, { width: tableWidth, height: TABLE_HEIGHT }]}>
-          <LinearGradient
-            colors={['#151b12', '#0d100b', '#0a0a0a']}
-            style={StyleSheet.absoluteFill}
-            pointerEvents="none"
+        <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+          <ScreenHeader
+            title="ARCADE"
+            subtitle={`vs. ${opponent.nickname} · Lvl ${level}`}
+            right={
+              <View style={styles.coinChip}>
+                <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
+                <Text style={styles.coinText} selectable={false}>
+                  {coins}
+                </Text>
+              </View>
+            }
           />
-          <View style={styles.tableCenterLine} pointerEvents="none" />
-          <View style={[styles.tableRail, styles.tableRailLeft]} pointerEvents="none" />
-          <View style={[styles.tableRail, styles.tableRailRight]} pointerEvents="none" />
-          <CupPyramid cups={cups} aliveFlags={aliveFlags} accent={opponent.color} />
-          <ThrowBall
-            startX={startX}
-            startY={startY}
-            cups={cups}
-            aliveFlags={aliveFlags}
-            accent={ballSkin.accent}
-            opponentDifficulty={opponent.difficulty}
-            onResult={handleResult}
-            disabled={roundWon}
-          />
-          <ParticleBurst ref={particleRef} />
-          <FlashOverlay ref={flashRef} />
-        </View>
 
-        <Text style={styles.hint} selectable={false}>
-          Nach oben wischen: Richtung = Ziel, Weite = Kraft
-        </Text>
+          <View style={styles.progressWrap}>
+            <ProgressBar progress={progress} />
+          </View>
 
-        <View style={styles.statsRow}>
-          <Stat label="Cups übrig" value={`${cupsRemaining}/${CUP_COUNT}`} />
-          <Stat label="Career Cups" value={`${arcade.totalCupsHit}`} />
-          <Stat label="Siege" value={`${arcade.wins}`} />
-        </View>
+          <View style={styles.navRow}>
+            <Pressable style={styles.navButton} onPress={() => router.push('/(tabs)/arcade/league')}>
+              <Ionicons name="trophy" size={16} color={colors.neon} />
+              <Text style={styles.navButtonText}>Liga</Text>
+            </Pressable>
+            <Pressable style={styles.navButton} onPress={() => router.push('/(tabs)/arcade/skins')}>
+              <Ionicons name="color-palette" size={16} color={colors.neon} />
+              <Text style={styles.navButtonText}>Skins</Text>
+            </Pressable>
+          </View>
+
+          <View style={styles.scoreRow}>
+            <RackBadge label={opponent.nickname} count={opponentRemaining} color={opponent.color} />
+            <Text style={styles.vsText} selectable={false}>
+              VS
+            </Text>
+            <RackBadge label="Du" count={playerRemaining} color={colors.neon} align="right" />
+          </View>
+
+          <View style={[styles.table, { width: tableWidth, height: TABLE_HEIGHT }]}>
+            <LinearGradient
+              colors={['#151b12', '#0d100b', '#151b12']}
+              style={StyleSheet.absoluteFill}
+              pointerEvents="none"
+            />
+            <View style={styles.tableCenterLine} pointerEvents="none" />
+            <View style={[styles.tableRail, styles.tableRailLeft]} pointerEvents="none" />
+            <View style={[styles.tableRail, styles.tableRailRight]} pointerEvents="none" />
+
+            <CupPyramid cups={opponentCups} aliveFlags={opponentAlive} accent={opponent.color} />
+            <CupPyramid cups={playerCups} aliveFlags={playerAlive} accent={colors.neon} />
+
+            <ThrowBall
+              startX={playerBallStart.x}
+              startY={playerBallStart.y}
+              cups={opponentCups}
+              aliveFlags={opponentAlive}
+              accent={ballSkin.accent}
+              opponentDifficulty={opponent.difficulty}
+              onResult={handlePlayerResult}
+              disabled={turn !== 'player' || roundResult != null}
+            />
+            <OpponentThrow
+              startX={opponentBallStart.x}
+              startY={opponentBallStart.y}
+              cups={playerCups}
+              aliveFlags={playerAlive}
+              accuracy={opponent.accuracy}
+              accent={colors.danger}
+              turnToken={opponentTurnToken}
+              onResult={handleOpponentResult}
+            />
+
+            <ParticleBurst ref={particleRef} />
+            <FlashOverlay ref={flashRef} />
+          </View>
+
+          <Text style={styles.hint} selectable={false}>
+            {turnStatusText}
+          </Text>
+        </ScrollView>
       </SafeAreaView>
 
-      {roundWon ? (
-        <View style={styles.victoryOverlay}>
-          <View style={styles.victoryCard}>
+      {roundResult === 'win' ? (
+        <View style={styles.resultOverlay}>
+          <View style={styles.resultCard}>
             <Ionicons name="trophy" size={40} color={colors.gold} />
-            <Text style={styles.victoryTitle}>SIEG!</Text>
-            <Text style={styles.victoryBody}>
+            <Text style={[styles.resultTitle, { color: colors.neon }]}>SIEG!</Text>
+            <Text style={styles.resultBody}>
               {opponent.nickname} besiegt · +75 Coins · +Career XP
             </Text>
-            <View style={styles.victoryButtons}>
-              <GlowButton label="Rack wiederholen" variant="outline" size="sm" onPress={retryRack} />
+            <View style={styles.resultButtons}>
+              <GlowButton label="Rack wiederholen" variant="outline" size="sm" onPress={resetRound} />
               <GlowButton label="Nächster Gegner" size="sm" onPress={nextOpponent} />
+            </View>
+          </View>
+        </View>
+      ) : null}
+
+      {roundResult === 'lose' ? (
+        <View style={styles.resultOverlay}>
+          <View style={[styles.resultCard, { borderColor: colors.danger }]}>
+            <Ionicons name="skull" size={40} color={colors.danger} />
+            <Text style={[styles.resultTitle, { color: colors.danger }]}>NIEDERLAGE</Text>
+            <Text style={styles.resultBody}>
+              {opponent.nickname} hat dein Rack leergeräumt · +20 Coins
+            </Text>
+            <View style={styles.resultButtons}>
+              <GlowButton label="Nochmal versuchen" variant="outline" size="sm" onPress={resetRound} />
+              <GlowButton label="Anderer Gegner" size="sm" onPress={nextOpponent} />
             </View>
           </View>
         </View>
@@ -177,15 +272,28 @@ export default function ArcadeScreen() {
   );
 }
 
-function Stat({ label, value }: { label: string; value: string }) {
+function RackBadge({
+  label,
+  count,
+  color,
+  align = 'left',
+}: {
+  label: string;
+  count: number;
+  color: string;
+  align?: 'left' | 'right';
+}) {
   return (
-    <View style={styles.statBox}>
-      <Text style={styles.statValue} selectable={false}>
-        {value}
-      </Text>
-      <Text style={styles.statLabel} selectable={false}>
-        {label}
-      </Text>
+    <View style={[styles.rackBadge, align === 'right' && styles.rackBadgeReverse]}>
+      <View style={[styles.rackBadgeDot, { backgroundColor: color }]} />
+      <View style={align === 'right' ? { alignItems: 'flex-end' } : undefined}>
+        <Text style={styles.rackBadgeLabel} selectable={false} numberOfLines={1}>
+          {label}
+        </Text>
+        <Text style={[styles.rackBadgeCount, { color }]} selectable={false}>
+          {count}/{CUP_COUNT}
+        </Text>
+      </View>
     </View>
   );
 }
@@ -197,6 +305,9 @@ const styles = StyleSheet.create({
   },
   safe: {
     flex: 1,
+  },
+  scroll: {
+    paddingBottom: spacing.lg,
   },
   progressWrap: {
     paddingHorizontal: spacing.lg,
@@ -225,9 +336,48 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 1,
   },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.md,
+  },
+  rackBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    flex: 1,
+  },
+  rackBadgeReverse: {
+    flexDirection: 'row-reverse',
+    justifyContent: 'flex-start',
+  },
+  rackBadgeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  rackBadgeLabel: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.textSecondary,
+    letterSpacing: 0.5,
+    maxWidth: 110,
+  },
+  rackBadgeCount: {
+    fontFamily: fonts.numeric,
+    fontSize: 20,
+  },
+  vsText: {
+    fontFamily: fonts.headingBlack,
+    fontSize: 13,
+    color: colors.textMuted,
+    marginHorizontal: spacing.sm,
+  },
   table: {
     alignSelf: 'center',
-    marginTop: spacing.lg,
+    marginTop: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.borderFaint,
@@ -236,7 +386,7 @@ const styles = StyleSheet.create({
   },
   tableCenterLine: {
     position: 'absolute',
-    top: '52%',
+    top: RACK_HEIGHT + NET_ZONE / 2,
     left: '8%',
     right: '8%',
     height: 1,
@@ -261,29 +411,7 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     fontSize: 12,
     marginTop: spacing.sm,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 'auto',
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.lg,
-  },
-  statBox: {
-    alignItems: 'center',
-  },
-  statValue: {
-    fontFamily: fonts.numeric,
-    fontSize: 22,
-    color: colors.neon,
-  },
-  statLabel: {
-    fontFamily: fonts.label,
-    fontSize: 11,
-    color: colors.textSecondary,
-    letterSpacing: 1,
-    marginTop: 2,
-    textTransform: 'uppercase',
+    minHeight: 16,
   },
   coinChip: {
     flexDirection: 'row',
@@ -297,11 +425,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.backgroundElevated,
   },
   coinText: {
-    fontFamily: fonts.label,
+    fontFamily: fonts.numeric,
     color: colors.gold,
     fontSize: 13,
   },
-  victoryOverlay: {
+  resultOverlay: {
     position: 'absolute',
     top: 0,
     left: 0,
@@ -312,7 +440,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     padding: spacing.xl,
   },
-  victoryCard: {
+  resultCard: {
     width: '100%',
     backgroundColor: colors.backgroundElevated,
     borderRadius: radius.xl,
@@ -322,20 +450,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
-  victoryTitle: {
+  resultTitle: {
     fontFamily: fonts.displayBlack,
     fontSize: 32,
-    color: colors.neon,
     letterSpacing: 2,
   },
-  victoryBody: {
+  resultBody: {
     fontFamily: fonts.body,
     fontSize: 14,
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.sm,
   },
-  victoryButtons: {
+  resultButtons: {
     flexDirection: 'row',
     gap: spacing.sm,
   },

@@ -146,7 +146,7 @@ export function ThrowBall({
   return (
     <>
       {aimLine && !flying ? (
-        <Svg style={StyleSheet.absoluteFill} pointerEvents="none">
+        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
           <Line
             x1={startX}
             y1={startY}
