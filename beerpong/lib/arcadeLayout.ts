@@ -31,10 +31,12 @@ const PLAYER_ROWS: RowSpec[] = [
   { count: 4, width: 68 },
 ];
 
-const OPPONENT_ROW_GAP = 14;
-const PLAYER_ROW_GAP = 16;
-const OPPONENT_COLUMN_GAP = 16;
-const PLAYER_COLUMN_GAP = 18;
+// Cups in a real rack sit shoulder to shoulder, and rows nest into each other,
+// so the row gaps are negative: nearer rows overlap the ones behind them.
+const OPPONENT_ROW_GAP = -8;
+const PLAYER_ROW_GAP = -10;
+const OPPONENT_COLUMN_GAP = 4;
+const PLAYER_COLUMN_GAP = 5;
 
 function rackHeight(rows: RowSpec[], rowGap: number): number {
   return rows.reduce((sum, row, i) => sum + row.width * CUP_ASPECT + (i > 0 ? rowGap : 0), 0);
@@ -45,9 +47,9 @@ export const OPPONENT_RACK_HEIGHT = rackHeight(OPPONENT_ROWS, OPPONENT_ROW_GAP);
 export const NET_Y = OPPONENT_RACK_TOP + OPPONENT_RACK_HEIGHT + 74;
 // Both balls rest mid-table. Thanks to the camera pan, the same stretch of
 // table reads as "near you" on your turn and "far away" on the opponent's.
-export const PLAYER_BALL_Y = NET_Y + 46;
+export const PLAYER_BALL_Y = NET_Y + 75;
 export const OPPONENT_BALL_Y = NET_Y + 90;
-export const PLAYER_RACK_TOP = NET_Y + 128;
+export const PLAYER_RACK_TOP = NET_Y + 155;
 export const PLAYER_RACK_HEIGHT = rackHeight(PLAYER_ROWS, PLAYER_ROW_GAP);
 export const TABLE_HEIGHT = PLAYER_RACK_TOP + PLAYER_RACK_HEIGHT + 28;
 

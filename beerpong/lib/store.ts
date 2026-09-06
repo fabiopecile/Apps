@@ -3,6 +3,14 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_BALL_SKIN, DEFAULT_TABLE_SKIN, SKINS } from './skins';
 import { LEAGUE_OPPONENTS } from './opponents';
+import {
+  ENTRY_DIVISION,
+  TOP_DIVISION,
+  WEEKEND_MATCHES,
+  getDivision,
+  weekendTierFor,
+  type AiDifficulty,
+} from './competition';
 
 export interface HouseRules {
   reRacks: boolean;
@@ -27,6 +35,43 @@ interface ArcadeState {
   defeatedOpponentIds: string[];
   equippedBall: string;
   equippedTable: string;
+}
+
+interface RivalsState {
+  division: number;
+  bestDivision: number;
+  divisionWins: number;
+  divisionLosses: number;
+  wins: number;
+  losses: number;
+}
+
+interface WeekendState {
+  active: boolean;
+  played: number;
+  wins: number;
+  bestWins: number;
+  runsCompleted: number;
+}
+
+export interface RivalsOutcome {
+  won: boolean;
+  promoted: boolean;
+  relegated: boolean;
+  division: number;
+  previousDivision: number;
+  divisionWins: number;
+  winsToPromote: number;
+  coins: number;
+}
+
+export interface WeekendOutcome {
+  won: boolean;
+  played: number;
+  wins: number;
+  finished: boolean;
+  coins: number;
+  tierName?: string;
 }
 
 interface BeerpongStore {
@@ -56,6 +101,17 @@ interface BeerpongStore {
 
   currentOpponentId: string;
   setCurrentOpponentId: (id: string) => void;
+
+  aiDifficulty: AiDifficulty;
+  setAiDifficulty: (difficulty: AiDifficulty) => void;
+
+  rivals: RivalsState;
+  recordRivalsMatch: (won: boolean) => RivalsOutcome;
+
+  weekend: WeekendState;
+  startWeekendRun: () => void;
+  recordWeekendMatch: (won: boolean) => WeekendOutcome;
+  resetWeekendRun: () => void;
 }
 
 export const useBeerpongStore = create<BeerpongStore>()(
@@ -169,6 +225,96 @@ export const useBeerpongStore = create<BeerpongStore>()(
 
       currentOpponentId: LEAGUE_OPPONENTS[0].id,
       setCurrentOpponentId: (id) => set({ currentOpponentId: id }),
+
+      aiDifficulty: 'medium',
+      setAiDifficulty: (difficulty) => set({ aiDifficulty: difficulty }),
+
+      rivals: {
+        division: ENTRY_DIVISION,
+        bestDivision: ENTRY_DIVISION,
+        divisionWins: 0,
+        divisionLosses: 0,
+        wins: 0,
+        losses: 0,
+      },
+
+      recordRivalsMatch: (won) => {
+        const previous = get().rivals;
+        const division = getDivision(previous.division);
+        const divisionWins = previous.divisionWins + (won ? 1 : 0);
+        const divisionLosses = previous.divisionLosses + (won ? 0 : 1);
+
+        const promoted = divisionWins >= division.winsToPromote && previous.division > TOP_DIVISION;
+        const relegated =
+          !promoted &&
+          divisionLosses >= division.lossesToRelegate &&
+          previous.division < ENTRY_DIVISION;
+
+        const nextDivision = promoted
+          ? previous.division - 1
+          : relegated
+            ? previous.division + 1
+            : previous.division;
+        const coins =
+          (won ? division.winCoins : Math.round(division.winCoins / 3)) +
+          (promoted ? division.promotionCoins : 0);
+
+        set((s) => ({
+          rivals: {
+            division: nextDivision,
+            // Divisions count down, so the best run is the lowest number.
+            bestDivision: Math.min(s.rivals.bestDivision, nextDivision),
+            divisionWins: promoted || relegated ? 0 : divisionWins,
+            divisionLosses: promoted || relegated ? 0 : divisionLosses,
+            wins: s.rivals.wins + (won ? 1 : 0),
+            losses: s.rivals.losses + (won ? 0 : 1),
+          },
+          coins: s.coins + coins,
+          arcade: { ...s.arcade, careerXP: s.arcade.careerXP + (won ? 60 : 15) },
+        }));
+
+        return {
+          won,
+          promoted,
+          relegated,
+          division: nextDivision,
+          previousDivision: previous.division,
+          divisionWins: promoted || relegated ? 0 : divisionWins,
+          winsToPromote: getDivision(nextDivision).winsToPromote,
+          coins,
+        };
+      },
+
+      weekend: { active: false, played: 0, wins: 0, bestWins: 0, runsCompleted: 0 },
+
+      startWeekendRun: () =>
+        set((s) => ({ weekend: { ...s.weekend, active: true, played: 0, wins: 0 } })),
+
+      recordWeekendMatch: (won) => {
+        const previous = get().weekend;
+        const played = previous.played + 1;
+        const wins = previous.wins + (won ? 1 : 0);
+        const finished = played >= WEEKEND_MATCHES;
+        const tier = finished ? weekendTierFor(wins) : undefined;
+        const coins = (won ? 60 : 15) + (tier ? tier.coins : 0);
+
+        set((s) => ({
+          weekend: {
+            active: !finished,
+            played,
+            wins,
+            bestWins: Math.max(s.weekend.bestWins, wins),
+            runsCompleted: s.weekend.runsCompleted + (finished ? 1 : 0),
+          },
+          coins: s.coins + coins,
+          arcade: { ...s.arcade, careerXP: s.arcade.careerXP + (won ? 80 : 20) },
+        }));
+
+        return { won, played, wins, finished, coins, tierName: tier?.name };
+      },
+
+      resetWeekendRun: () =>
+        set((s) => ({ weekend: { ...s.weekend, active: false, played: 0, wins: 0 } })),
     }),
     {
       name: 'beerpong-storage',
@@ -185,6 +331,9 @@ export const useBeerpongStore = create<BeerpongStore>()(
         coins: state.coins,
         ownedSkinIds: state.ownedSkinIds,
         currentOpponentId: state.currentOpponentId,
+        aiDifficulty: state.aiDifficulty,
+        rivals: state.rivals,
+        weekend: state.weekend,
       }),
     }
   )
