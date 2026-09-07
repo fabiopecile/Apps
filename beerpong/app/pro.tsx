@@ -17,6 +17,7 @@ const FEATURES: {
   bodyKey: TranslationKey;
 }[] = [
   { icon: 'scan', titleKey: 'pro.feature.detect.title', bodyKey: 'pro.feature.detect.body' },
+  { icon: 'globe', titleKey: 'pro.feature.online.title', bodyKey: 'pro.feature.online.body' },
   { icon: 'stats-chart', titleKey: 'pro.feature.stats.title', bodyKey: 'pro.feature.stats.body' },
   { icon: 'videocam', titleKey: 'pro.feature.replay.title', bodyKey: 'pro.feature.replay.body' },
   { icon: 'cloud-upload', titleKey: 'pro.feature.sync.title', bodyKey: 'pro.feature.sync.body' },
@@ -69,7 +70,12 @@ export default function ProScreen() {
 
           <SectionLabel>{t('pro.howItWorks')}</SectionLabel>
           <View style={styles.explainCard}>
+            <Text style={styles.explainTitle}>{t('pro.explainDetectTitle')}</Text>
             <Text style={styles.explainBody}>{t('pro.explainBody')}</Text>
+          </View>
+          <View style={styles.explainCard}>
+            <Text style={styles.explainTitle}>{t('pro.explainOnlineTitle')}</Text>
+            <Text style={styles.explainBody}>{t('pro.explainOnlineBody')}</Text>
           </View>
 
           <GlowButton
@@ -203,7 +209,14 @@ const styles = StyleSheet.create({
     borderColor: colors.borderFaint,
     backgroundColor: colors.backgroundCard,
     padding: spacing.md,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.sm,
+    gap: 6,
+  },
+  explainTitle: {
+    fontFamily: fonts.label,
+    fontSize: 13,
+    color: colors.gold,
+    letterSpacing: 0.5,
   },
   explainBody: {
     fontFamily: fonts.bodyRegular,

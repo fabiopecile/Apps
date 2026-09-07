@@ -92,8 +92,8 @@ const STRINGS = {
   // ------------------------------------------------------------ pro paywall
   'pro.title': { de: 'Beerpong Pro', en: 'Beerpong Pro' },
   'pro.teaser': {
-    de: 'Automatische Cup-Erkennung und mehr — in Arbeit',
-    en: 'Automatic cup detection and more — in the works',
+    de: 'Cup-Erkennung, online gegen andere Tische — in Arbeit',
+    en: 'Cup detection, online against other tables — in the works',
   },
   'pro.heroTitle': { de: 'Die Kamera zählt mit', en: 'Let the camera keep score' },
   'pro.heroBody': {
@@ -107,6 +107,14 @@ const STRINGS = {
     de: 'Cups und Ball werden im Kamerabild erkannt, Treffer zählen sich selbst.',
     en: 'Cups and ball recognised in the camera feed, so hits count themselves.',
   },
+  'pro.feature.online.title': {
+    de: 'Kamera-Modus gegen Online-Gegner',
+    en: 'Camera mode against online opponents',
+  },
+  'pro.feature.online.body': {
+    de: 'Ihr steht an eurem Tisch, die anderen an ihrem — jede Seite trackt ihr eigenes Rack, die App führt einen gemeinsamen Spielstand.',
+    en: 'You stand at your table, they stand at theirs — each side tracks its own rack while the app keeps one shared score.',
+  },
   'pro.feature.stats.title': { de: 'Tiefe Statistiken', en: 'Deep stats' },
   'pro.feature.stats.body': {
     de: 'Trefferzonen, Formkurve über die Saison und Vergleich mit deinen Freunden.',
@@ -119,8 +127,8 @@ const STRINGS = {
   },
   'pro.feature.sync.title': { de: 'Cloud-Sync', en: 'Cloud sync' },
   'pro.feature.sync.body': {
-    de: 'Fortschritt auf mehreren Geräten, echtes Online-Matchmaking.',
-    en: 'Progress across devices, plus real online matchmaking.',
+    de: 'Fortschritt auf mehreren Geräten und echtes Matchmaking im Arcade-Modus.',
+    en: 'Progress across devices, plus real matchmaking in arcade mode.',
   },
   'pro.feature.skins.title': { de: 'Pro-Skins', en: 'Pro skins' },
   'pro.feature.skins.body': {
@@ -128,6 +136,12 @@ const STRINGS = {
     en: 'Exclusive balls and tables you cannot buy with coins.',
   },
   'pro.howItWorks': { de: 'Wie das funktionieren soll', en: 'How it is meant to work' },
+  'pro.explainDetectTitle': { de: 'Cups automatisch zählen', en: 'Counting cups automatically' },
+  'pro.explainOnlineTitle': { de: 'Zwei Tische, ein Spiel', en: 'Two tables, one game' },
+  'pro.explainOnlineBody': {
+    de: 'Einer eröffnet eine Partie und teilt den Code, die andere Seite tritt bei. Ab da zählt jedes Team nur sein eigenes Rack — der Spielstand wird zwischen den Handys abgeglichen, und wer dran ist, steht auf beiden Bildschirmen. Übertragen werden nur Treffer und Züge, kein Videobild.',
+    en: 'One side opens a game and shares the code, the other joins. From then on each team only counts its own rack — the score syncs between the phones and both screens show whose turn it is. Only hits and turns travel over the network, never video.',
+  },
   'pro.explainBody': {
     de: 'Ein kleines Bilderkennungsmodell läuft direkt auf dem Handy und sucht in jedem Kamerabild nach den runden Cup-Öffnungen und dem Ball. Verschwindet eine Öffnung genau dann, wenn der Ball sie erreicht, war es ein Treffer. Alles bleibt auf dem Gerät — es werden keine Videos hochgeladen.',
     en: 'A small vision model runs directly on the phone and looks for the round cup openings and the ball in every frame. When an opening disappears exactly as the ball reaches it, that was a hit. Everything stays on the device — no video is uploaded.',
@@ -180,6 +194,10 @@ const STRINGS = {
   'tracker.permission.cta': { de: 'Kamera erlauben', en: 'Allow camera' },
   'tracker.finished': { de: 'Spiel beendet', en: 'Game over' },
   'tracker.throwingAt': { de: '{shooter} wirft auf {target}', en: '{shooter} is throwing at {target}' },
+  'tracker.openOnline': {
+    de: 'Online gegen anderen Tisch spielen (Pro)',
+    en: 'Play online against another table (Pro)',
+  },
   'tracker.openTournament': { de: 'Turnier öffnen', en: 'Open tournament' },
   'tracker.openHouseRules': { de: 'House Rules öffnen', en: 'Open house rules' },
   'tracker.tapHint': {
