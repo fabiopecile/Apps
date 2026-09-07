@@ -13,21 +13,57 @@ import {
   WEEKEND_UNLOCK_DIVISION,
   getDivision,
 } from '@/lib/competition';
+import {
+  ACHIEVEMENTS,
+  SEASON_TIERS,
+  challengesFor,
+  todayKey,
+  type AchievementStats,
+} from '@/lib/progression';
 import { selectCareerProgress, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function ArcadeHubScreen() {
   const arcade = useBeerpongStore((s) => s.arcade);
+  const camera = useBeerpongStore((s) => s.camera);
   const coins = useBeerpongStore((s) => s.coins);
   const rivals = useBeerpongStore((s) => s.rivals);
   const weekend = useBeerpongStore((s) => s.weekend);
   const aiDifficulty = useBeerpongStore((s) => s.aiDifficulty);
+  const daily = useBeerpongStore((s) => s.daily);
+  const ownedSkinIds = useBeerpongStore((s) => s.ownedSkinIds);
+  const claimedAchievements = useBeerpongStore((s) => s.claimedAchievements);
+  const claimedSeasonTiers = useBeerpongStore((s) => s.claimedSeasonTiers);
   const { level, progress } = selectCareerProgress(arcade.careerXP);
 
   const division = getDivision(rivals.division);
   const weekendUnlocked = rivals.division <= WEEKEND_UNLOCK_DIVISION;
   const preset = AI_PRESETS[aiDifficulty];
+
+  // How many rewards are sitting there unclaimed — shown on the tasks card.
+  const today = todayKey();
+  const counters = daily.date === today ? daily : null;
+  const achievementStats: AchievementStats = {
+    totalCupsHit: camera.totalCupsHit + arcade.totalCupsHit,
+    arcadeWins: arcade.wins,
+    bestStreak: camera.bestStreak,
+    bestDivision: rivals.bestDivision,
+    weekendBestWins: weekend.bestWins,
+    ownedSkins: ownedSkinIds.length,
+    trackerGames: camera.gamesPlayed,
+  };
+  const claimable =
+    challengesFor(today).filter(
+      (c) => (counters ? counters[c.metric] : 0) >= c.target && !counters?.claimed.includes(c.id),
+    ).length +
+    ACHIEVEMENTS.filter((a) => {
+      const { current, target } = a.progress(achievementStats);
+      return current >= target && !claimedAchievements.includes(a.id);
+    }).length +
+    SEASON_TIERS.filter(
+      (t) => arcade.careerXP >= t.xp && !claimedSeasonTiers.includes(t.level),
+    ).length;
 
   return (
     <View style={styles.container}>
@@ -63,6 +99,14 @@ export default function ArcadeHubScreen() {
             />
 
             <ModeCard
+              icon="people"
+              title="Pass & Play"
+              subtitle="Zwei Spieler, ein Handy — abwechselnd werfen"
+              accent={colors.gold}
+              href="/(tabs)/arcade/passplay"
+            />
+
+            <ModeCard
               icon="globe"
               title="Division Rivals"
               subtitle={`${division.name} · ${rivals.divisionWins}/${division.winsToPromote} Siege bis Aufstieg`}
@@ -83,6 +127,22 @@ export default function ArcadeHubScreen() {
               accent={weekendUnlocked ? colors.gold : colors.textMuted}
               href="/(tabs)/arcade/weekend"
               locked={!weekendUnlocked}
+            />
+          </View>
+
+          <View style={styles.section}>
+            <SectionLabel>Fortschritt</SectionLabel>
+            <ModeCard
+              icon="checkmark-done"
+              title="Aufgaben & Erfolge"
+              subtitle={
+                claimable > 0
+                  ? `${claimable} Belohnung${claimable === 1 ? '' : 'en'} abholbereit`
+                  : 'Tagesaufgaben, Saison-Stufen und Erfolge'
+              }
+              accent={claimable > 0 ? colors.gold : colors.neon}
+              href="/(tabs)/arcade/challenges"
+              badge={claimable > 0 ? claimable : undefined}
             />
           </View>
 
@@ -117,6 +177,7 @@ function ModeCard({
   href,
   locked,
   compact,
+  badge,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
@@ -125,6 +186,7 @@ function ModeCard({
   href: Href;
   locked?: boolean;
   compact?: boolean;
+  badge?: number;
 }) {
   const feedback = useFeedback();
   return (
@@ -159,6 +221,13 @@ function ModeCard({
           {subtitle}
         </Text>
       </View>
+      {badge ? (
+        <View style={styles.badge}>
+          <Text style={styles.badgeText} selectable={false}>
+            {badge}
+          </Text>
+        </View>
+      ) : null}
       <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
     </Pressable>
   );
@@ -241,6 +310,20 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  badge: {
+    minWidth: 22,
+    height: 22,
+    borderRadius: 11,
+    paddingHorizontal: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.gold,
+  },
+  badgeText: {
+    fontFamily: fonts.numeric,
+    fontSize: 13,
+    color: colors.background,
   },
   statsRow: {
     flexDirection: 'row',

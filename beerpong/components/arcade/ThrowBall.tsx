@@ -24,6 +24,8 @@ export interface ThrowResult {
   power: number;
   /** True when the ball caught the rim and kicked out. */
   rimOut: boolean;
+  /** True when this was a bounce shot, which is worth two cups. */
+  bounce: boolean;
 }
 
 interface ThrowBallProps {
@@ -36,8 +38,12 @@ interface ThrowBallProps {
   skill: number;
   onResult: (result: ThrowResult) => void;
   disabled?: boolean;
-  /** Fades the ball out while the opponent is throwing. */
+  /** Fades the ball out while the other side is throwing. */
   hidden?: boolean;
+  /** 'up' throws at a rack above the ball, 'down' at one below it. */
+  direction?: 'up' | 'down';
+  /** Doubles up: harder to land, but takes two cups. */
+  bounce?: boolean;
 }
 
 export function ThrowBall({
@@ -50,6 +56,8 @@ export function ThrowBall({
   onResult,
   disabled,
   hidden,
+  direction = 'up',
+  bounce = false,
 }: ThrowBallProps) {
   const ballX = useSharedValue(startX);
   const ballY = useSharedValue(startY);
@@ -112,7 +120,7 @@ export function ThrowBall({
   const finishThrow = (cupIndex: number, hit: boolean, power: number, rimOut: boolean) => {
     setFlyingState(false);
     setAimLine(null);
-    onResult({ cupIndex, hit, power, rimOut });
+    onResult({ cupIndex, hit, power, rimOut, bounce });
     if (resetTimer.current) clearTimeout(resetTimer.current);
     resetTimer.current = setTimeout(() => {
       ballX.value = withTiming(startX, { duration: 260 });
@@ -132,11 +140,14 @@ export function ThrowBall({
     const target = pickTarget(aimRatio);
 
     if (!target || power < 0.12) {
-      onResult({ cupIndex: null, hit: false, power, rimOut: false });
+      onResult({ cupIndex: null, hit: false, power, rimOut: false, bounce });
       return;
     }
 
-    const hitChance = Math.max(0.1, Math.min(0.94, skill + power * 0.28));
+    const hitChance = Math.max(
+      0.08,
+      Math.min(0.94, skill + power * 0.28 - (bounce ? 0.18 : 0))
+    );
     const roll = Math.random();
     const hit = roll < hitChance;
     const isCritical = Math.abs(hitChance - roll) < 0.08;
@@ -150,7 +161,9 @@ export function ThrowBall({
     const easing = Easing.out(Easing.quad);
     const mainDuration = isCritical ? 620 : 460;
     const landX = hit || rimOut ? target.x : target.x + (Math.random() - 0.5) * 90;
-    const landY = hit ? target.y : rimOut ? target.y - 8 : target.y - 34 - Math.random() * 24;
+    const shortOf = direction === 'up' ? -1 : 1;
+    const landY =
+      hit ? target.y : rimOut ? target.y + shortOf * 8 : target.y + shortOf * (34 + Math.random() * 24);
 
     ballScale.value = withTiming(hit ? 0.5 : 0.62, { duration: mainDuration, easing });
     ballX.value = withTiming(landX, { duration: mainDuration, easing });
@@ -159,7 +172,7 @@ export function ThrowBall({
       if (rimOut) {
         // Catch the lip, kick sideways, then drop away past the rack.
         const kickX = landX + (Math.random() < 0.5 ? -1 : 1) * (34 + Math.random() * 30);
-        const kickY = landY - 24;
+        const kickY = landY + shortOf * 24;
         ballScale.value = withSequence(
           withTiming(0.74, { duration: 90 }),
           withTiming(0.5, { duration: 320 })
@@ -167,7 +180,7 @@ export function ThrowBall({
         ballX.value = withTiming(kickX, { duration: 380, easing: Easing.out(Easing.quad) });
         ballY.value = withSequence(
           withTiming(kickY, { duration: 140, easing: Easing.out(Easing.quad) }),
-          withTiming(kickY + 80, { duration: 260, easing: Easing.in(Easing.quad) })
+          withTiming(kickY - shortOf * 80, { duration: 260, easing: Easing.in(Easing.quad) })
         );
         trailOpacity.value = withTiming(0, { duration: 380 });
         runOnJS(scheduleResult)(target.index, hit, power, 420);
@@ -185,7 +198,8 @@ export function ThrowBall({
     })
     .onEnd((e) => {
       runOnJS(setAimLine)(null);
-      if (e.translationY < -20) {
+      const flicked = direction === 'up' ? e.translationY < -20 : e.translationY > 20;
+      if (flicked) {
         runOnJS(throwBall)(e.translationX, e.translationY);
       }
     });
@@ -227,7 +241,12 @@ export function ThrowBall({
             x1={startX}
             y1={startY}
             x2={startX + Math.max(-110, Math.min(110, aimLine.dx))}
-            y2={startY + Math.max(-260, Math.min(20, aimLine.dy))}
+            y2={
+              startY +
+              (direction === 'up'
+                ? Math.max(-260, Math.min(20, aimLine.dy))
+                : Math.max(-20, Math.min(260, aimLine.dy)))
+            }
             stroke={accent}
             strokeWidth={3}
             strokeDasharray="8,8"

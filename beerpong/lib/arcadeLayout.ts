@@ -111,3 +111,12 @@ export function generatePlayerRack(tableWidth: number): CupSpec[] {
 }
 
 export const CUP_COUNT = OPPONENT_ROWS.reduce((sum, r) => sum + r.count, 0);
+
+/**
+ * Re-rack: pull the remaining cups forward into a tight formation by moving
+ * them onto the last slots, which are the rows nearest the net.
+ */
+export function reRackFlags(aliveFlags: boolean[]): boolean[] {
+  const remaining = aliveFlags.filter(Boolean).length;
+  return aliveFlags.map((_, i) => i >= aliveFlags.length - remaining);
+}

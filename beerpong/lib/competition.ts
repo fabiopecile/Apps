@@ -1,5 +1,5 @@
 export type AiDifficulty = 'easy' | 'medium' | 'hard';
-export type MatchMode = 'offline' | 'rivals' | 'weekend';
+export type MatchMode = 'offline' | 'rivals' | 'weekend' | 'passplay';
 
 export interface AiPreset {
   id: AiDifficulty;

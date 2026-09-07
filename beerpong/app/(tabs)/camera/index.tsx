@@ -1,48 +1,69 @@
 import { useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 
 import { GridBackground } from '@/components/ui/GridBackground';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { ScoreDisplay } from '@/components/ui/ScoreDisplay';
-import { StreakBadge } from '@/components/ui/StreakBadge';
 import { GlowButton } from '@/components/ui/GlowButton';
+import { Confetti } from '@/components/ui/Confetti';
 import { ParticleBurst, type ParticleBurstHandle } from '@/components/ui/ParticleBurst';
 import { FlashOverlay, type FlashOverlayHandle } from '@/components/ui/FlashOverlay';
 import { HouseRulesPanel } from '@/components/camera/HouseRulesPanel';
-import { useBeerpongStore } from '@/lib/store';
+import { TeamScoreboard } from '@/components/camera/TeamScoreboard';
+import { ShareResultButton } from '@/components/ui/ShareableResult';
+import { useBeerpongStore, type TeamIndex } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
-import { colors, fonts, spacing } from '@/theme';
+import { colors, fonts, radius, spacing } from '@/theme';
 
 export default function CameraTrackerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [rulesVisible, setRulesVisible] = useState(false);
-  const score = useBeerpongStore((s) => s.camera.score);
-  const streak = useBeerpongStore((s) => s.camera.streak);
-  const cameraHit = useBeerpongStore((s) => s.cameraHit);
-  const cameraMiss = useBeerpongStore((s) => s.cameraMiss);
-  const cameraResetGame = useBeerpongStore((s) => s.cameraResetGame);
+
+  const tracker = useBeerpongStore((s) => s.tracker);
+  const houseRules = useBeerpongStore((s) => s.houseRules);
+  const trackerHit = useBeerpongStore((s) => s.trackerHit);
+  const trackerMiss = useBeerpongStore((s) => s.trackerMiss);
+  const trackerSwitchTeam = useBeerpongStore((s) => s.trackerSwitchTeam);
+  const trackerUndo = useBeerpongStore((s) => s.trackerUndo);
+  const trackerSetTeamName = useBeerpongStore((s) => s.trackerSetTeamName);
+  const trackerReRack = useBeerpongStore((s) => s.trackerReRack);
+  const trackerNewGame = useBeerpongStore((s) => s.trackerNewGame);
+  const trackDaily = useBeerpongStore((s) => s.trackDaily);
+
   const feedback = useFeedback();
   const flashRef = useRef<FlashOverlayHandle>(null);
   const particleRef = useRef<ParticleBurstHandle>(null);
 
+  const finished = tracker.winner != null;
+  const shooter = tracker.teams[tracker.activeTeam];
+  const targetIndex: TeamIndex = tracker.activeTeam === 0 ? 1 : 0;
+  const target = tracker.teams[targetIndex];
+
   const handleHit = (event: GestureResponderEvent) => {
+    if (finished) return;
     const { locationX, locationY } = event.nativeEvent;
-    cameraHit();
+    trackerHit();
+    trackDaily('trackerCups');
     feedback.cupHit();
-    flashRef.current?.flash(colors.neon);
+    flashRef.current?.flash(colors.neon, 0.32);
     particleRef.current?.burst(locationX, locationY);
-    if ((streak + 1) % 5 === 0) {
-      feedback.streak();
-    }
+    if ((shooter.streak + 1) % 3 === 0) feedback.streak();
   };
 
   const handleMiss = () => {
-    cameraMiss();
+    if (finished) return;
+    trackerMiss();
     feedback.miss();
+  };
+
+  const selectTeam = (team: TeamIndex) => {
+    if (finished || team === tracker.activeTeam) return;
+    feedback.tap();
+    trackerSwitchTeam();
   };
 
   if (!permission) {
@@ -72,8 +93,8 @@ export default function CameraTrackerScreen() {
     <View style={styles.container}>
       <CameraView style={StyleSheet.absoluteFill} facing="back" />
       <LinearGradient
-        colors={['rgba(0,0,0,0.75)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.85)']}
-        locations={[0, 0.35, 1]}
+        colors={['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.05)', 'rgba(0,0,0,0.88)']}
+        locations={[0, 0.42, 1]}
         style={StyleSheet.absoluteFill}
         pointerEvents="none"
       />
@@ -84,8 +105,18 @@ export default function CameraTrackerScreen() {
       <SafeAreaView style={styles.overlay} pointerEvents="box-none">
         <ScreenHeader
           title="TRACKER"
-          subtitle="Tippe irgendwo für jeden Treffer"
+          subtitle={finished ? 'Spiel beendet' : `${shooter.name} wirft auf ${target.name}`}
           right={
+            <>
+            <Pressable
+              onPress={() => router.push('/(tabs)/camera/tournament')}
+              style={styles.iconButton}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel="Turnier öffnen"
+            >
+              <Ionicons name="git-network" size={17} color={colors.neon} />
+            </Pressable>
             <Pressable
               onPress={() => setRulesVisible(true)}
               style={styles.iconButton}
@@ -95,35 +126,152 @@ export default function CameraTrackerScreen() {
             >
               <Ionicons name="options" size={18} color={colors.neon} />
             </Pressable>
+            </>
           }
         />
 
-        <View style={styles.center} pointerEvents="none">
-          <ScoreDisplay value={score} label="Cups getroffen" />
-          <View style={{ height: spacing.md }} />
-          <StreakBadge streak={streak} />
+        <View style={styles.scoreboardWrap} pointerEvents="box-none">
+          <TeamScoreboard
+            teams={tracker.teams}
+            activeTeam={tracker.activeTeam}
+            startCups={tracker.startCups}
+            onSelectTeam={selectTeam}
+            onRenameTeam={trackerSetTeamName}
+          />
         </View>
 
+        {!finished ? (
+          <View style={styles.hintWrap} pointerEvents="none">
+            <Text style={styles.hint} selectable={false}>
+              Tippe irgendwo, wenn {shooter.name} trifft
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.bottomBar}>
-          <GlowButton
-            label="Fehlwurf"
-            variant="outline"
-            size="sm"
-            onPress={handleMiss}
-            style={styles.bottomButton}
-          />
+          <View style={styles.bottomRow}>
+            <SmallButton icon="close-circle" label="Fehlwurf" onPress={handleMiss} disabled={finished} />
+            <SmallButton
+              icon="swap-horizontal"
+              label="Team"
+              onPress={() => selectTeam(targetIndex)}
+              disabled={finished}
+            />
+            <SmallButton
+              icon="arrow-undo"
+              label="Zurück"
+              onPress={() => {
+                feedback.tap();
+                trackerUndo();
+              }}
+              disabled={tracker.history.length === 0}
+            />
+            {houseRules.reRacks ? (
+              <SmallButton
+                icon="grid"
+                label={`Re-Rack ${target.reRacksLeft}`}
+                onPress={() => {
+                  feedback.tap();
+                  trackerReRack(targetIndex);
+                }}
+                disabled={finished || target.reRacksLeft === 0}
+              />
+            ) : null}
+          </View>
+
           <GlowButton
             label="Neues Spiel"
-            variant="ghost"
+            variant="outline"
             size="sm"
-            onPress={cameraResetGame}
-            style={styles.bottomButton}
+            onPress={() => trackerNewGame()}
+            style={styles.newGameButton}
           />
         </View>
       </SafeAreaView>
 
+      {finished ? (
+        <View style={styles.resultOverlay}>
+          <Confetti />
+          <View style={styles.resultCard}>
+            <Ionicons name="trophy" size={40} color={colors.gold} />
+            <Text style={styles.resultTitle} selectable={false}>
+              {tracker.teams[tracker.winner as TeamIndex].name} gewinnt!
+            </Text>
+            <View style={styles.resultStats}>
+              {tracker.teams.map((team, i) => (
+                <View key={i} style={styles.resultTeam}>
+                  <Text style={styles.resultTeamName} selectable={false}>
+                    {team.name}
+                  </Text>
+                  <Text style={styles.resultTeamValue} selectable={false}>
+                    {team.hits}
+                  </Text>
+                  <Text style={styles.resultTeamMeta} selectable={false}>
+                    Treffer · {team.throws > 0 ? Math.round((team.hits / team.throws) * 100) : 0}%
+                  </Text>
+                  <Text style={styles.resultTeamMeta} selectable={false}>
+                    Beste Serie {team.bestStreak}
+                  </Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.resultButtons}>
+              <GlowButton
+                label="Revanche"
+                size="sm"
+                onPress={() => trackerNewGame()}
+                style={styles.resultButton}
+              />
+              <ShareResultButton
+                data={{
+                  headline: `${tracker.teams[tracker.winner as TeamIndex].name} gewinnt!`,
+                  subline: `${tracker.teams[0].name} vs. ${tracker.teams[1].name}`,
+                  leftLabel: tracker.teams[0].name,
+                  leftValue: `${tracker.startCups - tracker.teams[1].cupsLeft}`,
+                  rightLabel: tracker.teams[1].name,
+                  rightValue: `${tracker.startCups - tracker.teams[0].cupsLeft}`,
+                }}
+              />
+            </View>
+          </View>
+        </View>
+      ) : null}
+
       <HouseRulesPanel visible={rulesVisible} onClose={() => setRulesVisible(false)} />
     </View>
+  );
+}
+
+function SmallButton({
+  icon,
+  label,
+  onPress,
+  disabled,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  onPress: () => void;
+  disabled?: boolean;
+}) {
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      style={({ pressed }) => [
+        styles.smallButton,
+        disabled && styles.smallButtonDisabled,
+        pressed && !disabled && styles.smallButtonPressed,
+      ]}
+    >
+      <Ionicons name={icon} size={17} color={disabled ? colors.textMuted : colors.neon} />
+      <Text
+        style={[styles.smallButtonText, disabled && { color: colors.textMuted }]}
+        selectable={false}
+        numberOfLines={1}
+      >
+        {label}
+      </Text>
+    </Pressable>
   );
 }
 
@@ -136,20 +284,55 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'space-between',
   },
-  center: {
+  scoreboardWrap: {
+    marginTop: spacing.md,
+  },
+  hintWrap: {
     alignItems: 'center',
-    justifyContent: 'center',
+  },
+  hint: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.textSecondary,
+    letterSpacing: 1,
+    textAlign: 'center',
   },
   bottomBar: {
+    paddingHorizontal: spacing.md,
+    paddingBottom: spacing.md,
+    gap: spacing.sm,
+  },
+  bottomRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.lg,
+    gap: spacing.sm,
   },
-  bottomButton: {
+  smallButton: {
     flex: 1,
-    maxWidth: 180,
+    alignItems: 'center',
+    gap: 3,
+    paddingVertical: 9,
+    paddingHorizontal: 4,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: 'rgba(10,10,10,0.75)',
+  },
+  smallButtonDisabled: {
+    borderColor: colors.borderFaint,
+  },
+  smallButtonPressed: {
+    opacity: 0.6,
+  },
+  smallButtonText: {
+    fontFamily: fonts.label,
+    fontSize: 10,
+    color: colors.neon,
+    letterSpacing: 0.4,
+  },
+  newGameButton: {
+    alignSelf: 'center',
+    minWidth: 160,
   },
   iconButton: {
     width: 38,
@@ -190,5 +373,64 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     textAlign: 'center',
     marginBottom: spacing.md,
+  },
+  resultOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.overlay,
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+  },
+  resultCard: {
+    width: '100%',
+    backgroundColor: colors.backgroundElevated,
+    borderRadius: radius.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.xl,
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  resultTitle: {
+    fontFamily: fonts.headingBlack,
+    fontSize: 24,
+    color: colors.neon,
+    textAlign: 'center',
+  },
+  resultStats: {
+    flexDirection: 'row',
+    width: '100%',
+    marginTop: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  resultTeam: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  resultTeamName: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  resultTeamValue: {
+    fontFamily: fonts.numeric,
+    fontSize: 30,
+    color: colors.textPrimary,
+  },
+  resultTeamMeta: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  resultButtons: {
+    width: '100%',
+    gap: spacing.sm,
+  },
+  resultButton: {
+    width: '100%',
   },
 });

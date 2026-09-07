@@ -3,6 +3,13 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_BALL_SKIN, DEFAULT_TABLE_SKIN, SKINS } from './skins';
 import { LEAGUE_OPPONENTS } from './opponents';
+import { todayKey, type DailyMetric } from './progression';
+import {
+  createBracket,
+  championOf,
+  propagate,
+  type Tournament,
+} from './tournament';
 import {
   ENTRY_DIVISION,
   TOP_DIVISION,
@@ -24,6 +31,35 @@ interface CameraState {
   bestStreak: number;
   totalCupsHit: number;
   gamesPlayed: number;
+}
+
+export type TeamIndex = 0 | 1;
+
+export interface TrackerTeam {
+  name: string;
+  cupsLeft: number;
+  hits: number;
+  throws: number;
+  streak: number;
+  bestStreak: number;
+  reRacksLeft: number;
+}
+
+interface TrackerSnapshot {
+  teams: [TrackerTeam, TrackerTeam];
+  activeTeam: TeamIndex;
+  winner: TeamIndex | null;
+}
+
+export interface TrackerState {
+  teams: [TrackerTeam, TrackerTeam];
+  activeTeam: TeamIndex;
+  startCups: number;
+  winner: TeamIndex | null;
+  startedAt: number;
+  finishedAt: number | null;
+  /** Recent states so a miscount can be taken back — parties are noisy. */
+  history: TrackerSnapshot[];
 }
 
 interface ArcadeState {
@@ -74,6 +110,16 @@ export interface WeekendOutcome {
   tierName?: string;
 }
 
+export interface DailyProgress {
+  date: string;
+  cupsHit: number;
+  throws: number;
+  wins: number;
+  bounceHits: number;
+  trackerCups: number;
+  claimed: string[];
+}
+
 interface BeerpongStore {
   hasHydrated: boolean;
   setHasHydrated: (v: boolean) => void;
@@ -90,6 +136,22 @@ interface BeerpongStore {
   cameraHit: () => void;
   cameraMiss: () => void;
   cameraResetGame: () => void;
+
+  tournament: Tournament | null;
+  tournamentStart: (teams: string[]) => void;
+  tournamentReportWinner: (matchId: string, winner: string) => void;
+  tournamentReset: () => void;
+
+  tracker: TrackerState;
+  /** The active team sank a cup on the other team's rack. */
+  trackerHit: () => void;
+  /** The active team missed — ends their streak and passes the turn. */
+  trackerMiss: () => void;
+  trackerSwitchTeam: () => void;
+  trackerUndo: () => void;
+  trackerSetTeamName: (team: TeamIndex, name: string) => void;
+  trackerReRack: (team: TeamIndex) => void;
+  trackerNewGame: (startCups?: number) => void;
 
   arcade: ArcadeState;
   coins: number;
@@ -108,10 +170,63 @@ interface BeerpongStore {
   rivals: RivalsState;
   recordRivalsMatch: (won: boolean) => RivalsOutcome;
 
+  daily: DailyProgress;
+  /** Counts one unit toward a daily objective, rolling the day over first. */
+  trackDaily: (metric: DailyMetric, amount?: number) => void;
+  claimDaily: (challengeId: string, coins: number) => void;
+
+  claimedAchievements: string[];
+  claimAchievement: (achievementId: string, coins: number) => void;
+
+  claimedSeasonTiers: number[];
+  claimSeasonTier: (level: number, coins: number) => void;
+
   weekend: WeekendState;
   startWeekendRun: () => void;
   recordWeekendMatch: (won: boolean) => WeekendOutcome;
   resetWeekendRun: () => void;
+}
+
+export const DEFAULT_START_CUPS = 10;
+const MAX_HISTORY = 30;
+
+function makeTeam(name: string, cups: number): TrackerTeam {
+  return {
+    name,
+    cupsLeft: cups,
+    hits: 0,
+    throws: 0,
+    streak: 0,
+    bestStreak: 0,
+    reRacksLeft: 2,
+  };
+}
+
+function makeTracker(startCups: number, names?: [string, string]): TrackerState {
+  return {
+    teams: [
+      makeTeam(names?.[0] || 'Team 1', startCups),
+      makeTeam(names?.[1] || 'Team 2', startCups),
+    ],
+    activeTeam: 0,
+    startCups,
+    winner: null,
+    startedAt: Date.now(),
+    finishedAt: null,
+    history: [],
+  };
+}
+
+function cloneTeams(teams: [TrackerTeam, TrackerTeam]): [TrackerTeam, TrackerTeam] {
+  return [{ ...teams[0] }, { ...teams[1] }];
+}
+
+function pushHistory(tracker: TrackerState): TrackerSnapshot[] {
+  const next = [
+    ...tracker.history,
+    { teams: cloneTeams(tracker.teams), activeTeam: tracker.activeTeam, winner: tracker.winner },
+  ];
+  return next.slice(-MAX_HISTORY);
 }
 
 export const useBeerpongStore = create<BeerpongStore>()(
@@ -158,6 +273,143 @@ export const useBeerpongStore = create<BeerpongStore>()(
             streak: 0,
             gamesPlayed: s.camera.gamesPlayed + 1,
           },
+        })),
+
+      tournament: null,
+
+      tournamentStart: (teams) =>
+        set({
+          tournament: {
+            teams,
+            matches: createBracket(teams),
+            champion: null,
+            createdAt: Date.now(),
+          },
+        }),
+
+      tournamentReportWinner: (matchId, winner) =>
+        set((state) => {
+          if (!state.tournament) return {};
+          const updated = state.tournament.matches.map((m) =>
+            m.id === matchId ? { ...m, winner } : m
+          );
+          const matches = propagate(updated);
+          return {
+            tournament: { ...state.tournament, matches, champion: championOf(matches) },
+          };
+        }),
+
+      tournamentReset: () => set({ tournament: null }),
+
+      tracker: makeTracker(DEFAULT_START_CUPS),
+
+      trackerHit: () =>
+        set((s) => {
+          const t = s.tracker;
+          if (t.winner != null) return {};
+          const shooter = t.activeTeam;
+          const target: TeamIndex = shooter === 0 ? 1 : 0;
+          const teams = cloneTeams(t.teams);
+          const streak = teams[shooter].streak + 1;
+
+          teams[shooter] = {
+            ...teams[shooter],
+            hits: teams[shooter].hits + 1,
+            throws: teams[shooter].throws + 1,
+            streak,
+            bestStreak: Math.max(teams[shooter].bestStreak, streak),
+          };
+          teams[target] = {
+            ...teams[target],
+            cupsLeft: Math.max(0, teams[target].cupsLeft - 1),
+          };
+
+          const winner: TeamIndex | null = teams[target].cupsLeft === 0 ? shooter : null;
+
+          return {
+            tracker: {
+              ...t,
+              teams,
+              winner,
+              finishedAt: winner != null ? Date.now() : null,
+              history: pushHistory(t),
+            },
+            camera: {
+              ...s.camera,
+              totalCupsHit: s.camera.totalCupsHit + 1,
+              bestStreak: Math.max(s.camera.bestStreak, streak),
+              gamesPlayed: s.camera.gamesPlayed + (winner != null ? 1 : 0),
+            },
+          };
+        }),
+
+      trackerMiss: () =>
+        set((s) => {
+          const t = s.tracker;
+          if (t.winner != null) return {};
+          const shooter = t.activeTeam;
+          const teams = cloneTeams(t.teams);
+          teams[shooter] = {
+            ...teams[shooter],
+            throws: teams[shooter].throws + 1,
+            streak: 0,
+          };
+          return {
+            tracker: {
+              ...t,
+              teams,
+              activeTeam: (shooter === 0 ? 1 : 0) as TeamIndex,
+              history: pushHistory(t),
+            },
+          };
+        }),
+
+      trackerSwitchTeam: () =>
+        set((s) => ({
+          tracker: {
+            ...s.tracker,
+            activeTeam: (s.tracker.activeTeam === 0 ? 1 : 0) as TeamIndex,
+            history: pushHistory(s.tracker),
+          },
+        })),
+
+      trackerUndo: () =>
+        set((s) => {
+          const previous = s.tracker.history[s.tracker.history.length - 1];
+          if (!previous) return {};
+          return {
+            tracker: {
+              ...s.tracker,
+              teams: cloneTeams(previous.teams),
+              activeTeam: previous.activeTeam,
+              winner: previous.winner,
+              finishedAt: previous.winner != null ? s.tracker.finishedAt : null,
+              history: s.tracker.history.slice(0, -1),
+            },
+          };
+        }),
+
+      trackerSetTeamName: (team, name) =>
+        set((s) => {
+          const teams = cloneTeams(s.tracker.teams);
+          teams[team] = { ...teams[team], name };
+          return { tracker: { ...s.tracker, teams } };
+        }),
+
+      trackerReRack: (team) =>
+        set((s) => {
+          const teams = cloneTeams(s.tracker.teams);
+          if (teams[team].reRacksLeft <= 0) return {};
+          teams[team] = { ...teams[team], reRacksLeft: teams[team].reRacksLeft - 1 };
+          return { tracker: { ...s.tracker, teams, history: pushHistory(s.tracker) } };
+        }),
+
+      trackerNewGame: (startCups) =>
+        set((s) => ({
+          tracker: makeTracker(startCups ?? s.tracker.startCups, [
+            s.tracker.teams[0].name,
+            s.tracker.teams[1].name,
+          ]),
         })),
 
       arcade: {
@@ -285,6 +537,63 @@ export const useBeerpongStore = create<BeerpongStore>()(
         };
       },
 
+      daily: {
+        date: todayKey(),
+        cupsHit: 0,
+        throws: 0,
+        wins: 0,
+        bounceHits: 0,
+        trackerCups: 0,
+        claimed: [],
+      },
+
+      trackDaily: (metric, amount = 1) =>
+        set((s) => {
+          const today = todayKey();
+          const base =
+            s.daily.date === today
+              ? s.daily
+              : {
+                  date: today,
+                  cupsHit: 0,
+                  throws: 0,
+                  wins: 0,
+                  bounceHits: 0,
+                  trackerCups: 0,
+                  claimed: [],
+                };
+          return { daily: { ...base, [metric]: base[metric] + amount } };
+        }),
+
+      claimDaily: (challengeId, coins) =>
+        set((s) => {
+          if (s.daily.claimed.includes(challengeId)) return {};
+          return {
+            daily: { ...s.daily, claimed: [...s.daily.claimed, challengeId] },
+            coins: s.coins + coins,
+          };
+        }),
+
+      claimedAchievements: [],
+      claimAchievement: (achievementId, coins) =>
+        set((s) => {
+          if (s.claimedAchievements.includes(achievementId)) return {};
+          return {
+            claimedAchievements: [...s.claimedAchievements, achievementId],
+            coins: s.coins + coins,
+          };
+        }),
+
+      claimedSeasonTiers: [],
+      claimSeasonTier: (level, coins) =>
+        set((s) => {
+          if (s.claimedSeasonTiers.includes(level)) return {};
+          return {
+            claimedSeasonTiers: [...s.claimedSeasonTiers, level],
+            coins: s.coins + coins,
+          };
+        }),
+
       weekend: { active: false, played: 0, wins: 0, bestWins: 0, runsCompleted: 0 },
 
       startWeekendRun: () =>
@@ -327,6 +636,11 @@ export const useBeerpongStore = create<BeerpongStore>()(
         hapticsEnabled: state.hapticsEnabled,
         houseRules: state.houseRules,
         camera: state.camera,
+        tracker: state.tracker,
+        tournament: state.tournament,
+        daily: state.daily,
+        claimedAchievements: state.claimedAchievements,
+        claimedSeasonTiers: state.claimedSeasonTiers,
         arcade: state.arcade,
         coins: state.coins,
         ownedSkinIds: state.ownedSkinIds,
