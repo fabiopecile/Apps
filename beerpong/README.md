@@ -105,9 +105,11 @@ Apple-Developer-Account (99 $/Jahr) über TestFlight.
 - **Kein echtes Online-Multiplayer.** Gegner in Rivals und Weekend League werden
   lokal simuliert (`lib/competition.ts`, `generateOnlineOpponent`). Das ist die
   Stelle, an der später ein Server andockt.
-- **Keine automatische Bechererkennung.** Der Kamera-Modus zählt per Tap. Der
-  Pro-Screen (`app/pro.tsx`) beschreibt, was dafür geplant ist — kaufbar ist
-  dort nichts, die Vormerkung bleibt lokal auf dem Gerät.
+- **Keine automatische Bechererkennung und kein Online-Spiel im Kamera-Modus.**
+  Der Kamera-Modus zählt per Tap und läuft nur an einem Tisch. Beides steht als
+  Pro-Funktion auf `app/pro.tsx` beschrieben (erreichbar über das Globus-Symbol
+  im Tracker und über das Profil) — kaufbar ist dort nichts, die Vormerkung
+  bleibt lokal auf dem Gerät.
 - **Keine echte Wurfphysik.** Treffer werden über eine Wahrscheinlichkeit
   entschieden und dann animiert; Fehlwürfe können am Becherrand abprallen.
 - **Sounds sind synthetisch erzeugt** — `tools/gen_sounds.py` baut sie aus

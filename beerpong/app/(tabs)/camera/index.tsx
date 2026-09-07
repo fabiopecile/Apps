@@ -115,6 +115,20 @@ export default function CameraTrackerScreen() {
           }
           right={
             <>
+            {/* Online play against another table is a Pro feature — the button
+                is here so it is findable, but it only opens the Pro preview. */}
+            <Pressable
+              onPress={() => router.push('/pro')}
+              style={[styles.iconButton, styles.iconButtonPro]}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('tracker.openOnline')}
+            >
+              <Ionicons name="globe" size={17} color={colors.gold} />
+              <View style={styles.iconLock}>
+                <Ionicons name="lock-closed" size={8} color={colors.background} />
+              </View>
+            </Pressable>
             <Pressable
               onPress={() => router.push('/(tabs)/camera/tournament')}
               style={styles.iconButton}
@@ -359,6 +373,20 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.backgroundElevated,
+  },
+  iconButtonPro: {
+    borderColor: colors.gold,
+  },
+  iconLock: {
+    position: 'absolute',
+    right: -1,
+    bottom: -1,
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.gold,
   },
   permissionWrap: {
     flex: 1,
