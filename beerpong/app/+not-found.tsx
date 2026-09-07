@@ -1,18 +1,20 @@
 import { Link, Stack } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 import { GridBackground } from '@/components/ui/GridBackground';
+import { useT } from '@/lib/i18n';
 import { colors, fonts, spacing } from '@/theme';
 
 export default function NotFoundScreen() {
+  const t = useT();
   return (
     <>
-      <Stack.Screen options={{ title: 'Nicht gefunden', headerShown: false }} />
+      <Stack.Screen options={{ title: t('notFound.title'), headerShown: false }} />
       <View style={styles.container}>
         <GridBackground />
         <Text style={styles.title}>404</Text>
-        <Text style={styles.body}>Diese Seite existiert nicht.</Text>
+        <Text style={styles.body}>{t('notFound.body')}</Text>
         <Link href="/(tabs)/camera" style={styles.link}>
-          <Text style={styles.linkText}>Zurück zum Tracker</Text>
+          <Text style={styles.linkText}>{t('notFound.link')}</Text>
         </Link>
       </View>
     </>

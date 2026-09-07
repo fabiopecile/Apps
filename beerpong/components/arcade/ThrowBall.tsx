@@ -44,6 +44,10 @@ interface ThrowBallProps {
   direction?: 'up' | 'down';
   /** Doubles up: harder to land, but takes two cups. */
   bounce?: boolean;
+  /** Fires the instant the ball catches the rim, before it kicks away. */
+  onRim?: () => void;
+  /** Fires as the ball leaves your hand. */
+  onLaunch?: () => void;
 }
 
 export function ThrowBall({
@@ -58,6 +62,8 @@ export function ThrowBall({
   hidden,
   direction = 'up',
   bounce = false,
+  onRim,
+  onLaunch,
 }: ThrowBallProps) {
   const ballX = useSharedValue(startX);
   const ballY = useSharedValue(startY);
@@ -69,6 +75,9 @@ export function ThrowBall({
   const flyingRef = useRef(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Stable JS target for runOnJS — the prop itself may be undefined.
+  const rimContact = () => onRim?.();
 
   const setFlyingState = (value: boolean) => {
     flyingRef.current = value;
@@ -156,6 +165,7 @@ export function ThrowBall({
     const rimOut = !hit && Math.random() < 0.55;
 
     setFlyingState(true);
+    onLaunch?.();
     trailOpacity.value = withTiming(1, { duration: 60 });
 
     const easing = Easing.out(Easing.quad);
@@ -183,6 +193,7 @@ export function ThrowBall({
           withTiming(kickY - shortOf * 80, { duration: 260, easing: Easing.in(Easing.quad) })
         );
         trailOpacity.value = withTiming(0, { duration: 380 });
+        runOnJS(rimContact)();
         runOnJS(scheduleResult)(target.index, hit, power, 420);
         return;
       }

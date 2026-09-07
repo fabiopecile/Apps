@@ -1,9 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { StyleSheet, View } from 'react-native';
+import { useT } from '@/lib/i18n';
 import { colors, fonts } from '@/theme';
 
 export default function TabsLayout() {
+  const t = useT();
   return (
     <Tabs
       screenOptions={{
@@ -18,7 +20,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="camera"
         options={{
-          title: 'Kamera',
+          title: t('tab.camera'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="camera" color={String(color)} focused={focused} />
           ),
@@ -27,7 +29,7 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="arcade"
         options={{
-          title: 'Arcade',
+          title: t('tab.arcade'),
           tabBarIcon: ({ color, focused }) => (
             <TabIcon name="game-controller" color={String(color)} focused={focused} />
           ),

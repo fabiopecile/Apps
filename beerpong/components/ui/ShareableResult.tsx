@@ -5,6 +5,7 @@ import * as Sharing from 'expo-sharing';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GlowButton } from './GlowButton';
+import { useT } from '@/lib/i18n';
 import { colors, fonts, radius, spacing } from '@/theme';
 
 export interface ShareCardData {
@@ -20,7 +21,8 @@ export interface ShareCardData {
  * The off-screen card that gets rasterised for sharing. Rendered at a fixed
  * size so the exported image looks the same on every device.
  */
-const ShareCard = forwardRef<View, { data: ShareCardData }>(({ data }, ref) => (
+const ShareCard = forwardRef<View, { data: ShareCardData; footer: string }>(
+  ({ data, footer }, ref) => (
   <View ref={ref} style={styles.card} collapsable={false}>
     <View style={styles.cardHeader}>
       <View style={styles.logoRing}>
@@ -44,18 +46,20 @@ const ShareCard = forwardRef<View, { data: ShareCardData }>(({ data }, ref) => (
       </View>
     </View>
 
-    <Text style={styles.footer}>Gespielt mit der Beerpong App</Text>
+    <Text style={styles.footer}>{footer}</Text>
   </View>
-));
+  )
+);
 ShareCard.displayName = 'ShareCard';
 
 /**
  * A share button plus the hidden card it exports. Kept together so callers
  * only pass the numbers and get the whole flow.
  */
-export function ShareResultButton({ data, label = 'Ergebnis teilen' }: { data: ShareCardData; label?: string }) {
+export function ShareResultButton({ data, label }: { data: ShareCardData; label?: string }) {
   const cardRef = useRef<View>(null);
   const [busy, setBusy] = useState(false);
+  const t = useT();
 
   const share = async () => {
     if (busy) return;
@@ -63,7 +67,10 @@ export function ShareResultButton({ data, label = 'Ergebnis teilen' }: { data: S
     try {
       const uri = await captureRef(cardRef, { format: 'png', quality: 1 });
       if (await Sharing.isAvailableAsync()) {
-        await Sharing.shareAsync(uri, { mimeType: 'image/png', dialogTitle: 'Ergebnis teilen' });
+        await Sharing.shareAsync(uri, {
+          mimeType: 'image/png',
+          dialogTitle: t('share.button'),
+        });
       }
     } catch {
       // Sharing can be unavailable (web, denied permission) — fail quietly.
@@ -77,11 +84,11 @@ export function ShareResultButton({ data, label = 'Ergebnis teilen' }: { data: S
       {/* Rendered off-screen purely so it can be captured. */}
       <View style={styles.offscreen} pointerEvents="none">
         <ViewShot>
-          <ShareCard ref={cardRef} data={data} />
+          <ShareCard ref={cardRef} data={data} footer={t('share.footer')} />
         </ViewShot>
       </View>
       <GlowButton
-        label={label}
+        label={label ?? t('share.button')}
         variant="outline"
         size="sm"
         onPress={share}

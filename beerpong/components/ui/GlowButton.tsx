@@ -17,6 +17,8 @@ interface GlowButtonProps {
   icon?: ReactNode;
   disabled?: boolean;
   style?: StyleProp<ViewStyle>;
+  /** Overrides the neon accent — used by the gold Pro screen. */
+  accent?: string;
 }
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
@@ -29,6 +31,7 @@ export function GlowButton({
   icon,
   disabled,
   style,
+  accent = colors.neon,
 }: GlowButtonProps) {
   const feedback = useFeedback();
   const scale = useSharedValue(1);
@@ -61,12 +64,12 @@ export function GlowButton({
 
   const variantStyle =
     variant === 'filled'
-      ? { backgroundColor: colors.neon, borderColor: colors.neon }
+      ? { backgroundColor: accent, borderColor: accent }
       : variant === 'outline'
-        ? { backgroundColor: 'transparent', borderColor: colors.neon }
+        ? { backgroundColor: 'transparent', borderColor: accent }
         : { backgroundColor: 'transparent', borderColor: 'transparent' };
 
-  const textColor = variant === 'filled' ? colors.background : colors.neon;
+  const textColor = variant === 'filled' ? colors.background : accent;
   const paddingV = size === 'lg' ? 18 : size === 'md' ? 14 : 10;
   const fontSize = size === 'lg' ? 18 : size === 'md' ? 15 : 13;
 
@@ -79,7 +82,7 @@ export function GlowButton({
       style={[
         styles.base,
         variantStyle,
-        variant !== 'ghost' ? glow('medium') : undefined,
+        variant !== 'ghost' ? glow('medium', accent) : undefined,
         { paddingVertical: paddingV },
         pulseStyle,
         animatedStyle,

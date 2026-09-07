@@ -50,7 +50,20 @@ export function useFeedback() {
       if (hapticsEnabled) void hapticNotification(Haptics.NotificationFeedbackType.Success);
     },
     miss: () => {
+      play('miss');
       if (hapticsEnabled) void hapticNotification(Haptics.NotificationFeedbackType.Warning);
+    },
+    rimOut: () => {
+      play('rimOut');
+      if (hapticsEnabled) void hapticImpact(Haptics.ImpactFeedbackStyle.Light);
+    },
+    defeat: () => {
+      play('defeat');
+      if (hapticsEnabled) void hapticNotification(Haptics.NotificationFeedbackType.Error);
+    },
+    reward: () => {
+      play('coin');
+      if (hapticsEnabled) void hapticImpact(Haptics.ImpactFeedbackStyle.Medium);
     },
   };
 }

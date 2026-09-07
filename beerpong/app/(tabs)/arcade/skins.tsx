@@ -10,6 +10,7 @@ import { GlowButton } from '@/components/ui/GlowButton';
 import { BallArt } from '@/components/arcade/BallArt';
 import { SKINS, type SkinType } from '@/lib/skins';
 import { useBeerpongStore } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function SkinsScreen() {
@@ -20,6 +21,7 @@ export default function SkinsScreen() {
   const equippedTable = useBeerpongStore((s) => s.arcade.equippedTable);
   const buySkin = useBeerpongStore((s) => s.buySkin);
   const equipSkin = useBeerpongStore((s) => s.equipSkin);
+  const t = useT();
 
   const equippedId = filter === 'ball' ? equippedBall : equippedTable;
   const skins = SKINS.filter((s) => s.type === filter);
@@ -33,7 +35,7 @@ export default function SkinsScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.title}>Skins</Text>
+          <Text style={styles.title}>{t('skins.title')}</Text>
           <View style={styles.coinChip}>
             <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
             <Text style={styles.coinText}>{coins}</Text>
@@ -48,7 +50,7 @@ export default function SkinsScreen() {
               style={[styles.filterButton, filter === type && styles.filterButtonActive]}
             >
               <Text style={[styles.filterText, filter === type && styles.filterTextActive]}>
-                {type === 'ball' ? 'Bälle' : 'Tische'}
+                {type === 'ball' ? t('skins.balls') : t('skins.tables')}
               </Text>
             </Pressable>
           ))}
@@ -91,18 +93,23 @@ export default function SkinsScreen() {
                   </View>
                 )}
                 <Text style={styles.skinName}>{item.name}</Text>
-                <Text style={styles.skinDescription}>{item.description}</Text>
+                <Text style={styles.skinDescription}>{t(item.descriptionKey)}</Text>
 
                 {equipped ? (
                   <View style={styles.equippedBadge}>
                     <Ionicons name="checkmark-circle" size={14} color={colors.neon} />
-                    <Text style={styles.equippedText}>Aktiv</Text>
+                    <Text style={styles.equippedText}>{t('skins.active')}</Text>
                   </View>
                 ) : owned ? (
-                  <GlowButton label="Ausrüsten" variant="outline" size="sm" onPress={() => equipSkin(item.id)} />
+                  <GlowButton
+                    label={t('skins.equip')}
+                    variant="outline"
+                    size="sm"
+                    onPress={() => equipSkin(item.id)}
+                  />
                 ) : (
                   <GlowButton
-                    label={`${item.cost} Coins`}
+                    label={t('skins.buy', { cost: item.cost })}
                     variant={canAfford ? 'filled' : 'ghost'}
                     size="sm"
                     disabled={!canAfford}

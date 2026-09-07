@@ -4,6 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radius, spacing } from '@/theme';
 import type { TeamIndex, TrackerTeam } from '@/lib/store';
+import { useT } from '@/lib/i18n';
 
 interface TeamScoreboardProps {
   teams: [TrackerTeam, TrackerTeam];
@@ -65,6 +66,7 @@ function TeamColumn({
 }) {
   const scale = useSharedValue(1);
   const previousCups = useRef(team.cupsLeft);
+  const t = useT();
 
   useEffect(() => {
     if (team.cupsLeft !== previousCups.current) {
@@ -113,7 +115,11 @@ function TeamColumn({
       </View>
 
       <Text style={styles.meta} selectable={false}>
-        {team.hits}/{team.throws} Würfe · Serie {team.streak}
+        {t('tracker.throwsMeta', {
+          hits: team.hits,
+          throws: team.throws,
+          streak: team.streak,
+        })}
       </Text>
     </Pressable>
   );

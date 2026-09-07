@@ -22,6 +22,7 @@ import {
 } from '@/lib/progression';
 import { selectCareerProgress, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
+import { divisionName, useLanguage, useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function ArcadeHubScreen() {
@@ -36,6 +37,8 @@ export default function ArcadeHubScreen() {
   const claimedAchievements = useBeerpongStore((s) => s.claimedAchievements);
   const claimedSeasonTiers = useBeerpongStore((s) => s.claimedSeasonTiers);
   const { level, progress } = selectCareerProgress(arcade.careerXP);
+  const t = useT();
+  const language = useLanguage();
 
   const division = getDivision(rivals.division);
   const weekendUnlocked = rivals.division <= WEEKEND_UNLOCK_DIVISION;
@@ -62,7 +65,7 @@ export default function ArcadeHubScreen() {
       return current >= target && !claimedAchievements.includes(a.id);
     }).length +
     SEASON_TIERS.filter(
-      (t) => arcade.careerXP >= t.xp && !claimedSeasonTiers.includes(t.level),
+      (tier) => arcade.careerXP >= tier.xp && !claimedSeasonTiers.includes(tier.level),
     ).length;
 
   return (
@@ -71,8 +74,8 @@ export default function ArcadeHubScreen() {
       <SafeAreaView style={styles.safe}>
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <ScreenHeader
-            title="ARCADE"
-            subtitle={`Career Level ${level}`}
+            title={t('hub.title')}
+            subtitle={t('hub.careerLevel', { level })}
             right={
               <View style={styles.coinChip}>
                 <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
@@ -88,41 +91,49 @@ export default function ArcadeHubScreen() {
           </View>
 
           <View style={styles.section}>
-            <SectionLabel>Spielmodi</SectionLabel>
+            <SectionLabel>{t('hub.modes')}</SectionLabel>
 
             <ModeCard
               icon="hardware-chip"
-              title="Offline vs. KI"
-              subtitle={`Zuletzt: ${preset.label} · Einfach, Mittel oder Schwer`}
+              title={t('hub.offline.title')}
+              subtitle={t('hub.offline.subtitle', { last: t(preset.labelKey) })}
               accent={colors.neon}
               href="/(tabs)/arcade/offline"
             />
 
             <ModeCard
               icon="people"
-              title="Pass & Play"
-              subtitle="Zwei Spieler, ein Handy — abwechselnd werfen"
+              title={t('hub.passplay.title')}
+              subtitle={t('hub.passplay.subtitle')}
               accent={colors.gold}
               href="/(tabs)/arcade/passplay"
             />
 
             <ModeCard
               icon="globe"
-              title="Division Rivals"
-              subtitle={`${division.name} · ${rivals.divisionWins}/${division.winsToPromote} Siege bis Aufstieg`}
+              title={t('hub.rivals.title')}
+              subtitle={t('hub.rivals.subtitle', {
+                division: divisionName(language, division),
+                wins: rivals.divisionWins,
+                target: division.winsToPromote,
+              })}
               accent={division.color}
               href="/(tabs)/arcade/rivals"
             />
 
             <ModeCard
               icon="calendar"
-              title="Weekend League"
+              title={t('hub.weekend.title')}
               subtitle={
                 weekendUnlocked
                   ? weekend.active
-                    ? `Lauf läuft · ${weekend.played}/${WEEKEND_MATCHES} Spiele · ${weekend.wins} Siege`
-                    : `${WEEKEND_MATCHES} Spiele, vier Belohnungsstufen`
-                  : `Ab Division ${WEEKEND_UNLOCK_DIVISION} freigeschaltet`
+                    ? t('hub.weekend.running', {
+                        played: weekend.played,
+                        matches: WEEKEND_MATCHES,
+                        wins: weekend.wins,
+                      })
+                    : t('hub.weekend.idle', { matches: WEEKEND_MATCHES })
+                  : t('hub.weekend.locked', { division: WEEKEND_UNLOCK_DIVISION })
               }
               accent={weekendUnlocked ? colors.gold : colors.textMuted}
               href="/(tabs)/arcade/weekend"
@@ -131,14 +142,16 @@ export default function ArcadeHubScreen() {
           </View>
 
           <View style={styles.section}>
-            <SectionLabel>Fortschritt</SectionLabel>
+            <SectionLabel>{t('hub.progress')}</SectionLabel>
             <ModeCard
               icon="checkmark-done"
-              title="Aufgaben & Erfolge"
+              title={t('hub.challenges.title')}
               subtitle={
                 claimable > 0
-                  ? `${claimable} Belohnung${claimable === 1 ? '' : 'en'} abholbereit`
-                  : 'Tagesaufgaben, Saison-Stufen und Erfolge'
+                  ? t(claimable === 1 ? 'hub.challenges.ready1' : 'hub.challenges.readyN', {
+                      count: claimable,
+                    })
+                  : t('hub.challenges.subtitle')
               }
               accent={claimable > 0 ? colors.gold : colors.neon}
               href="/(tabs)/arcade/challenges"
@@ -147,11 +160,11 @@ export default function ArcadeHubScreen() {
           </View>
 
           <View style={styles.section}>
-            <SectionLabel>Sammlung</SectionLabel>
+            <SectionLabel>{t('hub.collection')}</SectionLabel>
             <ModeCard
               icon="color-palette"
-              title="Skins"
-              subtitle="Bälle und Tische freischalten"
+              title={t('hub.skins.title')}
+              subtitle={t('hub.skins.subtitle')}
               accent={colors.neonAlt}
               href="/(tabs)/arcade/skins"
               compact
@@ -159,9 +172,9 @@ export default function ArcadeHubScreen() {
           </View>
 
           <View style={styles.statsRow}>
-            <HubStat label="Rivals-Siege" value={`${rivals.wins}`} />
-            <HubStat label="Beste Division" value={`${rivals.bestDivision}`} />
-            <HubStat label="WL-Bestwert" value={`${weekend.bestWins}`} />
+            <HubStat label={t('hub.stat.rivalsWins')} value={`${rivals.wins}`} />
+            <HubStat label={t('hub.stat.bestDivision')} value={`${rivals.bestDivision}`} />
+            <HubStat label={t('hub.stat.weekendBest')} value={`${weekend.bestWins}`} />
           </View>
         </ScrollView>
       </SafeAreaView>

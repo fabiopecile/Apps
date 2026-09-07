@@ -16,6 +16,7 @@ import {
 } from '@/lib/progression';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
+import { useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function ChallengesScreen() {
@@ -31,6 +32,7 @@ export default function ChallengesScreen() {
   const claimedSeasonTiers = useBeerpongStore((s) => s.claimedSeasonTiers);
   const claimSeasonTier = useBeerpongStore((s) => s.claimSeasonTier);
   const feedback = useFeedback();
+  const t = useT();
 
   const today = todayKey();
   const challenges = challengesFor(today);
@@ -57,12 +59,12 @@ export default function ChallengesScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.title}>Aufgaben</Text>
+          <Text style={styles.title}>{t('challenges.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <SectionLabel>Heute</SectionLabel>
+          <SectionLabel>{t('challenges.today')}</SectionLabel>
           {challenges.map((challenge) => {
             const current = counters ? counters[challenge.metric] : 0;
             const done = current >= challenge.target;
@@ -71,7 +73,7 @@ export default function ChallengesScreen() {
               <View key={challenge.id} style={[styles.card, done && !claimed && glow('soft')]}>
                 <View style={styles.cardTop}>
                   <Text style={styles.cardTitle} selectable={false}>
-                    {challenge.title}
+                    {t(challenge.titleKey)}
                   </Text>
                   <Text style={styles.cardCoins} selectable={false}>
                     +{challenge.coins}
@@ -84,18 +86,18 @@ export default function ChallengesScreen() {
                   </Text>
                   {claimed ? (
                     <Text style={styles.claimedText} selectable={false}>
-                      Abgeholt
+                      {t('challenges.claimed')}
                     </Text>
                   ) : done ? (
                     <Pressable
                       style={styles.claimButton}
                       onPress={() => {
-                        feedback.cupHit();
+                        feedback.reward();
                         claimDaily(challenge.id, challenge.coins);
                       }}
                     >
                       <Text style={styles.claimButtonText} selectable={false}>
-                        Einsammeln
+                        {t('challenges.claim')}
                       </Text>
                     </Pressable>
                   ) : null}
@@ -105,24 +107,30 @@ export default function ChallengesScreen() {
           })}
 
           <View style={styles.sectionGap} />
-          <SectionLabel>Saison</SectionLabel>
+          <SectionLabel>{t('challenges.season')}</SectionLabel>
           <View style={styles.card}>
             <View style={styles.cardTop}>
               <Text style={styles.cardTitle} selectable={false}>
-                Stufe {season.reached}/{SEASON_TIERS.length}
+                {t('challenges.seasonLevel', {
+                  reached: season.reached,
+                  total: SEASON_TIERS.length,
+                })}
               </Text>
               <Text style={styles.cardMeta} selectable={false}>
-                {arcade.careerXP} XP
+                {t('challenges.xp', { xp: arcade.careerXP })}
               </Text>
             </View>
             <ProgressBar progress={season.progress} height={6} />
             {season.next ? (
               <Text style={styles.cardMeta} selectable={false}>
-                Noch {season.next.xp - arcade.careerXP} XP bis Stufe {season.next.level}
+                {t('challenges.seasonNext', {
+                  xp: season.next.xp - arcade.careerXP,
+                  level: season.next.level,
+                })}
               </Text>
             ) : (
               <Text style={styles.cardMeta} selectable={false}>
-                Alle Stufen erreicht.
+                {t('challenges.seasonDone')}
               </Text>
             )}
           </View>
@@ -136,7 +144,7 @@ export default function ChallengesScreen() {
                   key={tier.level}
                   disabled={!unlocked || claimed}
                   onPress={() => {
-                    feedback.cupHit();
+                    feedback.reward();
                     claimSeasonTier(tier.level, tier.coins);
                   }}
                   style={[
@@ -160,7 +168,7 @@ export default function ChallengesScreen() {
           </View>
 
           <View style={styles.sectionGap} />
-          <SectionLabel>Erfolge</SectionLabel>
+          <SectionLabel>{t('challenges.achievements')}</SectionLabel>
           {ACHIEVEMENTS.map((achievement) => {
             const { current, target } = achievement.progress(stats);
             const done = current >= target;
@@ -182,10 +190,10 @@ export default function ChallengesScreen() {
                   </View>
                   <View style={{ flex: 1 }}>
                     <Text style={styles.cardTitle} selectable={false}>
-                      {achievement.title}
+                      {t(achievement.titleKey)}
                     </Text>
                     <Text style={styles.cardMeta} selectable={false}>
-                      {achievement.description}
+                      {t(achievement.descriptionKey)}
                     </Text>
                   </View>
                   {claimed ? (
@@ -194,7 +202,7 @@ export default function ChallengesScreen() {
                     <Pressable
                       style={styles.claimButton}
                       onPress={() => {
-                        feedback.cupHit();
+                        feedback.reward();
                         claimAchievement(achievement.id, achievement.coins);
                       }}
                     >

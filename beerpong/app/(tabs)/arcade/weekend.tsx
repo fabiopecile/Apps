@@ -14,6 +14,7 @@ import {
   weekendTierFor,
 } from '@/lib/competition';
 import { useBeerpongStore } from '@/lib/store';
+import { divisionName, useLanguage, useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function WeekendScreen() {
@@ -21,6 +22,8 @@ export default function WeekendScreen() {
   const weekend = useBeerpongStore((s) => s.weekend);
   const startWeekendRun = useBeerpongStore((s) => s.startWeekendRun);
   const resetWeekendRun = useBeerpongStore((s) => s.resetWeekendRun);
+  const t = useT();
+  const language = useLanguage();
 
   const unlocked = rivals.division <= WEEKEND_UNLOCK_DIVISION;
   const projected = weekendTierFor(weekend.wins);
@@ -39,7 +42,7 @@ export default function WeekendScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.title}>Weekend League</Text>
+          <Text style={styles.title}>{t('weekend.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
 
@@ -48,14 +51,16 @@ export default function WeekendScreen() {
             <View style={styles.lockedCard}>
               <Ionicons name="lock-closed" size={28} color={colors.textMuted} />
               <Text style={styles.lockedTitle} selectable={false}>
-                Noch gesperrt
+                {t('weekend.locked.title')}
               </Text>
               <Text style={styles.lockedBody} selectable={false}>
-                Die Weekend League öffnet ab {getDivision(WEEKEND_UNLOCK_DIVISION).name}. Du stehst
-                aktuell in {getDivision(rivals.division).name}.
+                {t('weekend.locked.body', {
+                  required: divisionName(language, getDivision(WEEKEND_UNLOCK_DIVISION)),
+                  current: divisionName(language, getDivision(rivals.division)),
+                })}
               </Text>
               <GlowButton
-                label="Zu Division Rivals"
+                label={t('weekend.locked.cta')}
                 variant="outline"
                 size="sm"
                 onPress={() => router.replace('/(tabs)/arcade/rivals')}
@@ -65,10 +70,10 @@ export default function WeekendScreen() {
           ) : (
             <View style={[styles.runCard, glow('soft', colors.gold)]}>
               <Text style={styles.runTitle} selectable={false}>
-                {weekend.active ? 'Lauf läuft' : 'Neuer Lauf'}
+                {weekend.active ? t('weekend.runActive') : t('weekend.runNew')}
               </Text>
               <Text style={styles.runSubtitle} selectable={false}>
-                {WEEKEND_MATCHES} Spiele am Stück — je mehr Siege, desto besser die Belohnungsstufe.
+                {t('weekend.runSubtitle', { matches: WEEKEND_MATCHES })}
               </Text>
 
               <View style={styles.matchGrid}>
@@ -91,21 +96,25 @@ export default function WeekendScreen() {
               </View>
 
               <View style={styles.runStats}>
-                <RunStat label="Siege" value={`${weekend.wins}`} color={colors.neon} />
-                <RunStat label="Offen" value={`${Math.max(0, remaining)}`} color={colors.textPrimary} />
-                <RunStat label="Stufe" value={projected.name} color={projected.color} />
+                <RunStat label={t('common.wins')} value={`${weekend.wins}`} color={colors.neon} />
+                <RunStat
+                  label={t('weekend.remaining')}
+                  value={`${Math.max(0, remaining)}`}
+                  color={colors.textPrimary}
+                />
+                <RunStat label={t('weekend.tier')} value={t(projected.nameKey)} color={projected.color} />
               </View>
 
               {weekend.active ? (
                 <>
                   <GlowButton
-                    label="Nächstes Spiel"
+                    label={t('weekend.nextMatch')}
                     size="lg"
                     onPress={() => router.push({ pathname: '/(tabs)/arcade/match', params: { mode: 'weekend' } })}
                     style={styles.runButton}
                   />
                   <GlowButton
-                    label="Lauf abbrechen"
+                    label={t('weekend.abortRun')}
                     variant="ghost"
                     size="sm"
                     onPress={resetWeekendRun}
@@ -113,27 +122,27 @@ export default function WeekendScreen() {
                   />
                 </>
               ) : (
-                <GlowButton label="Lauf starten" size="lg" onPress={startRun} style={styles.runButton} />
+                <GlowButton label={t('weekend.startRun')} size="lg" onPress={startRun} style={styles.runButton} />
               )}
             </View>
           )}
 
           <View style={styles.tiersSection}>
-            <SectionLabel>Belohnungen</SectionLabel>
+            <SectionLabel>{t('weekend.rewards')}</SectionLabel>
             {WEEKEND_TIERS.map((tier) => {
               const reached = weekend.wins >= tier.minWins;
               return (
                 <View
-                  key={tier.name}
+                  key={tier.nameKey}
                   style={[styles.tierRow, reached && { borderColor: tier.color }]}
                 >
                   <View style={[styles.tierDot, { backgroundColor: tier.color }]} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.tierName, { color: tier.color }]} selectable={false}>
-                      {tier.name}
+                      {t(tier.nameKey)}
                     </Text>
                     <Text style={styles.tierMeta} selectable={false}>
-                      ab {tier.minWins} Siegen
+                      {t('weekend.tierFrom', { wins: tier.minWins })}
                     </Text>
                   </View>
                   <Text style={styles.tierCoins} selectable={false}>
@@ -145,8 +154,12 @@ export default function WeekendScreen() {
           </View>
 
           <View style={styles.historyRow}>
-            <RunStat label="Bester Lauf" value={`${weekend.bestWins}`} color={colors.gold} />
-            <RunStat label="Läufe" value={`${weekend.runsCompleted}`} color={colors.textPrimary} />
+            <RunStat label={t('weekend.bestRun')} value={`${weekend.bestWins}`} color={colors.gold} />
+            <RunStat
+              label={t('weekend.runs')}
+              value={`${weekend.runsCompleted}`}
+              color={colors.textPrimary}
+            />
           </View>
         </ScrollView>
       </SafeAreaView>

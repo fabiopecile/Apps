@@ -8,6 +8,7 @@ import { Card } from '@/components/ui/Card';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { NeonSwitch } from '@/components/ui/NeonSwitch';
 import { selectCombinedStats, selectCareerProgress, useBeerpongStore } from '@/lib/store';
+import { LANGUAGES, useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function ProfileScreen() {
@@ -18,6 +19,9 @@ export default function ProfileScreen() {
   const hapticsEnabled = useBeerpongStore((s) => s.hapticsEnabled);
   const toggleSound = useBeerpongStore((s) => s.toggleSound);
   const toggleHaptics = useBeerpongStore((s) => s.toggleHaptics);
+  const language = useBeerpongStore((s) => s.language);
+  const setLanguage = useBeerpongStore((s) => s.setLanguage);
+  const t = useT();
 
   const accuracy =
     store.arcade.totalThrows > 0
@@ -33,8 +37,8 @@ export default function ProfileScreen() {
             <Ionicons name="person" size={30} color={colors.neon} />
           </View>
           <View style={{ flex: 1 }}>
-            <Text style={styles.name}>Spieler</Text>
-            <Text style={styles.levelText}>Career Level {level}</Text>
+            <Text style={styles.name}>{t('common.player')}</Text>
+            <Text style={styles.levelText}>{t('hub.careerLevel', { level })}</Text>
           </View>
           <Pressable onPress={() => router.back()} hitSlop={10} style={styles.closeButton}>
             <Ionicons name="close" size={22} color={colors.textSecondary} />
@@ -42,40 +46,83 @@ export default function ProfileScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll}>
-          <SectionLabel>Gesamtstatistik</SectionLabel>
+          <SectionLabel>{t('profile.overall')}</SectionLabel>
           <View style={styles.statGrid}>
-            <StatCard label="Cups gesamt" value={combined.totalCupsHit} />
-            <StatCard label="Siege" value={combined.totalWins} />
-            <StatCard label="Beste Serie" value={combined.bestStreak} />
-            <StatCard label="Spiele" value={combined.gamesPlayed} />
+            <StatCard label={t('profile.totalCups')} value={combined.totalCupsHit} />
+            <StatCard label={t('common.wins')} value={combined.totalWins} />
+            <StatCard label={t('profile.bestStreak')} value={combined.bestStreak} />
+            <StatCard label={t('profile.games')} value={combined.gamesPlayed} />
           </View>
 
-          <SectionLabel>Kamera-Tracker</SectionLabel>
+          <SectionLabel>{t('profile.cameraTracker')}</SectionLabel>
           <Card style={styles.modeCard}>
-            <ModeRow label="Runden gespielt" value={`${store.camera.gamesPlayed}`} />
-            <ModeRow label="Cups getrackt" value={`${store.camera.totalCupsHit}`} />
-            <ModeRow label="Beste Serie" value={`${store.camera.bestStreak}`} />
+            <ModeRow label={t('profile.roundsPlayed')} value={`${store.camera.gamesPlayed}`} />
+            <ModeRow label={t('profile.cupsTracked')} value={`${store.camera.totalCupsHit}`} />
+            <ModeRow label={t('profile.bestStreak')} value={`${store.camera.bestStreak}`} />
           </Card>
 
-          <SectionLabel>Arcade</SectionLabel>
+          <SectionLabel>{t('profile.arcade')}</SectionLabel>
           <Card style={styles.modeCard}>
-            <ModeRow label="Würfe gesamt" value={`${store.arcade.totalThrows}`} />
-            <ModeRow label="Trefferquote" value={`${accuracy}%`} />
-            <ModeRow label="Bilanz" value={`${store.arcade.wins}S / ${store.arcade.losses}N`} />
-            <ModeRow label="Coins" value={`${store.coins}`} />
+            <ModeRow label={t('profile.totalThrows')} value={`${store.arcade.totalThrows}`} />
+            <ModeRow label={t('profile.accuracy')} value={`${accuracy}%`} />
+            <ModeRow
+              label={t('profile.record')}
+              value={t('profile.recordValue', {
+                wins: store.arcade.wins,
+                losses: store.arcade.losses,
+              })}
+            />
+            <ModeRow label={t('common.coins')} value={`${store.coins}`} />
           </Card>
 
-          <SectionLabel>Einstellungen</SectionLabel>
+          <SectionLabel>{t('profile.settings')}</SectionLabel>
           <Card style={styles.modeCard}>
             <View style={styles.settingRow}>
-              <Text style={styles.settingLabel}>Sound-Effekte</Text>
+              <Text style={styles.settingLabel}>{t('profile.sound')}</Text>
               <NeonSwitch value={soundEnabled} onValueChange={toggleSound} />
             </View>
-            <View style={[styles.settingRow, styles.settingRowLast]}>
-              <Text style={styles.settingLabel}>Haptisches Feedback</Text>
+            <View style={styles.settingRow}>
+              <Text style={styles.settingLabel}>{t('profile.haptics')}</Text>
               <NeonSwitch value={hapticsEnabled} onValueChange={toggleHaptics} />
             </View>
+            <View style={[styles.settingRow, styles.settingRowLast]}>
+              <Text style={styles.settingLabel}>{t('profile.language')}</Text>
+              <View style={styles.languageRow}>
+                {LANGUAGES.map((entry) => {
+                  const active = entry.id === language;
+                  return (
+                    <Pressable
+                      key={entry.id}
+                      onPress={() => setLanguage(entry.id)}
+                      style={[styles.languageChip, active && styles.languageChipActive]}
+                    >
+                      <Text
+                        style={[styles.languageText, active && styles.languageTextActive]}
+                        selectable={false}
+                      >
+                        {entry.flag} {entry.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </View>
+            </View>
           </Card>
+
+          <SectionLabel>{t('profile.pro')}</SectionLabel>
+          <Pressable
+            onPress={() => router.push('/pro')}
+            style={({ pressed }) => [styles.proCard, pressed && { opacity: 0.75 }]}
+          >
+            <View style={styles.proIcon}>
+              <Ionicons name="sparkles" size={20} color={colors.gold} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.proTitle}>{t('pro.title')}</Text>
+              <Text style={styles.proSubtitle}>{t('pro.teaser')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
 
           <Text style={styles.footer}>Beerpong Companion & Arcade · v1.0.0</Text>
         </ScrollView>
@@ -211,6 +258,63 @@ const styles = StyleSheet.create({
     fontFamily: fonts.body,
     color: colors.textPrimary,
     fontSize: 15,
+  },
+  languageRow: {
+    flexDirection: 'row',
+    gap: 6,
+  },
+  languageChip: {
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderFaint,
+    backgroundColor: colors.backgroundElevated,
+  },
+  languageChipActive: {
+    borderColor: colors.neon,
+    backgroundColor: colors.neonFaint,
+  },
+  languageText: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  languageTextActive: {
+    color: colors.neon,
+  },
+  proCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.lg,
+    borderWidth: 1.5,
+    borderColor: colors.gold,
+    backgroundColor: colors.backgroundCard,
+    marginBottom: spacing.lg,
+    ...glow('soft', colors.gold),
+  },
+  proIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    borderWidth: 1.5,
+    borderColor: colors.gold,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.backgroundElevated,
+  },
+  proTitle: {
+    fontFamily: fonts.headingBlack,
+    fontSize: 17,
+    color: colors.gold,
+  },
+  proSubtitle: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 12,
+    color: colors.textSecondary,
+    marginTop: 2,
   },
   footer: {
     textAlign: 'center',

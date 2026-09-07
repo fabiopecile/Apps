@@ -17,6 +17,7 @@ import { TeamScoreboard } from '@/components/camera/TeamScoreboard';
 import { ShareResultButton } from '@/components/ui/ShareableResult';
 import { useBeerpongStore, type TeamIndex } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
+import { useT } from '@/lib/i18n';
 import { colors, fonts, radius, spacing } from '@/theme';
 
 export default function CameraTrackerScreen() {
@@ -35,6 +36,7 @@ export default function CameraTrackerScreen() {
   const trackDaily = useBeerpongStore((s) => s.trackDaily);
 
   const feedback = useFeedback();
+  const t = useT();
   const flashRef = useRef<FlashOverlayHandle>(null);
   const particleRef = useRef<ParticleBurstHandle>(null);
 
@@ -78,12 +80,13 @@ export default function CameraTrackerScreen() {
           <View style={styles.permissionIcon}>
             <Ionicons name="camera" size={40} color={colors.neon} />
           </View>
-          <Text style={styles.permissionTitle}>Kamera-Zugriff nötig</Text>
-          <Text style={styles.permissionBody}>
-            Beerpong nutzt die Kamera, um dein Live-Spiel zu tracken. Erlaube den Zugriff, um
-            Treffer per Tap zu zählen.
-          </Text>
-          <GlowButton label="Kamera erlauben" onPress={requestPermission} size="lg" />
+          <Text style={styles.permissionTitle}>{t('tracker.permission.title')}</Text>
+          <Text style={styles.permissionBody}>{t('tracker.permission.body')}</Text>
+          <GlowButton
+            label={t('tracker.permission.cta')}
+            onPress={requestPermission}
+            size="lg"
+          />
         </SafeAreaView>
       </View>
     );
@@ -104,8 +107,12 @@ export default function CameraTrackerScreen() {
 
       <SafeAreaView style={styles.overlay} pointerEvents="box-none">
         <ScreenHeader
-          title="TRACKER"
-          subtitle={finished ? 'Spiel beendet' : `${shooter.name} wirft auf ${target.name}`}
+          title={t('tracker.title')}
+          subtitle={
+            finished
+              ? t('tracker.finished')
+              : t('tracker.throwingAt', { shooter: shooter.name, target: target.name })
+          }
           right={
             <>
             <Pressable
@@ -113,7 +120,7 @@ export default function CameraTrackerScreen() {
               style={styles.iconButton}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="Turnier öffnen"
+              accessibilityLabel={t('tracker.openTournament')}
             >
               <Ionicons name="git-network" size={17} color={colors.neon} />
             </Pressable>
@@ -122,7 +129,7 @@ export default function CameraTrackerScreen() {
               style={styles.iconButton}
               hitSlop={8}
               accessibilityRole="button"
-              accessibilityLabel="House Rules öffnen"
+              accessibilityLabel={t('tracker.openHouseRules')}
             >
               <Ionicons name="options" size={18} color={colors.neon} />
             </Pressable>
@@ -143,23 +150,28 @@ export default function CameraTrackerScreen() {
         {!finished ? (
           <View style={styles.hintWrap} pointerEvents="none">
             <Text style={styles.hint} selectable={false}>
-              Tippe irgendwo, wenn {shooter.name} trifft
+              {t('tracker.tapHint', { shooter: shooter.name })}
             </Text>
           </View>
         ) : null}
 
         <View style={styles.bottomBar}>
           <View style={styles.bottomRow}>
-            <SmallButton icon="close-circle" label="Fehlwurf" onPress={handleMiss} disabled={finished} />
+            <SmallButton
+              icon="close-circle"
+              label={t('tracker.miss')}
+              onPress={handleMiss}
+              disabled={finished}
+            />
             <SmallButton
               icon="swap-horizontal"
-              label="Team"
+              label={t('tracker.team')}
               onPress={() => selectTeam(targetIndex)}
               disabled={finished}
             />
             <SmallButton
               icon="arrow-undo"
-              label="Zurück"
+              label={t('common.back')}
               onPress={() => {
                 feedback.tap();
                 trackerUndo();
@@ -169,7 +181,7 @@ export default function CameraTrackerScreen() {
             {houseRules.reRacks ? (
               <SmallButton
                 icon="grid"
-                label={`Re-Rack ${target.reRacksLeft}`}
+                label={t('match.reRack', { left: target.reRacksLeft })}
                 onPress={() => {
                   feedback.tap();
                   trackerReRack(targetIndex);
@@ -180,7 +192,7 @@ export default function CameraTrackerScreen() {
           </View>
 
           <GlowButton
-            label="Neues Spiel"
+            label={t('tracker.newGame')}
             variant="outline"
             size="sm"
             onPress={() => trackerNewGame()}
@@ -195,7 +207,7 @@ export default function CameraTrackerScreen() {
           <View style={styles.resultCard}>
             <Ionicons name="trophy" size={40} color={colors.gold} />
             <Text style={styles.resultTitle} selectable={false}>
-              {tracker.teams[tracker.winner as TeamIndex].name} gewinnt!
+              {t('match.teamWins', { team: tracker.teams[tracker.winner as TeamIndex].name })}
             </Text>
             <View style={styles.resultStats}>
               {tracker.teams.map((team, i) => (
@@ -207,24 +219,28 @@ export default function CameraTrackerScreen() {
                     {team.hits}
                   </Text>
                   <Text style={styles.resultTeamMeta} selectable={false}>
-                    Treffer · {team.throws > 0 ? Math.round((team.hits / team.throws) * 100) : 0}%
+                    {t('tracker.hitsPercent', {
+                      percent: team.throws > 0 ? Math.round((team.hits / team.throws) * 100) : 0,
+                    })}
                   </Text>
                   <Text style={styles.resultTeamMeta} selectable={false}>
-                    Beste Serie {team.bestStreak}
+                    {t('tracker.bestStreak', { value: team.bestStreak })}
                   </Text>
                 </View>
               ))}
             </View>
             <View style={styles.resultButtons}>
               <GlowButton
-                label="Revanche"
+                label={t('tracker.rematch')}
                 size="sm"
                 onPress={() => trackerNewGame()}
                 style={styles.resultButton}
               />
               <ShareResultButton
                 data={{
-                  headline: `${tracker.teams[tracker.winner as TeamIndex].name} gewinnt!`,
+                  headline: t('match.teamWins', {
+                    team: tracker.teams[tracker.winner as TeamIndex].name,
+                  }),
                   subline: `${tracker.teams[0].name} vs. ${tracker.teams[1].name}`,
                   leftLabel: tracker.teams[0].name,
                   leftValue: `${tracker.startCups - tracker.teams[1].cupsLeft}`,

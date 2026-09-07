@@ -44,6 +44,7 @@ import { LEAGUE_OPPONENTS } from '@/lib/opponents';
 import { SKINS } from '@/lib/skins';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
+import { divisionName, translate, useLanguage, useT } from '@/lib/i18n';
 import { colors, fonts, spacing, radius } from '@/theme';
 
 type Turn = 'player' | 'opponent';
@@ -96,6 +97,8 @@ export default function MatchScreen() {
   const recordWeekendMatch = useBeerpongStore((s) => s.recordWeekendMatch);
   const trackDaily = useBeerpongStore((s) => s.trackDaily);
   const feedback = useFeedback();
+  const t = useT();
+  const language = useLanguage();
 
   const flashRef = useRef<FlashOverlayHandle>(null);
   const particleRef = useRef<ParticleBurstHandle>(null);
@@ -122,11 +125,13 @@ export default function MatchScreen() {
       const character = pool[Math.floor(Math.random() * pool.length)] ?? LEAGUE_OPPONENTS[0];
       return {
         id: character.id,
-        name: `${character.nickname} · ${preset.label}`,
+        name: `${character.nickname} · ${translate(language, preset.labelKey)}`,
         accuracy: preset.opponentAccuracy,
         playerSkill: preset.playerSkill,
         color: preset.color,
-        badge: `KI · ${preset.label}`,
+        badge: translate(language, 'match.badge.ai', {
+          difficulty: translate(language, preset.labelKey),
+        }),
       };
     }
     if (isPassPlay) {
@@ -147,10 +152,13 @@ export default function MatchScreen() {
       accuracy: online.accuracy,
       playerSkill: mode === 'weekend' ? 0.53 : 0.55,
       color: online.color,
-      badge: mode === 'weekend' ? 'Weekend League' : getDivision(rivals.division).name,
+      badge:
+        mode === 'weekend'
+          ? translate(language, 'weekend.title')
+          : divisionName(language, getDivision(rivals.division)),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, difficulty, rivals.division, matchSeed, isPassPlay]);
+  }, [mode, difficulty, rivals.division, matchSeed, isPassPlay, language]);
 
   const ballSkin = SKINS.find((s) => s.id === arcade.equippedBall) ?? SKINS[0];
   const opponentRemaining = opponentAlive.filter(Boolean).length;
@@ -240,13 +248,15 @@ export default function MatchScreen() {
     if (won) {
       feedback.victory();
       trackDaily('wins');
+    } else {
+      feedback.defeat();
     }
 
     if (isPassPlay) {
       setResultNote(
-        won
-          ? `${trackerTeams[0].name} räumt ab!`
-          : `${trackerTeams[1].name} räumt ab!`
+        t('match.passplayClears', {
+          team: won ? trackerTeams[0].name : trackerTeams[1].name,
+        })
       );
       endTimer.current = setTimeout(() => setRoundResult(outcome), 420);
       return;
@@ -255,18 +265,23 @@ export default function MatchScreen() {
     if (mode === 'rivals') {
       const result = recordRivalsMatch(won);
       const division = getDivision(result.division);
+      const name = divisionName(language, division);
       setResultNote(
         result.promoted || result.relegated
-          ? division.name
-          : `${result.divisionWins}/${result.winsToPromote} Siege bis zum Aufstieg · +${result.coins} Coins`
+          ? name
+          : t('match.rivalsNote', {
+              wins: result.divisionWins,
+              target: result.winsToPromote,
+              coins: result.coins,
+            })
       );
       if (result.promoted || result.relegated) {
         setCelebration({
           kind: result.promoted ? 'promotion' : 'relegation',
-          title: result.promoted ? 'AUFSTIEG!' : 'ABSTIEG',
+          title: result.promoted ? t('match.promoted') : t('match.relegated'),
           subtitle: result.promoted
-            ? `Willkommen in ${division.name} · +${result.coins} Coins`
-            : `Zurück in ${division.name} — hol sie dir wieder.`,
+            ? t('match.promotedSub', { division: name, coins: result.coins })
+            : t('match.relegatedSub', { division: name }),
           badgeLabel: `${result.division}`,
           color: division.color,
         });
@@ -276,21 +291,31 @@ export default function MatchScreen() {
       setRunFinished(result.finished);
       setResultNote(
         result.finished
-          ? `Lauf beendet: ${result.wins}/${WEEKEND_MATCHES} Siege`
-          : `Spiel ${result.played}/${WEEKEND_MATCHES} · ${result.wins} Siege · +${result.coins} Coins`
+          ? t('match.weekendDone', { wins: result.wins, matches: WEEKEND_MATCHES })
+          : t('match.weekendNote', {
+              played: result.played,
+              matches: WEEKEND_MATCHES,
+              wins: result.wins,
+              coins: result.coins,
+            })
       );
       if (result.finished) {
         setCelebration({
           kind: 'promotion',
-          title: 'WEEKEND LEAGUE',
-          subtitle: `${result.wins}/${WEEKEND_MATCHES} Siege · Stufe ${result.tierName} · +${result.coins} Coins`,
+          title: t('weekend.title'),
+          subtitle: t('match.weekendCelebration', {
+            wins: result.wins,
+            matches: WEEKEND_MATCHES,
+            tier: result.tierKey ? t(result.tierKey) : '—',
+            coins: result.coins,
+          }),
           badgeLabel: `${result.wins}`,
           color: colors.gold,
         });
       }
     } else {
       arcadeRecordMatch(setup.id, won);
-      setResultNote(won ? '+75 Coins · +Career XP' : '+20 Coins');
+      setResultNote(won ? t('match.offlineWin') : t('match.offlineLose'));
     }
 
     // Let the last cup finish falling before the overlay covers the table.
@@ -308,7 +333,12 @@ export default function MatchScreen() {
     return next;
   };
 
-  const handlePlayerResult = (result: { cupIndex: number | null; hit: boolean; bounce: boolean }) => {
+  const handlePlayerResult = (result: {
+    cupIndex: number | null;
+    hit: boolean;
+    bounce: boolean;
+    rimOut?: boolean;
+  }) => {
     arcadeRecordThrow(result.hit);
     trackDaily('throws');
     if (result.hit) {
@@ -316,7 +346,8 @@ export default function MatchScreen() {
       if (result.bounce) trackDaily('bounceHits');
     }
     if (result.cupIndex == null || !result.hit) {
-      feedback.miss();
+      // A rim-out already clacked when the ball caught the lip.
+      if (!result.rimOut) feedback.miss();
       scheduleOpponentTurn();
       return;
     }
@@ -340,10 +371,11 @@ export default function MatchScreen() {
     cupIndex: number | null;
     hit: boolean;
     bounce: boolean;
+    rimOut?: boolean;
   }) => {
     arcadeRecordThrow(result.hit);
     if (result.cupIndex == null || !result.hit) {
-      feedback.miss();
+      if (!result.rimOut) feedback.miss();
       returnTurnToPlayer(650);
       return;
     }
@@ -363,11 +395,13 @@ export default function MatchScreen() {
 
   const handleOpponentResult = (result: { cupIndex: number; hit: boolean }) => {
     if (!result.hit) {
+      feedback.miss();
       returnTurnToPlayer(700);
       return;
     }
     const cup = playerCups[result.cupIndex];
-    feedback.miss();
+    // Their ball goes in: the cup sound, but the warning colour and haptic.
+    feedback.cupHit();
     flashRef.current?.flash(colors.danger, 0.18);
     particleRef.current?.burst(cup.x, cup.y);
     const next = playerAlive.map((alive, i) => (i === result.cupIndex ? false : alive));
@@ -381,7 +415,11 @@ export default function MatchScreen() {
 
   const playerTurn = turn === 'player' && roundResult == null;
   const turnStatus =
-    roundResult != null ? '' : playerTurn ? 'Dein Wurf — nach oben wischen' : `${setup.name} zielt …`;
+    roundResult != null
+      ? ''
+      : playerTurn
+        ? t('match.yourTurn')
+        : t('match.opponentAiming', { name: setup.name });
 
   const showResultCard = roundResult != null && celebration == null;
 
@@ -399,7 +437,11 @@ export default function MatchScreen() {
             </Text>
             {mode === 'weekend' ? (
               <Text style={styles.headerSub} selectable={false}>
-                Spiel {Math.min(weekend.played + 1, WEEKEND_MATCHES)}/{WEEKEND_MATCHES} · {weekend.wins} Siege
+                {t('match.weekendHeader', {
+                  played: Math.min(weekend.played + 1, WEEKEND_MATCHES),
+                  matches: WEEKEND_MATCHES,
+                  wins: weekend.wins,
+                })}
               </Text>
             ) : null}
           </View>
@@ -417,7 +459,7 @@ export default function MatchScreen() {
             VS
           </Text>
           <RackBadge
-            label="Du"
+            label={t('common.you')}
             count={playerRemaining}
             color={colors.neon}
             active={!playerTurn && roundResult == null}
@@ -449,6 +491,8 @@ export default function MatchScreen() {
               skill={setup.playerSkill}
               bounce={bounceArmed}
               onResult={handlePlayerResult}
+              onRim={feedback.rimOut}
+              onLaunch={feedback.whoosh}
               disabled={!playerTurn || handOver}
               hidden={!playerTurn}
             />
@@ -463,6 +507,8 @@ export default function MatchScreen() {
                 direction="down"
                 bounce={bounceArmed}
                 onResult={handleSecondPlayerResult}
+                onRim={feedback.rimOut}
+                onLaunch={feedback.whoosh}
                 disabled={playerTurn || handOver || roundResult != null}
                 hidden={playerTurn || roundResult != null}
               />
@@ -506,7 +552,7 @@ export default function MatchScreen() {
               style={[styles.actionText, bounceArmed && { color: colors.background }]}
               selectable={false}
             >
-              Bounce ×2
+              {t('match.bounce')}
             </Text>
           </Pressable>
 
@@ -531,7 +577,7 @@ export default function MatchScreen() {
               ]}
               selectable={false}
             >
-              Re-Rack {reRacksLeft[playerTurn ? 0 : 1]}
+              {t('match.reRack', { left: reRacksLeft[playerTurn ? 0 : 1] })}
             </Text>
           </Pressable>
         </View>
@@ -540,7 +586,7 @@ export default function MatchScreen() {
           style={[styles.hint, { color: playerTurn ? colors.neon : colors.danger }]}
           selectable={false}
         >
-          {bounceArmed ? 'Bounce-Wurf scharf — schwerer, aber zwei Cups' : turnStatus}
+          {bounceArmed ? t('match.bounceArmed') : turnStatus}
         </Text>
       </SafeAreaView>
 
@@ -568,23 +614,25 @@ export default function MatchScreen() {
               ]}
             >
               {isPassPlay
-                ? `${roundResult === 'win' ? trackerTeams[0].name : trackerTeams[1].name} gewinnt!`
+                ? t('match.teamWins', {
+                    team: roundResult === 'win' ? trackerTeams[0].name : trackerTeams[1].name,
+                  })
                 : roundResult === 'win'
-                  ? 'SIEG!'
-                  : 'NIEDERLAGE'}
+                  ? t('match.win')
+                  : t('match.lose')}
             </Text>
             <Text style={styles.resultBody}>{resultNote}</Text>
             <View style={styles.resultButtons}>
               {mode === 'weekend' && runFinished ? null : (
                 <GlowButton
-                  label="Nächstes Spiel"
+                  label={t('weekend.nextMatch')}
                   size="sm"
                   onPress={nextMatch}
                   style={styles.resultButton}
                 />
               )}
               <GlowButton
-                label="Zurück"
+                label={t('common.back')}
                 variant="outline"
                 size="sm"
                 onPress={() => router.back()}
@@ -593,12 +641,14 @@ export default function MatchScreen() {
               <ShareResultButton
                 data={{
                   headline: isPassPlay
-                    ? `${roundResult === 'win' ? trackerTeams[0].name : trackerTeams[1].name} gewinnt!`
+                    ? t('match.teamWins', {
+                        team: roundResult === 'win' ? trackerTeams[0].name : trackerTeams[1].name,
+                      })
                     : roundResult === 'win'
-                      ? 'Sieg!'
-                      : 'Knapp verloren',
-                  subline: `${setup.badge} · gegen ${setup.name}`,
-                  leftLabel: 'Du',
+                      ? t('match.shareWin')
+                      : t('match.shareLose'),
+                  subline: t('match.shareSubline', { badge: setup.badge, name: setup.name }),
+                  leftLabel: t('common.you'),
                   leftValue: `${CUP_COUNT - playerRemaining}`,
                   rightLabel: setup.name,
                   rightValue: `${CUP_COUNT - opponentRemaining}`,
@@ -613,12 +663,19 @@ export default function MatchScreen() {
         <Pressable style={styles.handOverOverlay} onPress={confirmHandOver}>
           <Ionicons name="swap-horizontal" size={44} color={colors.neon} />
           <Text style={styles.handOverTitle} selectable={false}>
-            {turn === 'player' ? trackerTeams[1].name : trackerTeams[0].name} ist dran
+            {t('match.handOverTitle', {
+              team: turn === 'player' ? trackerTeams[1].name : trackerTeams[0].name,
+            })}
           </Text>
           <Text style={styles.handOverBody} selectable={false}>
-            Handy weitergeben, dann tippen.
+            {t('match.handOverBody')}
           </Text>
-          <GlowButton label="Bereit" size="lg" onPress={confirmHandOver} style={styles.handOverButton} />
+          <GlowButton
+            label={t('match.handOverReady')}
+            size="lg"
+            onPress={confirmHandOver}
+            style={styles.handOverButton}
+          />
         </Pressable>
       ) : null}
 

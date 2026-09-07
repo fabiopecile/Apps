@@ -4,6 +4,8 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_BALL_SKIN, DEFAULT_TABLE_SKIN, SKINS } from './skins';
 import { LEAGUE_OPPONENTS } from './opponents';
 import { todayKey, type DailyMetric } from './progression';
+import type { Language } from './languages';
+import type { TranslationKey } from './i18n';
 import {
   createBracket,
   championOf,
@@ -107,7 +109,7 @@ export interface WeekendOutcome {
   wins: number;
   finished: boolean;
   coins: number;
-  tierName?: string;
+  tierKey?: TranslationKey;
 }
 
 export interface DailyProgress {
@@ -128,6 +130,17 @@ interface BeerpongStore {
   hapticsEnabled: boolean;
   toggleSound: () => void;
   toggleHaptics: () => void;
+
+  language: Language;
+  setLanguage: (language: Language) => void;
+
+  /** False until the intro has been seen once. */
+  onboardingDone: boolean;
+  completeOnboarding: () => void;
+
+  /** Local reminder flag for the (not yet purchasable) Pro tier. */
+  proNotifyRequested: boolean;
+  setProNotifyRequested: (value: boolean) => void;
 
   houseRules: HouseRules;
   toggleHouseRule: (key: keyof HouseRules) => void;
@@ -239,6 +252,15 @@ export const useBeerpongStore = create<BeerpongStore>()(
       hapticsEnabled: true,
       toggleSound: () => set((s) => ({ soundEnabled: !s.soundEnabled })),
       toggleHaptics: () => set((s) => ({ hapticsEnabled: !s.hapticsEnabled })),
+
+      language: 'de',
+      setLanguage: (language) => set({ language }),
+
+      onboardingDone: false,
+      completeOnboarding: () => set({ onboardingDone: true }),
+
+      proNotifyRequested: false,
+      setProNotifyRequested: (value) => set({ proNotifyRequested: value }),
 
       houseRules: { reRacks: true, island: true, redemption: false },
       toggleHouseRule: (key) =>
@@ -619,7 +641,7 @@ export const useBeerpongStore = create<BeerpongStore>()(
           arcade: { ...s.arcade, careerXP: s.arcade.careerXP + (won ? 80 : 20) },
         }));
 
-        return { won, played, wins, finished, coins, tierName: tier?.name };
+        return { won, played, wins, finished, coins, tierKey: tier?.nameKey };
       },
 
       resetWeekendRun: () =>
@@ -634,6 +656,9 @@ export const useBeerpongStore = create<BeerpongStore>()(
       partialize: (state) => ({
         soundEnabled: state.soundEnabled,
         hapticsEnabled: state.hapticsEnabled,
+        language: state.language,
+        onboardingDone: state.onboardingDone,
+        proNotifyRequested: state.proNotifyRequested,
         houseRules: state.houseRules,
         camera: state.camera,
         tracker: state.tracker,

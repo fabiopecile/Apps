@@ -10,6 +10,7 @@ import { AI_PRESETS, type AiDifficulty } from '@/lib/competition';
 import { LEAGUE_OPPONENTS } from '@/lib/opponents';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
+import { useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 const ORDER: AiDifficulty[] = ['easy', 'medium', 'hard'];
@@ -19,6 +20,7 @@ export default function OfflineScreen() {
   const setAiDifficulty = useBeerpongStore((s) => s.setAiDifficulty);
   const defeatedIds = useBeerpongStore((s) => s.arcade.defeatedOpponentIds);
   const feedback = useFeedback();
+  const t = useT();
 
   const start = (difficulty: AiDifficulty) => {
     feedback.tap();
@@ -34,15 +36,12 @@ export default function OfflineScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.title}>Offline</Text>
+          <Text style={styles.title}>{t('offline.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Text style={styles.intro}>
-            Spiel ohne Verbindung gegen die KI. Die Schwierigkeit bestimmt, wie sicher dein Gegner
-            trifft — und wie viel Spielraum deine eigenen Würfe haben.
-          </Text>
+          <Text style={styles.intro}>{t('offline.intro')}</Text>
 
           {ORDER.map((id) => {
             const preset = AI_PRESETS[id];
@@ -60,27 +59,31 @@ export default function OfflineScreen() {
               >
                 <View style={styles.difficultyHead}>
                   <Text style={[styles.difficultyLabel, { color: preset.color }]} selectable={false}>
-                    {preset.label}
+                    {t(preset.labelKey)}
                   </Text>
                   {selected ? (
                     <View style={styles.selectedChip}>
                       <Text style={styles.selectedText} selectable={false}>
-                        Zuletzt gespielt
+                        {t('offline.lastPlayed')}
                       </Text>
                     </View>
                   ) : null}
                 </View>
                 <Text style={styles.difficultyDescription} selectable={false}>
-                  {preset.description}
+                  {t(preset.descriptionKey)}
                 </Text>
                 <View style={styles.meterRow}>
-                  <Meter label="Gegner trifft" value={preset.opponentAccuracy} color={preset.color} />
-                  <Meter label="Deine Chance" value={preset.playerSkill} color={colors.neon} />
+                  <Meter
+                    label={t('offline.meter.opponent')}
+                    value={preset.opponentAccuracy}
+                    color={preset.color}
+                  />
+                  <Meter label={t('offline.meter.you')} value={preset.playerSkill} color={colors.neon} />
                 </View>
                 <View style={styles.startRow}>
                   <Ionicons name="play" size={14} color={preset.color} />
                   <Text style={[styles.startText, { color: preset.color }]} selectable={false}>
-                    Spiel starten · +{preset.rewardCoins} Coins bei Sieg
+                    {t('offline.startWith', { coins: preset.rewardCoins })}
                   </Text>
                 </View>
               </Pressable>
@@ -88,7 +91,7 @@ export default function OfflineScreen() {
           })}
 
           <View style={styles.opponentsSection}>
-            <SectionLabel>Gegner-Galerie</SectionLabel>
+            <SectionLabel>{t('offline.gallery')}</SectionLabel>
             {LEAGUE_OPPONENTS.map((opponent) => {
               const defeated = defeatedIds.includes(opponent.id);
               return (
@@ -117,7 +120,7 @@ export default function OfflineScreen() {
                   </View>
                   {defeated ? (
                     <Text style={styles.defeatedText} selectable={false}>
-                      Besiegt
+                      {t('offline.defeated')}
                     </Text>
                   ) : null}
                 </Card>

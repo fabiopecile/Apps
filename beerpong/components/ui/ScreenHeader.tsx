@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { router } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useT } from '@/lib/i18n';
 import { colors, fonts, radius, spacing } from '@/theme';
 
 interface ScreenHeaderProps {
@@ -10,6 +11,7 @@ interface ScreenHeaderProps {
 }
 
 export function ScreenHeader({ title, subtitle, right }: ScreenHeaderProps) {
+  const t = useT();
   return (
     <View style={styles.row}>
       <View>
@@ -23,7 +25,7 @@ export function ScreenHeader({ title, subtitle, right }: ScreenHeaderProps) {
           style={({ pressed }) => [styles.profileButton, pressed && styles.profileButtonPressed]}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel="Profil öffnen"
+          accessibilityLabel={t('profile.open')}
         >
           <Ionicons name="person" size={18} color={colors.neon} />
         </Pressable>
