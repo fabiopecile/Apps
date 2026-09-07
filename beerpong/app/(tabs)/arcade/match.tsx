@@ -20,9 +20,11 @@ import { ThrowBall } from '@/components/arcade/ThrowBall';
 import { OpponentThrow } from '@/components/arcade/OpponentThrow';
 import { TableSurface } from '@/components/arcade/TableSurface';
 import { PromotionOverlay } from '@/components/arcade/PromotionOverlay';
+import { ShareResultButton } from '@/components/ui/ShareableResult';
 import {
   generateOpponentRack,
   generatePlayerRack,
+  reRackFlags,
   CAMERA_PAN,
   CUP_COUNT,
   OPPONENT_BALL_Y,
@@ -58,7 +60,10 @@ interface Celebration {
 export default function MatchScreen() {
   const params = useLocalSearchParams<{ mode?: string; difficulty?: string }>();
   const mode: MatchMode =
-    params.mode === 'rivals' || params.mode === 'weekend' ? params.mode : 'offline';
+    params.mode === 'rivals' || params.mode === 'weekend' || params.mode === 'passplay'
+      ? params.mode
+      : 'offline';
+  const isPassPlay = mode === 'passplay';
 
   const { width } = useWindowDimensions();
   const tableWidth = width - spacing.lg * 2;
@@ -74,16 +79,22 @@ export default function MatchScreen() {
   const [celebration, setCelebration] = useState<Celebration | null>(null);
   const [resultNote, setResultNote] = useState('');
   const [runFinished, setRunFinished] = useState(false);
+  // Pass & Play: the phone changes hands, so a prompt gates each turn.
+  const [handOver, setHandOver] = useState(false);
+  const [bounceArmed, setBounceArmed] = useState(false);
+  const [reRacksLeft, setReRacksLeft] = useState<[number, number]>([1, 1]);
 
   const arcade = useBeerpongStore((s) => s.arcade);
   const coins = useBeerpongStore((s) => s.coins);
   const rivals = useBeerpongStore((s) => s.rivals);
+  const trackerTeams = useBeerpongStore((s) => s.tracker.teams);
   const weekend = useBeerpongStore((s) => s.weekend);
   const storedDifficulty = useBeerpongStore((s) => s.aiDifficulty);
   const arcadeRecordThrow = useBeerpongStore((s) => s.arcadeRecordThrow);
   const arcadeRecordMatch = useBeerpongStore((s) => s.arcadeRecordMatch);
   const recordRivalsMatch = useBeerpongStore((s) => s.recordRivalsMatch);
   const recordWeekendMatch = useBeerpongStore((s) => s.recordWeekendMatch);
+  const trackDaily = useBeerpongStore((s) => s.trackDaily);
   const feedback = useFeedback();
 
   const flashRef = useRef<FlashOverlayHandle>(null);
@@ -118,6 +129,16 @@ export default function MatchScreen() {
         badge: `KI · ${preset.label}`,
       };
     }
+    if (isPassPlay) {
+      return {
+        id: 'passplay',
+        name: trackerTeams[1].name,
+        accuracy: 0,
+        playerSkill: 0.58,
+        color: colors.gold,
+        badge: 'Pass & Play',
+      };
+    }
     const boost = mode === 'weekend' ? 0.06 : 0;
     const online = generateOnlineOpponent(rivals.division, boost);
     return {
@@ -129,7 +150,7 @@ export default function MatchScreen() {
       badge: mode === 'weekend' ? 'Weekend League' : getDivision(rivals.division).name,
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, difficulty, rivals.division, matchSeed]);
+  }, [mode, difficulty, rivals.division, matchSeed, isPassPlay]);
 
   const ballSkin = SKINS.find((s) => s.id === arcade.equippedBall) ?? SKINS[0];
   const opponentRemaining = opponentAlive.filter(Boolean).length;
@@ -163,6 +184,9 @@ export default function MatchScreen() {
     setCelebration(null);
     setResultNote('');
     setTurn('player');
+    setHandOver(false);
+    setBounceArmed(false);
+    setReRacksLeft([1, 1]);
   };
 
   const nextMatch = () => {
@@ -172,6 +196,10 @@ export default function MatchScreen() {
 
   const scheduleOpponentTurn = () => {
     clearTimers();
+    if (isPassPlay) {
+      turnTimer.current = setTimeout(() => setHandOver(true), 650);
+      return;
+    }
     turnTimer.current = setTimeout(() => {
       setTurn('opponent');
       setOpponentTurnToken((t) => t + 1);
@@ -180,13 +208,49 @@ export default function MatchScreen() {
 
   const returnTurnToPlayer = (delay: number) => {
     clearTimers();
+    if (isPassPlay) {
+      turnTimer.current = setTimeout(() => setHandOver(true), delay);
+      return;
+    }
     turnTimer.current = setTimeout(() => setTurn('player'), delay);
+  };
+
+  /** Pass & Play: the next player has taken the phone. */
+  const confirmHandOver = () => {
+    setHandOver(false);
+    setBounceArmed(false);
+    setTurn((current) => (current === 'player' ? 'opponent' : 'player'));
+  };
+
+  const doReRack = (side: 0 | 1) => {
+    if (reRacksLeft[side] <= 0) return;
+    feedback.tap();
+    setReRacksLeft((prev) => {
+      const next: [number, number] = [prev[0], prev[1]];
+      next[side] -= 1;
+      return next;
+    });
+    if (side === 0) setOpponentAlive((prev) => reRackFlags(prev));
+    else setPlayerAlive((prev) => reRackFlags(prev));
   };
 
   const endRound = (outcome: 'win' | 'lose') => {
     clearTimers();
     const won = outcome === 'win';
-    if (won) feedback.victory();
+    if (won) {
+      feedback.victory();
+      trackDaily('wins');
+    }
+
+    if (isPassPlay) {
+      setResultNote(
+        won
+          ? `${trackerTeams[0].name} räumt ab!`
+          : `${trackerTeams[1].name} räumt ab!`
+      );
+      endTimer.current = setTimeout(() => setRoundResult(outcome), 420);
+      return;
+    }
 
     if (mode === 'rivals') {
       const result = recordRivalsMatch(won);
@@ -233,8 +297,24 @@ export default function MatchScreen() {
     endTimer.current = setTimeout(() => setRoundResult(outcome), 420);
   };
 
-  const handlePlayerResult = (result: { cupIndex: number | null; hit: boolean }) => {
+  /** Sinking a bounce shot takes a second cup along with the target. */
+  const removeCups = (alive: boolean[], primaryIndex: number, extra: boolean): boolean[] => {
+    const next = alive.map((value, i) => (i === primaryIndex ? false : value));
+    if (!extra) return next;
+    const standing = next.map((value, i) => (value ? i : -1)).filter((i) => i >= 0);
+    if (standing.length > 0) {
+      next[standing[Math.floor(Math.random() * standing.length)]] = false;
+    }
+    return next;
+  };
+
+  const handlePlayerResult = (result: { cupIndex: number | null; hit: boolean; bounce: boolean }) => {
     arcadeRecordThrow(result.hit);
+    trackDaily('throws');
+    if (result.hit) {
+      trackDaily('cupsHit');
+      if (result.bounce) trackDaily('bounceHits');
+    }
     if (result.cupIndex == null || !result.hit) {
       feedback.miss();
       scheduleOpponentTurn();
@@ -242,14 +322,42 @@ export default function MatchScreen() {
     }
     const cup = opponentCups[result.cupIndex];
     feedback.cupHit();
+    if (result.bounce) feedback.streak();
     flashRef.current?.flash(ballSkin.accent, 0.18);
     particleRef.current?.burst(cup.x, cup.y);
-    const next = opponentAlive.map((alive, i) => (i === result.cupIndex ? false : alive));
+    const next = removeCups(opponentAlive, result.cupIndex, result.bounce);
     setOpponentAlive(next);
+    setBounceArmed(false);
     if (next.every((alive) => !alive)) {
       endRound('win');
     } else {
       scheduleOpponentTurn();
+    }
+  };
+
+  /** Pass & Play only: player two throws down at your rack. */
+  const handleSecondPlayerResult = (result: {
+    cupIndex: number | null;
+    hit: boolean;
+    bounce: boolean;
+  }) => {
+    arcadeRecordThrow(result.hit);
+    if (result.cupIndex == null || !result.hit) {
+      feedback.miss();
+      returnTurnToPlayer(650);
+      return;
+    }
+    const cup = playerCups[result.cupIndex];
+    feedback.cupHit();
+    flashRef.current?.flash(colors.gold, 0.18);
+    particleRef.current?.burst(cup.x, cup.y);
+    const next = removeCups(playerAlive, result.cupIndex, result.bounce);
+    setPlayerAlive(next);
+    setBounceArmed(false);
+    if (next.every((alive) => !alive)) {
+      endRound('lose');
+    } else {
+      returnTurnToPlayer(900);
     }
   };
 
@@ -339,52 +447,131 @@ export default function MatchScreen() {
               aliveFlags={opponentAlive}
               accent={ballSkin.accent}
               skill={setup.playerSkill}
+              bounce={bounceArmed}
               onResult={handlePlayerResult}
-              disabled={!playerTurn}
+              disabled={!playerTurn || handOver}
               hidden={!playerTurn}
             />
-            <OpponentThrow
-              startX={tableWidth / 2}
-              startY={OPPONENT_BALL_Y}
-              cups={playerCups}
-              aliveFlags={playerAlive}
-              accuracy={setup.accuracy}
-              accent={colors.danger}
-              turnToken={opponentTurnToken}
-              onResult={handleOpponentResult}
-            />
+            {isPassPlay ? (
+              <ThrowBall
+                startX={tableWidth / 2}
+                startY={OPPONENT_BALL_Y}
+                cups={playerCups}
+                aliveFlags={playerAlive}
+                accent={colors.gold}
+                skill={setup.playerSkill}
+                direction="down"
+                bounce={bounceArmed}
+                onResult={handleSecondPlayerResult}
+                disabled={playerTurn || handOver || roundResult != null}
+                hidden={playerTurn || roundResult != null}
+              />
+            ) : (
+              <OpponentThrow
+                startX={tableWidth / 2}
+                startY={OPPONENT_BALL_Y}
+                cups={playerCups}
+                aliveFlags={playerAlive}
+                accuracy={setup.accuracy}
+                accent={colors.danger}
+                turnToken={opponentTurnToken}
+                onResult={handleOpponentResult}
+              />
+            )}
 
             <ParticleBurst ref={particleRef} />
             <FlashOverlay ref={flashRef} />
           </Animated.View>
         </View>
 
+        <View style={styles.actionRow}>
+          <Pressable
+            onPress={() => {
+              feedback.tap();
+              setBounceArmed((armed) => !armed);
+            }}
+            disabled={roundResult != null || handOver}
+            style={({ pressed }) => [
+              styles.actionButton,
+              bounceArmed && styles.actionButtonActive,
+              pressed && styles.actionButtonPressed,
+            ]}
+          >
+            <Ionicons
+              name="tennisball"
+              size={15}
+              color={bounceArmed ? colors.background : colors.neon}
+            />
+            <Text
+              style={[styles.actionText, bounceArmed && { color: colors.background }]}
+              selectable={false}
+            >
+              Bounce ×2
+            </Text>
+          </Pressable>
+
+          <Pressable
+            onPress={() => doReRack(playerTurn ? 0 : 1)}
+            disabled={roundResult != null || handOver || reRacksLeft[playerTurn ? 0 : 1] <= 0}
+            style={({ pressed }) => [
+              styles.actionButton,
+              reRacksLeft[playerTurn ? 0 : 1] <= 0 && styles.actionButtonDisabled,
+              pressed && styles.actionButtonPressed,
+            ]}
+          >
+            <Ionicons
+              name="grid"
+              size={15}
+              color={reRacksLeft[playerTurn ? 0 : 1] > 0 ? colors.neon : colors.textMuted}
+            />
+            <Text
+              style={[
+                styles.actionText,
+                reRacksLeft[playerTurn ? 0 : 1] <= 0 && { color: colors.textMuted },
+              ]}
+              selectable={false}
+            >
+              Re-Rack {reRacksLeft[playerTurn ? 0 : 1]}
+            </Text>
+          </Pressable>
+        </View>
+
         <Text
           style={[styles.hint, { color: playerTurn ? colors.neon : colors.danger }]}
           selectable={false}
         >
-          {turnStatus}
+          {bounceArmed ? 'Bounce-Wurf scharf — schwerer, aber zwei Cups' : turnStatus}
         </Text>
       </SafeAreaView>
 
       {showResultCard ? (
         <View style={styles.resultOverlay}>
-          {roundResult === 'win' ? <Confetti /> : null}
+          {roundResult === 'win' || isPassPlay ? <Confetti /> : null}
           <View
             style={[styles.resultCard, roundResult === 'lose' && { borderColor: colors.danger }]}
           >
             <Ionicons
-              name={roundResult === 'win' ? 'trophy' : 'skull'}
+              name={isPassPlay || roundResult === 'win' ? 'trophy' : 'skull'}
               size={40}
-              color={roundResult === 'win' ? colors.gold : colors.danger}
+              color={isPassPlay || roundResult === 'win' ? colors.gold : colors.danger}
             />
             <Text
               style={[
                 styles.resultTitle,
-                { color: roundResult === 'win' ? colors.neon : colors.danger },
+                {
+                  color: isPassPlay
+                    ? colors.neon
+                    : roundResult === 'win'
+                      ? colors.neon
+                      : colors.danger,
+                },
               ]}
             >
-              {roundResult === 'win' ? 'SIEG!' : 'NIEDERLAGE'}
+              {isPassPlay
+                ? `${roundResult === 'win' ? trackerTeams[0].name : trackerTeams[1].name} gewinnt!`
+                : roundResult === 'win'
+                  ? 'SIEG!'
+                  : 'NIEDERLAGE'}
             </Text>
             <Text style={styles.resultBody}>{resultNote}</Text>
             <View style={styles.resultButtons}>
@@ -403,9 +590,36 @@ export default function MatchScreen() {
                 onPress={() => router.back()}
                 style={styles.resultButton}
               />
+              <ShareResultButton
+                data={{
+                  headline: isPassPlay
+                    ? `${roundResult === 'win' ? trackerTeams[0].name : trackerTeams[1].name} gewinnt!`
+                    : roundResult === 'win'
+                      ? 'Sieg!'
+                      : 'Knapp verloren',
+                  subline: `${setup.badge} · gegen ${setup.name}`,
+                  leftLabel: 'Du',
+                  leftValue: `${CUP_COUNT - playerRemaining}`,
+                  rightLabel: setup.name,
+                  rightValue: `${CUP_COUNT - opponentRemaining}`,
+                }}
+              />
             </View>
           </View>
         </View>
+      ) : null}
+
+      {handOver ? (
+        <Pressable style={styles.handOverOverlay} onPress={confirmHandOver}>
+          <Ionicons name="swap-horizontal" size={44} color={colors.neon} />
+          <Text style={styles.handOverTitle} selectable={false}>
+            {turn === 'player' ? trackerTeams[1].name : trackerTeams[0].name} ist dran
+          </Text>
+          <Text style={styles.handOverBody} selectable={false}>
+            Handy weitergeben, dann tippen.
+          </Text>
+          <GlowButton label="Bereit" size="lg" onPress={confirmHandOver} style={styles.handOverButton} />
+        </Pressable>
       ) : null}
 
       {celebration ? (
@@ -555,6 +769,68 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginTop: spacing.md,
     minHeight: 18,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundElevated,
+  },
+  actionButtonActive: {
+    backgroundColor: colors.neon,
+    borderColor: colors.neon,
+  },
+  actionButtonDisabled: {
+    borderColor: colors.borderFaint,
+  },
+  actionButtonPressed: {
+    opacity: 0.65,
+  },
+  actionText: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.neon,
+    letterSpacing: 0.5,
+  },
+  handOverOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.94)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing.xl,
+    gap: spacing.sm,
+  },
+  handOverTitle: {
+    fontFamily: fonts.headingBlack,
+    fontSize: 26,
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  handOverBody: {
+    fontFamily: fonts.body,
+    fontSize: 15,
+    color: colors.textSecondary,
+    marginBottom: spacing.lg,
+  },
+  handOverButton: {
+    minWidth: 200,
   },
   resultOverlay: {
     position: 'absolute',
