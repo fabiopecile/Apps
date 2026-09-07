@@ -1,0 +1,82 @@
+name: Web-App veröffentlichen
+
+# Baut die Web-Version und stellt sie auf GitHub Pages. Läuft bei jedem Push
+# auf main, der die App verändert — und lässt sich unter "Actions" jederzeit
+# von Hand starten.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'beerpong/**'
+      - '.github/workflows/deploy-web.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Nie zwei Deploys gleichzeitig; ein neuerer Push löst den älteren ab.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Bauen
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: beerpong
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: beerpong/package-lock.json
+
+      - name: Pakete installieren
+        run: npm ci
+
+      - name: Pages konfigurieren
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Basis-Pfad bestimmen
+        id: base
+        # Pages liefert das Repo unter /<repo>/ aus, also muss jeder Asset-Pfad
+        # dieses Präfix tragen. Bei einer eigenen Domain ist der Pfad "/" und
+        # das Präfix muss leer bleiben.
+        run: |
+          path='${{ steps.pages.outputs.base_path }}'
+          if [ "$path" = "/" ]; then path=''; fi
+          echo "value=$path" >> "$GITHUB_OUTPUT"
+          echo "Basis-Pfad: '${path}'"
+
+      - name: Web-Version exportieren
+        run: npx expo export --platform web
+        env:
+          EXPO_BASE_URL: ${{ steps.base.outputs.value }}
+
+      - name: Jekyll abschalten
+        # Ohne diese Datei ignoriert Pages Ordner, die mit _ beginnen — und
+        # genau da liegt der komplette JavaScript-Code (_expo/).
+        run: touch dist/.nojekyll
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: beerpong/dist
+
+  deploy:
+    name: Veröffentlichen
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Auf GitHub Pages stellen
+        id: deployment
+        uses: actions/deploy-pages@v4

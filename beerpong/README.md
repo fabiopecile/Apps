@@ -68,6 +68,85 @@ Am Ende bekommst du einen Link zu einer **APK**, die du direkt auf einem
 Android-Handy installieren kannst. Für iOS geht dieser Weg nur mit einem
 Apple-Developer-Account (99 $/Jahr) über TestFlight.
 
+## An Freunde verteilen (kostenlos)
+
+Zwei Wege, beide ohne Gebühren. Der Web-Weg funktioniert auf **iPhone und
+Android**, der APK-Weg nur auf Android — dafür ist er eine echte App.
+
+### Weg 1: Web-App auf GitHub Pages — einmalig 2 Minuten einrichten
+
+Das ist der wichtigere Weg, weil er auch auf dem iPhone funktioniert. Es gibt
+**keinen kostenlosen Weg, eine echte App aufs iPhone zu bringen** — Apple
+verlangt dafür 99 €/Jahr, auch für TestFlight und auch für die EU-Alternativstores.
+Die Web-App umgeht das komplett.
+
+**Einrichten (nur einmal nötig):**
+
+1. Auf GitHub in dieses Repository gehen → **Settings** → links **Pages**
+2. Bei „Source" **GitHub Actions** auswählen → speichern
+3. Unter **Actions** den Workflow **„Web-App veröffentlichen"** auswählen →
+   rechts **Run workflow** klicken
+
+Nach ein paar Minuten steht die Adresse oben im Workflow-Ergebnis, normalerweise:
+
+```
+https://fabiopecile.github.io/Apps/
+```
+
+Ab jetzt aktualisiert sich die Seite bei jedem Push auf `main` von allein.
+
+**Installieren auf dem Handy:**
+
+| Gerät | So geht's |
+|---|---|
+| **iPhone** | Link in **Safari** öffnen (nicht Chrome!) → Teilen-Symbol unten → „Zum Home-Bildschirm" |
+| **Android** | Link in Chrome öffnen → Menü (⋮) → „App installieren" bzw. „Zum Startbildschirm hinzufügen" |
+
+Danach liegt ein Icon auf dem Handy und die App startet im Vollbild — ohne
+Browser-Leiste, wie eine normale App. Dank Service Worker läuft sie auch
+**ohne Internet** weiter, sobald sie einmal geladen wurde.
+
+**Was in der Web-Version fehlt:**
+
+- **Kein Vibrieren** — Haptik gibt es im Browser nicht
+- **Ergebnis-Teilen als Bild** ist deaktiviert (auf iOS nicht sauber machbar)
+- **Ton** startet erst nach der ersten Berührung — Browser-Regel gegen Autoplay
+- Die **Kamera** funktioniert, braucht aber HTTPS — bei GitHub Pages automatisch dabei
+
+### Weg 2: APK für Android
+
+Unter **Actions** → **„Android-APK bauen"** → **Run workflow**. Nach ein paar
+Minuten hängt die fertige APK unten am Workflow-Ergebnis als Download
+(„beerpong-apk").
+
+Soll die APK eine feste Adresse zum Verschicken bekommen, stattdessen ein
+Versions-Tag pushen — dann landet sie automatisch unter „Releases":
+
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+
+Deine Freunde laden die Datei herunter und öffnen sie. Android fragt einmalig,
+ob Installationen aus dieser Quelle erlaubt sind — bestätigen, fertig.
+
+> **Zur Signatur:** Die APK wird mit dem Standard-Debug-Schlüssel signiert, den
+> jedes Expo-Projekt mitbringt. Zum Verteilen an Freunde reicht das, und
+> Updates lassen sich installieren, weil der Schlüssel gleich bleibt. Für den
+> Google Play Store bräuchtest du einen eigenen Schlüssel — dann ist
+> `eas build` (siehe oben) der einfachere Weg, weil Expo den Schlüssel für dich
+> verwaltet.
+
+### Was das kostet
+
+| | Preis |
+|---|---|
+| GitHub Pages + Actions (öffentliches Repo) | **0 €** |
+| APK direkt verteilen | **0 €** |
+| Amazon Appstore, Samsung Galaxy Store | **0 €**, kleine Reichweite |
+| Google Play | **25 $ einmalig** — neue Privatkonten müssen erst 14 Tage mit 12 Testern testen |
+| Apple App Store / TestFlight | **99 €/Jahr**, kein kostenloser Ersatz |
+
 ## Wenn etwas nicht läuft
 
 | Problem | Lösung |
@@ -77,6 +156,9 @@ Apple-Developer-Account (99 $/Jahr) über TestFlight.
 | Rote Fehlerseite über Paketversionen | `npx expo install --check` und die Vorschläge bestätigen |
 | Metro hängt oder zeigt alte Stände | `npx expo start -c` (löscht den Cache) |
 | `npm install` bricht ab | Node-Version prüfen, `node_modules` und `package-lock.json` löschen, neu installieren |
+| Pages-Seite zeigt nur eine leere Seite | Unter Settings → Pages muss „Source" auf **GitHub Actions** stehen, nicht auf einen Branch |
+| Web-App zeigt nach einem Update alte Inhalte | Einmal schließen und neu öffnen — der Service Worker holt sich die neue Version beim nächsten Start |
+| iPhone: „Zum Home-Bildschirm" fehlt | Der Link muss in **Safari** geöffnet werden, in Chrome gibt es die Option nicht |
 
 ## Was drin ist
 
@@ -122,7 +204,9 @@ Apple-Developer-Account (99 $/Jahr) über TestFlight.
 ## Projektstruktur
 
 ```
+.github/workflows/       Web-Deploy und APK-Build (im Repo-Wurzelverzeichnis)
 app/                     Routen (expo-router)
+  +html.tsx              HTML-Gerüst der Web-Version (PWA-Einstellungen)
   (tabs)/camera/         Kamera-Tracker, Turnier
   (tabs)/arcade/         Hub, Offline, Pass & Play, Rivals, Weekend,
                          Match, Skins, Aufgaben
@@ -131,7 +215,9 @@ app/                     Routen (expo-router)
   pro.tsx                Pro-Vorschau (Modal)
 components/              UI-Bausteine, Arcade-Grafik (Becher, Ball, Würfe)
 lib/                     Store (zustand), Spiel-Logik, Layout, Sound, i18n
+public/                  Wird 1:1 in die Web-Version kopiert (Manifest, Icons, sw.js)
 theme/                   Farben, Schriften, Glow-Effekt
+tools/                   Hilfsskripte (Sounds und PWA-Icons erzeugen)
 ```
 
 ## Sprache ergänzen oder Texte ändern
