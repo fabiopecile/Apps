@@ -9,21 +9,23 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, fonts, radius, spacing } from '@/theme';
 import { NeonSwitch } from '@/components/ui/NeonSwitch';
 import { useBeerpongStore, type HouseRules } from '@/lib/store';
+import { useT, type TranslationKey } from '@/lib/i18n';
 
 interface HouseRulesPanelProps {
   visible: boolean;
   onClose: () => void;
 }
 
-const RULES: { key: keyof HouseRules; title: string; description: string }[] = [
-  { key: 'reRacks', title: 'Re-Racks', description: 'Cups dürfen bis zu zweimal neu aufgestellt werden.' },
-  { key: 'island', title: 'Island', description: 'Letzter Cup ohne Nachbarn zählt doppelt.' },
-  { key: 'redemption', title: 'Redemption', description: 'Verlierendes Team bekommt einen letzten Wurf.' },
+const RULES: { key: keyof HouseRules; title: string; descriptionKey: TranslationKey }[] = [
+  { key: 'reRacks', title: 'Re-Racks', descriptionKey: 'rules.reRacks' },
+  { key: 'island', title: 'Island', descriptionKey: 'rules.island' },
+  { key: 'redemption', title: 'Redemption', descriptionKey: 'rules.redemption' },
 ];
 
 export function HouseRulesPanel({ visible, onClose }: HouseRulesPanelProps) {
   const houseRules = useBeerpongStore((s) => s.houseRules);
   const toggleHouseRule = useBeerpongStore((s) => s.toggleHouseRule);
+  const t = useT();
   const translateY = useSharedValue(400);
   const backdropOpacity = useSharedValue(0);
 
@@ -56,7 +58,7 @@ export function HouseRulesPanel({ visible, onClose }: HouseRulesPanelProps) {
           <View key={rule.key} style={styles.ruleRow}>
             <View style={styles.ruleText}>
               <Text style={styles.ruleTitle}>{rule.title}</Text>
-              <Text style={styles.ruleDescription}>{rule.description}</Text>
+              <Text style={styles.ruleDescription}>{t(rule.descriptionKey)}</Text>
             </View>
             <NeonSwitch
               value={houseRules[rule.key]}

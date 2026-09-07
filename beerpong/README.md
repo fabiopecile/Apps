@@ -80,35 +80,66 @@ Apple-Developer-Account (99 $/Jahr) über TestFlight.
 
 ## Was drin ist
 
-- **Kamera-Tracker** — Live-Kamera mit Overlay, Treffer per Tap zählen, Streak,
-  House Rules (Re-Racks, Island, Redemption)
+- **Kamera-Tracker** — Live-Kamera mit Overlay, zwei Teams mit eigenen Namen,
+  Treffer per Tap zählen, Undo für Verzähler, Re-Racks, House Rules
+  (Re-Racks, Island, Redemption)
+- **Turnier** — K.-o.-Baum für 3 bis 8 Teams; jede Partie lässt sich direkt im
+  Tracker spielen, Sieger rücken automatisch weiter
 - **Arcade** — Wischen zum Werfen, zwei Racks, abwechselnde Züge, Kamera schwenkt
   pro Zug ans jeweilige Tischende
   - Offline gegen die KI (Einfach / Mittel / Schwer)
+  - Pass & Play — zwei Spieler an einem Handy, mit Übergabe-Bildschirm
   - Division Rivals (Division 10 bis 1, Auf- und Abstieg)
   - Weekend League (10 Spiele, Belohnungsstufen Bronze bis Elite)
-- **Profil** — Statistiken über beide Modi, Sound- und Haptik-Schalter
+  - Bounce-Wurf (schwerer, nimmt zwei Cups) und Re-Rack im Spiel
+- **Aufgaben & Erfolge** — drei Tagesaufgaben, zehn Saison-Stufen und neun
+  modusübergreifende Erfolge, alle mit Coin-Belohnung
+- **Profil** — Statistiken über beide Modi, Sound-, Haptik- und Sprachschalter
 - **Skins** — Bälle und Tische aus Coins freischalten
+- **Ergebnis teilen** — Sieg als Bildkarte exportieren (auf dem Gerät, nicht im Web)
+- **Deutsch und Englisch** — umschaltbar im Profil, greift sofort
+- **Intro beim ersten Start** — drei Karten, danach nie wieder
 
 ## Bekannte Einschränkungen
 
 - **Kein echtes Online-Multiplayer.** Gegner in Rivals und Weekend League werden
   lokal simuliert (`lib/competition.ts`, `generateOnlineOpponent`). Das ist die
   Stelle, an der später ein Server andockt.
-- **Keine automatische Bechererkennung.** Der Kamera-Modus zählt per Tap.
+- **Keine automatische Bechererkennung.** Der Kamera-Modus zählt per Tap. Der
+  Pro-Screen (`app/pro.tsx`) beschreibt, was dafür geplant ist — kaufbar ist
+  dort nichts, die Vormerkung bleibt lokal auf dem Gerät.
 - **Keine echte Wurfphysik.** Treffer werden über eine Wahrscheinlichkeit
   entschieden und dann animiert; Fehlwürfe können am Becherrand abprallen.
-- **Sounds sind Platzhalter** — kurze synthetische Töne, kein Sounddesign.
+- **Sounds sind synthetisch erzeugt** — `tools/gen_sounds.py` baut sie aus
+  Rauschen, Sinus- und Dreieckstönen; kein aufgenommenes Sounddesign.
+  Neu erzeugen mit `python3 tools/gen_sounds.py`.
 - `expo-av` ist veraltet und sollte vor einem Release auf `expo-audio` umziehen.
+- **Kein Fortschritt in der Cloud.** Alles liegt in AsyncStorage auf dem Gerät;
+  App löschen heißt Fortschritt weg.
 
 ## Projektstruktur
 
 ```
 app/                     Routen (expo-router)
-  (tabs)/camera/         Kamera-Tracker
-  (tabs)/arcade/         Hub, Offline, Rivals, Weekend, Match, Skins
+  (tabs)/camera/         Kamera-Tracker, Turnier
+  (tabs)/arcade/         Hub, Offline, Pass & Play, Rivals, Weekend,
+                         Match, Skins, Aufgaben
+  onboarding.tsx         Intro beim ersten Start
   profile.tsx            Profil (Modal)
+  pro.tsx                Pro-Vorschau (Modal)
 components/              UI-Bausteine, Arcade-Grafik (Becher, Ball, Würfe)
-lib/                     Store (zustand), Spiel-Logik, Layout, Sound
+lib/                     Store (zustand), Spiel-Logik, Layout, Sound, i18n
 theme/                   Farben, Schriften, Glow-Effekt
 ```
+
+## Sprache ergänzen oder Texte ändern
+
+Alle sichtbaren Texte stehen in `lib/i18n.ts` in einer Tabelle:
+
+```ts
+'match.win': { de: 'SIEG!', en: 'WIN!' },
+```
+
+Zum Ändern einfach den Text austauschen. Für eine dritte Sprache
+`lib/languages.ts` um das Kürzel erweitern und in jedem Eintrag eine Zeile
+ergänzen — TypeScript meldet jede Lücke beim `npx tsc --noEmit`.

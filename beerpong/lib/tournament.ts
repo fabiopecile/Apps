@@ -1,3 +1,5 @@
+import type { TranslationKey } from './i18n';
+
 export interface TournamentMatch {
   id: string;
   round: number;
@@ -18,12 +20,13 @@ export interface Tournament {
 export const MIN_TEAMS = 3;
 export const MAX_TEAMS = 8;
 
-export function roundName(round: number, totalRounds: number): string {
+/** The key for a round's name; the caller translates it. */
+export function roundNameKey(round: number, totalRounds: number): TranslationKey {
   const fromEnd = totalRounds - round;
-  if (fromEnd === 0) return 'Finale';
-  if (fromEnd === 1) return 'Halbfinale';
-  if (fromEnd === 2) return 'Viertelfinale';
-  return `Runde ${round}`;
+  if (fromEnd === 0) return 'tournament.round.final';
+  if (fromEnd === 1) return 'tournament.round.semi';
+  if (fromEnd === 2) return 'tournament.round.quarter';
+  return 'tournament.round.n';
 }
 
 export function totalRoundsFor(teamCount: number): number {

@@ -7,12 +7,14 @@ import { GridBackground } from '@/components/ui/GridBackground';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { useBeerpongStore, type TeamIndex } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
+import { useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function PassPlayScreen() {
   const teams = useBeerpongStore((s) => s.tracker.teams);
   const setTeamName = useBeerpongStore((s) => s.trackerSetTeamName);
   const feedback = useFeedback();
+  const t = useT();
 
   const start = () => {
     feedback.tap();
@@ -32,10 +34,7 @@ export default function PassPlayScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Text style={styles.intro}>
-            Zwei Spieler an einem Handy. Ihr werft abwechselnd — nach jedem Wurf sagt die App, wer
-            dran ist, und ihr gebt das Handy weiter.
-          </Text>
+          <Text style={styles.intro}>{t('passplay.intro')}</Text>
 
           <View style={styles.playersCard}>
             {([0, 1] as TeamIndex[]).map((index) => (
@@ -62,24 +61,29 @@ export default function PassPlayScreen() {
                   style={styles.playerInput}
                   maxLength={14}
                   selectTextOnFocus
-                  placeholder={`Spieler ${index + 1}`}
+                  placeholder={t('passplay.playerN', { n: index + 1 })}
                   placeholderTextColor={colors.textMuted}
                 />
                 <Text style={styles.playerHint} selectable={false}>
-                  {index === 0 ? 'wirft nach oben' : 'wirft nach unten'}
+                  {index === 0 ? t('passplay.throwsUp') : t('passplay.throwsDown')}
                 </Text>
               </View>
             ))}
           </View>
 
           <View style={styles.rulesCard}>
-            <Rule icon="hand-left" text="Wischen wie sonst — Richtung zielt, Weite gibt Kraft." />
-            <Rule icon="tennisball" text="Bounce-Wurf: schwerer zu treffen, nimmt dafür zwei Cups." />
-            <Rule icon="grid" text="Ein Re-Rack pro Spieler, wenn nur noch wenige Cups stehen." />
-            <Rule icon="swap-horizontal" text="Nach jedem Wurf wechselt die Ansicht auf die andere Seite." />
+            <Rule icon="hand-left" text={t('passplay.rule.swipe')} />
+            <Rule icon="tennisball" text={t('passplay.rule.bounce')} />
+            <Rule icon="grid" text={t('passplay.rule.reRack')} />
+            <Rule icon="swap-horizontal" text={t('passplay.rule.camera')} />
           </View>
 
-          <GlowButton label="Spiel starten" size="lg" onPress={start} style={styles.startButton} />
+          <GlowButton
+            label={t('passplay.startGame')}
+            size="lg"
+            onPress={start}
+            style={styles.startButton}
+          />
         </ScrollView>
       </SafeAreaView>
     </View>

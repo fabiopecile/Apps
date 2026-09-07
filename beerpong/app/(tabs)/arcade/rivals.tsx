@@ -8,11 +8,14 @@ import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { ALL_DIVISIONS, getDivision } from '@/lib/competition';
 import { useBeerpongStore } from '@/lib/store';
+import { divisionName, useLanguage, useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function RivalsScreen() {
   const rivals = useBeerpongStore((s) => s.rivals);
   const division = getDivision(rivals.division);
+  const t = useT();
+  const language = useLanguage();
 
   return (
     <View style={styles.container}>
@@ -22,7 +25,7 @@ export default function RivalsScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.title}>Division Rivals</Text>
+          <Text style={styles.title}>{t('rivals.title')}</Text>
           <View style={{ width: 26 }} />
         </View>
 
@@ -34,7 +37,7 @@ export default function RivalsScreen() {
               </Text>
             </View>
             <Text style={[styles.currentName, { color: division.color }]} selectable={false}>
-              {division.name}
+              {divisionName(language, division)}
             </Text>
 
             <View style={styles.pipRow}>
@@ -52,29 +55,32 @@ export default function RivalsScreen() {
               ))}
             </View>
             <Text style={styles.currentHint} selectable={false}>
-              {rivals.divisionWins}/{division.winsToPromote} Siege bis zum Aufstieg ·{' '}
-              {division.lossesToRelegate - rivals.divisionLosses} Niederlagen bis zum Abstieg
+              {t('rivals.progress', {
+                wins: rivals.divisionWins,
+                target: division.winsToPromote,
+                losses: division.lossesToRelegate - rivals.divisionLosses,
+              })}
             </Text>
 
             <View style={styles.balanceRow}>
-              <Balance label="Siege" value={rivals.wins} color={colors.neon} />
-              <Balance label="Niederlagen" value={rivals.losses} color={colors.danger} />
-              <Balance label="Beste Div." value={rivals.bestDivision} color={colors.gold} />
+              <Balance label={t('common.wins')} value={rivals.wins} color={colors.neon} />
+              <Balance label={t('rivals.losses')} value={rivals.losses} color={colors.danger} />
+              <Balance label={t('rivals.bestDiv')} value={rivals.bestDivision} color={colors.gold} />
             </View>
 
             <GlowButton
-              label="Gegner suchen"
+              label={t('rivals.findOpponent')}
               size="lg"
               onPress={() => router.push({ pathname: '/(tabs)/arcade/match', params: { mode: 'rivals' } })}
               style={styles.playButton}
             />
             <Text style={styles.matchmakingNote} selectable={false}>
-              Gegner werden aktuell lokal simuliert — Skill passend zu deiner Division.
+              {t('rivals.matchmakingNote')}
             </Text>
           </View>
 
           <View style={styles.ladderSection}>
-            <SectionLabel>Leiter</SectionLabel>
+            <SectionLabel>{t('rivals.ladder')}</SectionLabel>
             {ALL_DIVISIONS.map((entry) => {
               const isCurrent = entry.id === rivals.division;
               const reached = entry.id >= rivals.bestDivision;
@@ -102,16 +108,19 @@ export default function RivalsScreen() {
                       style={[styles.ladderName, !reached && { color: colors.textMuted }]}
                       selectable={false}
                     >
-                      {entry.name}
+                      {divisionName(language, entry)}
                     </Text>
                     <Text style={styles.ladderMeta} selectable={false}>
-                      {entry.winsToPromote} Siege zum Aufstieg · +{entry.winCoins} Coins pro Sieg
+                      {t('rivals.ladderMeta', {
+                        wins: entry.winsToPromote,
+                        coins: entry.winCoins,
+                      })}
                     </Text>
                   </View>
                   {isCurrent ? (
                     <View style={[styles.hereChip, { borderColor: entry.color }]}>
                       <Text style={[styles.hereText, { color: entry.color }]} selectable={false}>
-                        Hier
+                        {t('rivals.here')}
                       </Text>
                     </View>
                   ) : null}

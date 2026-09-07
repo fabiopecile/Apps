@@ -86,8 +86,13 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="onboarding" />
         <Stack.Screen
           name="profile"
+          options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
+        <Stack.Screen
+          name="pro"
           options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
         />
       </Stack>

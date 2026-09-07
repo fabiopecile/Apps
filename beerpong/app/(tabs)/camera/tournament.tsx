@@ -12,12 +12,13 @@ import {
   MAX_TEAMS,
   MIN_TEAMS,
   nextPlayableMatch,
-  roundName,
+  roundNameKey,
   totalRoundsFor,
   type TournamentMatch,
 } from '@/lib/tournament';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
+import { useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function TournamentScreen() {
@@ -28,6 +29,7 @@ export default function TournamentScreen() {
   const trackerNewGame = useBeerpongStore((s) => s.trackerNewGame);
   const trackerSetTeamName = useBeerpongStore((s) => s.trackerSetTeamName);
   const feedback = useFeedback();
+  const t = useT();
 
   const [draft, setDraft] = useState<string[]>(['', '', '', '']);
 
@@ -57,7 +59,7 @@ export default function TournamentScreen() {
           <Pressable onPress={() => router.back()} hitSlop={10}>
             <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
           </Pressable>
-          <Text style={styles.title}>Turnier</Text>
+          <Text style={styles.title}>{t('tournament.title')}</Text>
           {tournament ? (
             <Pressable onPress={tournamentReset} hitSlop={10}>
               <Ionicons name="trash" size={20} color={colors.textSecondary} />
@@ -110,6 +112,8 @@ function SetupView({
   teamCount: number;
   onStart: () => void;
 }) {
+  const t = useT();
+
   const update = (index: number, value: string) => {
     const next = [...draft];
     next[index] = value.slice(0, 16);
@@ -119,11 +123,10 @@ function SetupView({
   return (
     <>
       <Text style={styles.intro}>
-        Trage {MIN_TEAMS} bis {MAX_TEAMS} Teams ein. Die App erstellt den Turnierbaum, ihr spielt am
-        echten Tisch, und der Sieger jedes Spiels rückt automatisch weiter.
+        {t('tournament.intro', { min: MIN_TEAMS, max: MAX_TEAMS })}
       </Text>
 
-      <SectionLabel>Teams</SectionLabel>
+      <SectionLabel>{t('tournament.teams')}</SectionLabel>
       {draft.map((team, index) => (
         <View key={index} style={styles.teamInputRow}>
           <View style={styles.teamNumber}>
@@ -155,13 +158,17 @@ function SetupView({
         <Pressable style={styles.addButton} onPress={() => setDraft([...draft, ''])}>
           <Ionicons name="add" size={18} color={colors.neon} />
           <Text style={styles.addButtonText} selectable={false}>
-            Team hinzufügen
+            {t('tournament.addTeam')}
           </Text>
         </Pressable>
       ) : null}
 
       <GlowButton
-        label={canStart ? `Turnier mit ${teamCount} Teams starten` : `Mindestens ${MIN_TEAMS} Teams`}
+        label={
+          canStart
+            ? t('tournament.start', { count: teamCount })
+            : t('tournament.needMore', { min: MIN_TEAMS })
+        }
         size="lg"
         disabled={!canStart}
         onPress={onStart}
@@ -188,6 +195,7 @@ function BracketView({
 }) {
   const rounds = totalRoundsFor(teamCount);
   const upNext = nextPlayableMatch(matches);
+  const t = useT();
 
   return (
     <>
@@ -195,23 +203,28 @@ function BracketView({
         <View style={[styles.championCard, glow('medium', colors.gold)]}>
           <Ionicons name="trophy" size={40} color={colors.gold} />
           <Text style={styles.championLabel} selectable={false}>
-            Turniersieger
+            {t('tournament.champion')}
           </Text>
           <Text style={styles.championName} selectable={false}>
             {champion}
           </Text>
-          <GlowButton label="Neues Turnier" size="sm" onPress={onReset} style={styles.championButton} />
+          <GlowButton
+            label={t('tournament.newTournament')}
+            size="sm"
+            onPress={onReset}
+            style={styles.championButton}
+          />
         </View>
       ) : upNext ? (
         <View style={[styles.upNextCard, glow('soft')]}>
           <Text style={styles.upNextLabel} selectable={false}>
-            Als Nächstes
+            {t('tournament.upNext')}
           </Text>
           <Text style={styles.upNextMatch} selectable={false}>
             {upNext.teamA} vs. {upNext.teamB}
           </Text>
           <GlowButton
-            label="Im Tracker spielen"
+            label={t('tournament.playInTracker')}
             size="sm"
             onPress={() => onPlay(upNext)}
             style={styles.upNextButton}
@@ -224,7 +237,7 @@ function BracketView({
         const roundMatches = matches.filter((m) => m.round === round);
         return (
           <View key={round} style={styles.roundSection}>
-            <SectionLabel>{roundName(round, rounds)}</SectionLabel>
+            <SectionLabel>{t(roundNameKey(round, rounds), { round })}</SectionLabel>
             {roundMatches.map((match) => (
               <MatchRow key={match.id} match={match} onReport={onReport} />
             ))}
@@ -243,6 +256,7 @@ function MatchRow({
   onReport: (matchId: string, winner: string) => void;
 }) {
   const pending = !match.winner && match.teamA && match.teamB;
+  const t = useT();
 
   return (
     <View style={[styles.matchCard, match.winner != null && styles.matchCardDone]}>
@@ -268,12 +282,12 @@ function MatchRow({
               selectable={false}
               numberOfLines={1}
             >
-              {team ?? 'offen'}
+              {team ?? t('tournament.open')}
             </Text>
             {isWinner ? <Ionicons name="checkmark-circle" size={16} color={colors.neon} /> : null}
             {pending && team ? (
               <Text style={styles.matchPick} selectable={false}>
-                gewinnt
+                {t('tournament.wins')}
               </Text>
             ) : null}
           </Pressable>
