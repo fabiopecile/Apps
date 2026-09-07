@@ -8,7 +8,14 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated';
-import Svg, { Defs, Ellipse, LinearGradient, Path, Stop } from 'react-native-svg';
+import Svg, {
+  Defs,
+  Ellipse,
+  LinearGradient,
+  Path,
+  RadialGradient,
+  Stop,
+} from 'react-native-svg';
 import type { CupSpec } from '@/lib/arcadeLayout';
 
 interface CupProps {
@@ -17,38 +24,82 @@ interface CupProps {
   accent: string;
 }
 
-// A stylized green Solo-cup profile, drawn once per cup on a 100x125 viewBox.
-// Tapered trapezoid body + a rim ellipse for the open top, shaded with a
-// left-to-right gradient to fake a cylindrical highlight.
+/**
+ * A moulded plastic cup on a 100x125 viewBox: concave silhouette with an
+ * elliptical base, a rolled lip, two moulding ribs, a broad soft gloss on the
+ * lit side plus a tight specular on the shaded one, and a beer surface inside.
+ */
 function CupArt({ id, accent }: { id: string; accent: string }) {
   return (
     <Svg width="100%" height="100%" viewBox="0 0 100 125">
       <Defs>
         <LinearGradient id={`body-${id}`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#baffa0" />
-          <Stop offset="0.45" stopColor="#39c823" />
-          <Stop offset="1" stopColor="#0b5c08" />
+          <Stop offset="0" stopColor="#17590e" />
+          <Stop offset="0.12" stopColor="#49cc27" />
+          <Stop offset="0.34" stopColor="#86ff56" />
+          <Stop offset="0.58" stopColor="#2fb01d" />
+          <Stop offset="0.84" stopColor="#0d5209" />
+          <Stop offset="1" stopColor="#083405" />
         </LinearGradient>
-        <LinearGradient id={`rim-${id}`} x1="0" y1="0" x2="1" y2="0">
-          <Stop offset="0" stopColor="#ddffc8" />
-          <Stop offset="0.5" stopColor="#5cec3c" />
-          <Stop offset="1" stopColor="#1f8a12" />
+        <LinearGradient id={`lip-${id}`} x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#2c7a1c" />
+          <Stop offset="0.28" stopColor="#d6ffc2" />
+          <Stop offset="0.6" stopColor="#6bf545" />
+          <Stop offset="1" stopColor="#17590e" />
+        </LinearGradient>
+        <RadialGradient id={`inner-${id}`} cx="50%" cy="30%" r="70%">
+          <Stop offset="0" stopColor="#032302" />
+          <Stop offset="1" stopColor="#0b4508" />
+        </RadialGradient>
+        <RadialGradient id={`shadow-${id}`} cx="50%" cy="50%" r="50%">
+          <Stop offset="0" stopColor="#000000" stopOpacity={0.45} />
+          <Stop offset="0.55" stopColor="#000000" stopOpacity={0.2} />
+          <Stop offset="1" stopColor="#000000" stopOpacity={0} />
+        </RadialGradient>
+        <LinearGradient id={`gloss-${id}`} x1="0" y1="0" x2="1" y2="0">
+          <Stop offset="0" stopColor="#ffffff" stopOpacity={0} />
+          <Stop offset="0.5" stopColor="#ffffff" stopOpacity={0.55} />
+          <Stop offset="1" stopColor="#ffffff" stopOpacity={0} />
+        </LinearGradient>
+        <LinearGradient id={`beer-${id}`} x1="0" y1="0" x2="0" y2="1">
+          <Stop offset="0" stopColor="#ffcf4d" />
+          <Stop offset="1" stopColor="#c8891a" />
         </LinearGradient>
       </Defs>
 
-      {/* base shadow */}
-      <Ellipse cx={50} cy={119} rx={26} ry={5} fill="#000000" opacity={0.35} />
+      {/* soft contact shadow */}
+      <Ellipse cx={50} cy={116} rx={32} ry={9} fill={`url(#shadow-${id})`} />
 
       {/* body */}
-      <Path d="M9,18 L91,18 L76,116 L24,116 Z" fill={`url(#body-${id})`} />
+      <Path
+        d="M13,21 C15,54 20,86 26,105 A24,6.5 0 0 0 74,105 C80,86 85,54 87,21 Z"
+        fill={`url(#body-${id})`}
+      />
+      <Path d="M26,105 A24,6.5 0 0 0 74,105" fill="none" stroke="#a8ff88" strokeWidth={1.5} opacity={0.3} />
 
-      {/* subtle sheen stripe */}
-      <Path d="M22,26 L30,22 L23,110 L17,109 Z" fill="#ffffff" opacity={0.18} />
+      {/* moulding ribs */}
+      <Path d="M16,45 C33,51 67,51 84,45" fill="none" stroke="#000000" strokeWidth={1.3} opacity={0.14} />
+      <Path d="M19,75 C35,81 65,81 81,75" fill="none" stroke="#000000" strokeWidth={1.3} opacity={0.14} />
 
-      {/* rim */}
-      <Ellipse cx={50} cy={18} rx={41} ry={10} fill={`url(#rim-${id})`} />
-      <Ellipse cx={50} cy={18} rx={41} ry={10} fill="none" stroke={accent} strokeWidth={2} opacity={0.9} />
-      <Ellipse cx={50} cy={18} rx={31} ry={6.4} fill="#0d3d09" opacity={0.9} />
+      {/* highlights */}
+      <Path
+        d="M23,28 C25,58 29,88 33,103 L41,101 C36,86 32,57 31,28 Z"
+        fill={`url(#gloss-${id})`}
+        opacity={0.6}
+      />
+      <Path d="M69,30 C70,57 68,84 66,99 L69,98 C73,84 74,57 73,30 Z" fill="#ffffff" opacity={0.2} />
+
+      {/* cavity, beer, rolled lip */}
+      <Ellipse cx={50} cy={21} rx={37} ry={9.6} fill={`url(#inner-${id})`} />
+      <Ellipse cx={50} cy={26} rx={30} ry={7.6} fill={`url(#beer-${id})`} />
+      <Ellipse cx={50} cy={26} rx={30} ry={7.6} fill="none" stroke="#ffe08a" strokeWidth={0.9} opacity={0.55} />
+      <Path
+        d="M13,21 A37,9.6 0 0 1 87,21 A37,9.6 0 0 1 13,21 Z"
+        fill="none"
+        stroke={`url(#lip-${id})`}
+        strokeWidth={5}
+      />
+      <Ellipse cx={50} cy={21} rx={37} ry={9.6} fill="none" stroke={accent} strokeWidth={1.5} opacity={0.7} />
     </Svg>
   );
 }

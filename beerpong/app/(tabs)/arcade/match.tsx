@@ -3,7 +3,6 @@ import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-na
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -19,13 +18,13 @@ import { FlashOverlay, type FlashOverlayHandle } from '@/components/ui/FlashOver
 import { CupPyramid } from '@/components/arcade/CupPyramid';
 import { ThrowBall } from '@/components/arcade/ThrowBall';
 import { OpponentThrow } from '@/components/arcade/OpponentThrow';
+import { TableSurface } from '@/components/arcade/TableSurface';
 import { PromotionOverlay } from '@/components/arcade/PromotionOverlay';
 import {
   generateOpponentRack,
   generatePlayerRack,
   CAMERA_PAN,
   CUP_COUNT,
-  NET_Y,
   OPPONENT_BALL_Y,
   PLAYER_BALL_Y,
   TABLE_HEIGHT,
@@ -322,14 +321,13 @@ export default function MatchScreen() {
           <Animated.View
             style={[styles.table, { width: tableWidth, height: TABLE_HEIGHT }, cameraStyle]}
           >
-            <LinearGradient
-              colors={['#0b0f0a', '#151b12', '#1a2216']}
-              style={StyleSheet.absoluteFill}
-              pointerEvents="none"
+            <TableSurface
+              width={tableWidth}
+              racks={[
+                { cups: opponentCups, aliveFlags: opponentAlive },
+                { cups: playerCups, aliveFlags: playerAlive },
+              ]}
             />
-            <View style={styles.tableCenterLine} pointerEvents="none" />
-            <View style={[styles.tableRail, styles.tableRailLeft]} pointerEvents="none" />
-            <View style={[styles.tableRail, styles.tableRailRight]} pointerEvents="none" />
 
             <CupPyramid cups={opponentCups} aliveFlags={opponentAlive} accent={setup.color} />
             <CupPyramid cups={playerCups} aliveFlags={playerAlive} accent={colors.neon} />
@@ -550,23 +548,6 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
   },
-  tableCenterLine: {
-    position: 'absolute',
-    top: NET_Y,
-    left: '6%',
-    right: '6%',
-    height: 1,
-    backgroundColor: colors.neonFaint,
-  },
-  tableRail: {
-    position: 'absolute',
-    top: 0,
-    bottom: 0,
-    width: 6,
-    backgroundColor: 'rgba(255,255,255,0.04)',
-  },
-  tableRailLeft: { left: 0 },
-  tableRailRight: { right: 0 },
   hint: {
     textAlign: 'center',
     fontFamily: fonts.label,

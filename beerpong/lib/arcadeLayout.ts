@@ -11,7 +11,7 @@ interface RowSpec {
   width: number;
 }
 
-const CUP_ASPECT = 1.25; // height = width * CUP_ASPECT, like a real Solo cup
+const CUP_ASPECT = 1.35; // height = width * CUP_ASPECT, like a real Solo cup
 
 // Rows always run from the far end of a rack to the end nearest the viewer,
 // growing as they come closer, so a rack reads as receding down the table.
