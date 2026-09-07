@@ -208,6 +208,17 @@ export function ThrowBall({
     ],
   }));
 
+  // Grounds the resting ball on the table; it shrinks away as the ball flies.
+  const shadowStyle = useAnimatedStyle(() => ({
+    opacity: ballOpacity.value * (1 - trailOpacity.value) * 0.5,
+    transform: [
+      { translateX: ballX.value - BALL_SIZE / 2 },
+      { translateY: ballY.value + BALL_SIZE * 0.34 },
+      { scaleX: ballScale.value },
+      { scaleY: ballScale.value * 0.3 },
+    ],
+  }));
+
   return (
     <>
       {aimLine && !flying ? (
@@ -225,6 +236,7 @@ export function ThrowBall({
         </Svg>
       ) : null}
 
+      <Animated.View pointerEvents="none" style={[styles.ballShadow, shadowStyle]} />
       <Animated.View pointerEvents="none" style={[styles.ball, trailStyle]}>
         <BallArt accent={accent} />
       </Animated.View>
@@ -244,5 +256,12 @@ const styles = StyleSheet.create({
     height: BALL_SIZE,
     // Keeps the neon glow round instead of casting a square halo on web.
     borderRadius: BALL_SIZE / 2,
+  },
+  ballShadow: {
+    position: 'absolute',
+    width: BALL_SIZE,
+    height: BALL_SIZE,
+    borderRadius: BALL_SIZE / 2,
+    backgroundColor: '#000000',
   },
 });
