@@ -152,10 +152,19 @@ ob Installationen aus dieser Quelle erlaubt sind — bestätigen, fertig.
 Im Tracker gibt es oben das Scan-Symbol. Damit muss die App nicht mehr bei
 jedem Treffer angetippt werden.
 
-**Wo das Handy hin muss:** an ein **Tischende**, erhöht und leicht nach unten
-geneigt, sodass beide Racks im Bild sind — das nahe unten, das ferne oben.
-Von der Seite zu filmen klingt naheliegend, funktioniert im Hochformat aber
-nicht: der sichtbare Ausschnitt ist viel zu schmal für einen ganzen Tisch.
+**Wo das Handy hin muss — zwei Möglichkeiten:**
+
+- **Quer an der Längsseite** (empfohlen). Im Querformat ist der volle
+  Sensor-Ausschnitt zu sehen, im Hochformat nur ein Streifen von gut einem
+  Drittel — quer passt also fast dreimal so viel Tisch ins Bild, und beide
+  Racks sind gleich weit von der Linse entfernt. Die Ringe stehen dann schon
+  von selbst richtig: links und rechts, jeweils eine Vierteldrehung.
+- **Hochkant an einem Tischende**, erhöht und leicht nach unten geneigt: das
+  nahe Rack unten, das ferne oben. Funktioniert, aber das ferne Rack ist klein.
+
+Die App merkt selbst, wie das Handy gehalten wird, und setzt die Ringe beim
+Drehen passend neu — eine schon gestartete Ausrichtung geht dabei verloren und
+muss einmal neu bestätigt werden.
 
 **So läuft es ab:**
 
@@ -194,16 +203,18 @@ gemeinsamen Prüfung als fünf einzelne Treffer durchrutschen.
 - **Das Handy muss stillstehen.** Wackelt es, stimmt die Ausrichtung nicht mehr
   → „Neu ausrichten" drücken.
 - **Nach einem Re-Rack neu ausrichten**, weil die Becher dann woanders stehen.
-- **Das ferne Rack ist klein im Bild.** Je länger der Tisch, desto weniger
-  Pixel pro Becher — irgendwann reicht es nicht mehr. Wie weit das trägt, zeigt
-  erst der echte Tisch.
+- **Im Hochformat ist das ferne Rack klein im Bild.** Je länger der Tisch,
+  desto weniger Pixel pro Becher — irgendwann reicht es nicht mehr. Genau
+  deshalb ist quer die bessere Wahl. Wie weit das trägt, zeigt erst der echte
+  Tisch.
 
 **Getestet mit:**
 
 ```bash
 npm run test:vision                                    # 17 Prüfungen der Logik, ohne Kamera
 python3 tools/gen_test_table_video.py t.y4m one        # Testvideo: ein Rack
-python3 tools/gen_test_table_video.py t.y4m both       # Testvideo: beide Racks
+python3 tools/gen_test_table_video.py t.y4m both       # Testvideo: beide Racks, hochkant
+python3 tools/gen_test_table_video.py t.y4m side       # Testvideo: beide Racks, quer
 ```
 
 Die Testvideos zeigen Racks, über die erst eine Hand streicht (darf **nicht**
