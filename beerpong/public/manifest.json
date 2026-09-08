@@ -1,15 +1,19 @@
 {
   "name": "Beerpong Companion & Arcade",
   "short_name": "Beerpong",
-  "description": "Zähle dein echtes Beerpong-Spiel per Kamera oder spiele die Arcade-Variante gegen KI und Freunde.",
+  "description": "Z\u00e4hle dein echtes Beerpong-Spiel per Kamera oder spiele die Arcade-Variante gegen KI und Freunde.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "portrait",
+  "orientation": "any",
   "background_color": "#0A0A0A",
   "theme_color": "#0A0A0A",
   "lang": "de",
-  "categories": ["games", "sports", "entertainment"],
+  "categories": [
+    "games",
+    "sports",
+    "entertainment"
+  ],
   "icons": [
     {
       "src": "./icons/icon-192.png",

@@ -45,10 +45,13 @@ def triangle(cx, cy, pitch_x, pitch_y, rotation):
     widest = max(ROWS)
     points = []
     for row_index, count in enumerate(ROWS):
-        dy = (row_index - (len(ROWS) - 1) / 2) * pitch_y
+        row_dy = (row_index - (len(ROWS) - 1) / 2) * pitch_y
         offset = (widest - count) / 2
         for i in range(count):
-            dx = (offset + i - (widest - 1) / 2) * pitch_x
+            # dy has to be re-read from the row each time: rotating in place
+            # would carry the turned value into the next cup and scramble the
+            # rack — which is exactly what it did.
+            dx, dy = (offset + i - (widest - 1) / 2) * pitch_x, row_dy
             for _ in range(rotation % 4):
                 dx, dy = -dy, dx
             points.append((cx + dx, cy + dy))
@@ -139,9 +142,48 @@ def draw_both(t):
     return image
 
 
+# ------------------------------------------------------------- scene: side
+
+# Phone held sideways at the long edge: the full sensor width is on screen, so
+# the racks can sit far apart and still both be sampled. They face each other,
+# which is a quarter turn each.
+# Sized from the app's landscape guides, measured out of the running app: a
+# quarter turn swaps which axis the rows and columns run along, so the pitches
+# are not interchangeable — 42.7 along a row, 36.3 between rows.
+SIDE_LEFT = dict(cups=triangle(154, 246, 42.7, 36.3, 1), r=16)
+SIDE_RIGHT = dict(cups=triangle(486, 246, 42.7, 36.3, 3), r=16)
+SIDE_DURATION = 13.0
+SIDE_LEFT_MISSING, SIDE_LEFT_AT = 5, 6.5
+SIDE_RIGHT_MISSING, SIDE_RIGHT_AT = 2, 9.0
+SIDE_HAND = (3.5, 5.0)
+
+
+def draw_side(t):
+    image = Image.new("RGB", (W, H), TABLE)
+    draw = ImageDraw.Draw(image)
+    draw_table(draw)
+
+    for rack, missing, at in (
+        (SIDE_LEFT, SIDE_LEFT_MISSING, SIDE_LEFT_AT),
+        (SIDE_RIGHT, SIDE_RIGHT_MISSING, SIDE_RIGHT_AT),
+    ):
+        for index, (x, y) in enumerate(rack["cups"]):
+            if index == missing and t >= at:
+                draw_gap(draw, x, y, rack["r"])
+            else:
+                draw_cup(draw, x, y, rack["r"])
+
+    if SIDE_HAND[0] <= t < SIDE_HAND[1]:
+        # Over the left rack only.
+        draw.ellipse([70, 170, 240, 330], fill=HAND)
+
+    return image
+
+
 SCENES = {
     "one": (draw_one, ONE_DURATION),
     "both": (draw_both, BOTH_DURATION),
+    "side": (draw_side, SIDE_DURATION),
 }
 
 

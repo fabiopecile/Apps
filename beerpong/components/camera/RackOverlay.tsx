@@ -38,15 +38,32 @@ export const DEFAULT_FRAME: RackFrame = {
 };
 
 /**
- * Both racks, phone standing at one end of the table and tilted down: the near
- * rack fills the lower half pointing away, the far rack sits above it pointing
- * back. Filming from the side is the obvious idea and the wrong one — a
- * portrait frame is far too narrow to hold a whole table sideways.
+ * Where the two rack guides start, which depends entirely on how the phone is
+ * held — a 4:3 sensor cover-cropped into a portrait screen shows only about a
+ * third of its width, but the full width in landscape.
+ *
+ * Portrait: the phone stands at one end of the table, tilted down. The near
+ * rack fills the lower half pointing away, the far rack sits above it.
+ *
+ * Landscape: the phone sits at the long side, and the table runs across the
+ * frame. The racks face each other, so they are turned a quarter each way —
+ * and both are the same distance from the lens, which the end-on view can
+ * never manage.
  */
-export const DEFAULT_FRAMES: [RackFrame, RackFrame] = [
+export const DEFAULT_FRAMES_PORTRAIT: [RackFrame, RackFrame] = [
   { x: 0.5, y: 0.72, width: 0.44, height: 0.3, rotation: Math.PI },
   { x: 0.5, y: 0.28, width: 0.44, height: 0.3, rotation: 0 },
 ];
+
+export const DEFAULT_FRAMES_LANDSCAPE: [RackFrame, RackFrame] = [
+  { x: 0.24, y: 0.52, width: 0.2, height: 0.46, rotation: Math.PI / 2 },
+  { x: 0.76, y: 0.52, width: 0.2, height: 0.46, rotation: -Math.PI / 2 },
+];
+
+export function defaultFrames(landscape: boolean): [RackFrame, RackFrame] {
+  const source = landscape ? DEFAULT_FRAMES_LANDSCAPE : DEFAULT_FRAMES_PORTRAIT;
+  return [{ ...source[0] }, { ...source[1] }];
+}
 
 /** Radius of a cup's sample patch, as a fraction of the preview width. */
 export function cupRadius(frame: RackFrame, cupCount: number): number {

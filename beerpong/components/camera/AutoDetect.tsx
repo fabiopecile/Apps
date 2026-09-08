@@ -5,7 +5,7 @@ import { runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GlowButton } from '@/components/ui/GlowButton';
-import { RackOverlay, cupRegions, DEFAULT_FRAMES, type RackFrame } from './RackOverlay';
+import { RackOverlay, cupRegions, defaultFrames, type RackFrame } from './RackOverlay';
 import {
   acceptCup,
   calibrate,
@@ -52,6 +52,7 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
   // tab bar, so the window is taller than the video. Sharing one box is what
   // keeps the rings and the sampled patches over the same cups.
   const [size, setSize] = useState({ width: 1, height: 1 });
+  const landscape = size.width > size.height;
   const onLayout = (event: LayoutChangeEvent) => {
     const { width: w, height: h } = event.nativeEvent.layout;
     if (w > 0 && h > 0) setSize({ width: w, height: h });
@@ -62,10 +63,9 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
   const [mode, setMode] = useState<Mode>('aligning');
   /** Which rack is being lined up: 0 first, then 1. */
   const [aligning, setAligning] = useState<TeamIndex>(0);
-  const [frames, setFrames] = useState<[RackFrame, RackFrame]>(() => [
-    { ...DEFAULT_FRAMES[0] },
-    { ...DEFAULT_FRAMES[1] },
-  ]);
+  const [frames, setFrames] = useState<[RackFrame, RackFrame]>(() => defaultFrames(false));
+  /** Reset the guides when the phone is turned — the old ones make no sense. */
+  const wasLandscape = useRef<boolean | null>(null);
   /** Teams whose racks ended up being watched, in sampling order. */
   const [racks, setRacks] = useState<TeamIndex[]>([0, 1]);
   const [detector, setDetector] = useState<DetectorState>(() => createDetector([cupCount]));
@@ -86,6 +86,19 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
   framesRef.current = frames;
   racksRef.current = racks;
   sizeRef.current = size;
+
+  useEffect(() => {
+    if (wasLandscape.current === landscape) return;
+    const first = wasLandscape.current === null;
+    wasLandscape.current = landscape;
+    // On the very first layout this just picks the right starting point; on a
+    // later turn it throws away guides that no longer point at anything.
+    setFrames(defaultFrames(landscape));
+    if (!first) {
+      setMode('aligning');
+      setAligning(0);
+    }
+  }, [landscape]);
 
   useEffect(() => {
     samplerRef.current = createFrameSampler();
@@ -304,7 +317,7 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
         </View>
       ) : null}
 
-      <View style={styles.panel}>
+      <View style={[styles.panel, landscape && styles.panelLandscape]}>
         {mode === 'aligning' ? (
           <>
             <View style={styles.stepRow}>
@@ -318,7 +331,15 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
                 </Text>
               </Pressable>
             </View>
-            <Text style={styles.body}>{t('detect.alignBody')}</Text>
+            {landscape ? null : <Text style={styles.body}>{t('detect.alignBody')}</Text>}
+            {!landscape ? (
+              <View style={styles.tipRow}>
+                <Ionicons name="phone-landscape-outline" size={14} color={colors.gold} />
+                <Text style={styles.tip} selectable={false}>
+                  {t('detect.turnTip')}
+                </Text>
+              </View>
+            ) : null}
             <View style={styles.row}>
               {aligning === 0 ? (
                 <>
@@ -361,7 +382,7 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
         ) : pending != null ? (
           <>
             <Text style={styles.title}>{t('detect.hitTitle')}</Text>
-            <Text style={styles.body}>
+            <Text style={styles.body} numberOfLines={landscape ? 1 : 2}>
               {t('detect.hitBody', {
                 loser: teamNames[teamForIndex(pending)],
                 scorer: teamNames[teamForIndex(pending) === 0 ? 1 : 0],
@@ -429,7 +450,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing.lg,
     right: spacing.lg,
-    bottom: spacing.xl,
+    bottom: spacing.md,
     padding: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1.5,
@@ -437,6 +458,16 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(10,10,10,0.92)',
     gap: spacing.sm,
     ...glow('soft'),
+  },
+  /**
+   * Sideways there is barely any height to spare, and a full-width panel
+   * buries the very racks the user is trying to line up. It shrinks to a bar
+   * across the bottom and drops the explanatory text.
+   */
+  panelLandscape: {
+    paddingVertical: spacing.sm,
+    gap: 6,
+    bottom: spacing.sm,
   },
   stepRow: {
     flexDirection: 'row',
@@ -477,6 +508,17 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   flexButton: { flex: 1 },
+  tipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  tip: {
+    flex: 1,
+    fontFamily: fonts.label,
+    fontSize: 11,
+    color: colors.gold,
+  },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -201,6 +201,10 @@ const STRINGS = {
     de: 'Ringe auf die echten Becher legen: ziehen zum Verschieben, zwei Finger zum Vergrößern und Drehen. Steht das Handy an der Längsseite, liegen die Racks quer — dafür ist der 90°-Knopf da.',
     en: 'Put the rings on the real cups: drag to move, two fingers to resize and turn. With the phone at the side of the table the racks lie sideways — that is what the 90° button is for.',
   },
+  'detect.turnTip': {
+    de: 'Handy quer halten zeigt fast dreimal so viel vom Tisch — dann von der Längsseite filmen.',
+    en: 'Turning the phone sideways shows nearly three times as much table — then film from the long side.',
+  },
   'detect.nextRack': { de: 'Weiter zum 2. Rack', en: 'On to rack 2' },
   'detect.onlyOne': { de: 'Nur ein Rack', en: 'Just one rack' },
   'detect.start': { de: 'Passt — los', en: 'Looks right — go' },

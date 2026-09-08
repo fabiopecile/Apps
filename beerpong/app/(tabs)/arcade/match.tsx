@@ -27,7 +27,6 @@ import {
   generateOpponentRack,
   generatePlayerRack,
   reRackFlags,
-  CAMERA_PAN,
   CUP_COUNT,
   OPPONENT_BALL_Y,
   PLAYER_BALL_Y,
@@ -68,8 +67,23 @@ export default function MatchScreen() {
       : 'offline';
   const isPassPlay = mode === 'passplay';
 
-  const { width } = useWindowDimensions();
-  const tableWidth = width - spacing.lg * 2;
+  const { width, height } = useWindowDimensions();
+  // Sideways there is no vertical room to stack table over buttons, so the
+  // table takes the left and everything else moves into a column beside it.
+  //
+  // Cropping the viewport is not an option: the table's landmarks — net, ball,
+  // both racks — sit at fixed distances, and a 294pt window would leave the
+  // ball off screen. So the full viewport is rendered and then scaled down to
+  // whatever height there is. Every coordinate inside stays as it was.
+  const landscape = width > height;
+  const stageHeight = landscape
+    ? Math.max(200, height - 96)
+    : Math.min(VIEWPORT_HEIGHT, Math.max(220, height - 260));
+  const stageScale = landscape ? Math.min(1, stageHeight / VIEWPORT_HEIGHT) : 1;
+  const viewportHeight = landscape ? VIEWPORT_HEIGHT : stageHeight;
+  const tableWidth = landscape
+    ? Math.min(430, (width * 0.55) / stageScale)
+    : width - spacing.lg * 2;
   const opponentCups = useMemo(() => generateOpponentRack(tableWidth), [tableWidth]);
   const playerCups = useMemo(() => generatePlayerRack(tableWidth), [tableWidth]);
 
@@ -168,11 +182,12 @@ export default function MatchScreen() {
 
   const cameraY = useSharedValue(0);
   useEffect(() => {
-    cameraY.value = withTiming(turn === 'player' ? 0 : -CAMERA_PAN, {
+    const pan = Math.max(0, TABLE_HEIGHT - viewportHeight);
+    cameraY.value = withTiming(turn === 'player' ? 0 : -pan, {
       duration: 650,
       easing: Easing.inOut(Easing.cubic),
     });
-  }, [turn, cameraY]);
+  }, [turn, cameraY, viewportHeight]);
   const cameraStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: cameraY.value }],
   }));
@@ -447,6 +462,24 @@ export default function MatchScreen() {
 
   const showResultCard = roundResult != null && celebration == null;
 
+  // Above the table in portrait, beside it in landscape — same markup either
+  // way, so the two layouts can never drift apart.
+  const scoreBlock = (
+    <View style={[styles.scoreRow, landscape && styles.scoreRowLandscape]}>
+      <RackBadge label={setup.name} count={opponentRemaining} color={setup.color} active={playerTurn} />
+      <Text style={styles.vsText} selectable={false}>
+        VS
+      </Text>
+      <RackBadge
+        label={t('common.you')}
+        count={playerRemaining}
+        color={colors.neon}
+        active={!playerTurn && roundResult == null}
+        align="right"
+      />
+    </View>
+  );
+
   return (
     <View style={styles.container}>
       <GridBackground />
@@ -477,21 +510,29 @@ export default function MatchScreen() {
           </View>
         </View>
 
-        <View style={styles.scoreRow}>
-          <RackBadge label={setup.name} count={opponentRemaining} color={setup.color} active={playerTurn} />
-          <Text style={styles.vsText} selectable={false}>
-            VS
-          </Text>
-          <RackBadge
-            label={t('common.you')}
-            count={playerRemaining}
-            color={colors.neon}
-            active={!playerTurn && roundResult == null}
-            align="right"
-          />
-        </View>
+        {landscape ? null : scoreBlock}
 
-        <View style={[styles.viewport, { width: tableWidth, height: VIEWPORT_HEIGHT }]}>
+        <View style={landscape ? styles.stage : undefined}>
+        <View
+          style={
+            landscape
+              ? {
+                  width: tableWidth * stageScale,
+                  height: viewportHeight * stageScale,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }
+              : undefined
+          }
+        >
+        <View
+          style={[
+            styles.viewport,
+            landscape && styles.viewportLandscape,
+            { width: tableWidth, height: viewportHeight },
+            landscape && { transform: [{ scale: stageScale }] },
+          ]}
+        >
           <Animated.View
             style={[styles.table, { width: tableWidth, height: TABLE_HEIGHT }, cameraStyle]}
           >
@@ -553,7 +594,10 @@ export default function MatchScreen() {
             <FlashOverlay ref={flashRef} />
           </Animated.View>
         </View>
+        </View>
 
+        <View style={landscape ? styles.sideColumn : undefined}>
+        {landscape ? scoreBlock : null}
         <View style={styles.actionRow}>
           <Pressable
             onPress={() => {
@@ -612,6 +656,8 @@ export default function MatchScreen() {
         >
           {bounceArmed ? t('match.bounceArmed') : turnStatus}
         </Animated.Text>
+        </View>
+        </View>
       </SafeAreaView>
 
       {showResultCard ? (
@@ -828,6 +874,26 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: colors.textMuted,
     marginHorizontal: spacing.sm,
+  },
+  /** Landscape only: table on the left, score and controls on the right. */
+  stage: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    gap: spacing.lg,
+  },
+  sideColumn: {
+    flex: 1,
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  scoreRowLandscape: {
+    paddingHorizontal: 0,
+    marginTop: 0,
+  },
+  viewportLandscape: {
+    marginTop: 0,
   },
   viewport: {
     alignSelf: 'center',
