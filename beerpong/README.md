@@ -147,6 +147,53 @@ ob Installationen aus dieser Quelle erlaubt sind — bestätigen, fertig.
 | Google Play | **25 $ einmalig** — neue Privatkonten müssen erst 14 Tage mit 12 Testern testen |
 | Apple App Store / TestFlight | **99 €/Jahr**, kein kostenloser Ersatz |
 
+## Becher-Erkennung über die Kamera
+
+Im Tracker gibt es oben das Scan-Symbol. Damit muss die App nicht mehr bei
+jedem Treffer angetippt werden.
+
+**So läuft es ab:**
+
+1. Handy hinstellen — angelehnt oder auf einem Stativ, es darf sich nicht mehr
+   bewegen
+2. Scan-Symbol antippen, dann die Ringe auf die echten Becher schieben
+   (ziehen zum Verschieben, zwei Finger zum Vergrößern)
+3. **Passt — los** drücken. Ab jetzt beobachtet die App die Becher
+4. Verschwindet einer, fragt sie **„Becher weg — Treffer?"** — bestätigen oder
+   verwerfen
+
+Antippen funktioniert weiter wie bisher; die Erkennung ist nur eine Abkürzung.
+
+**Warum sie nachfragt statt selbst zu zählen:** Am Tisch stehen Leute, Hände
+greifen ins Bild, jemand räumt um. Die Nachfrage kostet einen Knopfdruck und
+verhindert falsche Punkte. Bewegt sich die Kamera oder ändert sich das Licht
+stark, merkt die App das und meldet es, statt das Rack leerzuräumen.
+
+**Einschränkungen, ehrlich:**
+
+- **Nur in der Web-Version.** Die installierte APK kann keine einzelnen
+  Kamerabilder lesen — `expo-camera` liefert nur fertige Fotos. Dafür bräuchte
+  es `react-native-vision-camera` mit Frame-Processors und einen eigenen
+  Dev-Client. Die Erkennungslogik selbst (`lib/cupVision.ts`) ist davon
+  unabhängig und würde unverändert weiterlaufen; auszutauschen wäre nur
+  `lib/frameSampler.ts`.
+- **Das Handy muss stillstehen.** Wackelt es, stimmt die Ausrichtung nicht mehr
+  → „Neu ausrichten" drücken.
+- **Nach einem Re-Rack neu ausrichten**, weil die Becher dann woanders stehen.
+- Es wird **ein Rack beobachtet** — das der Gegner-Mannschaft.
+
+**Getestet mit:**
+
+```bash
+npm run test:vision          # 13 Prüfungen der Erkennungslogik, ohne Kamera
+python3 tools/gen_test_table_video.py table.y4m   # Testvideo für den Browser
+```
+
+Das Testvideo zeigt ein Rack, über das erst eine Hand streicht (darf **nicht**
+zählen) und aus dem danach ein Becher verschwindet (muss **genau einmal**
+melden). Chromium kann es per
+`--use-file-for-fake-video-capture=table.y4m` als Kamera ausgeben.
+
 ## Wenn etwas nicht läuft
 
 | Problem | Lösung |
@@ -159,6 +206,8 @@ ob Installationen aus dieser Quelle erlaubt sind — bestätigen, fertig.
 | Pages-Seite zeigt nur eine leere Seite | Unter Settings → Pages muss „Source" auf **GitHub Actions** stehen, nicht auf einen Branch |
 | Web-App zeigt nach einem Update alte Inhalte | Einmal schließen und neu öffnen — der Service Worker holt sich die neue Version beim nächsten Start |
 | iPhone: „Zum Home-Bildschirm" fehlt | Der Link muss in **Safari** geöffnet werden, in Chrome gibt es die Option nicht |
+| Erkennung meldet ständig Treffer | Handy steht nicht still, oder das Licht flackert — „Neu ausrichten" drücken |
+| Erkennung meldet gar nichts | Ringe sitzen daneben oder die Becher heben sich kaum vom Tisch ab — neu ausrichten, notfalls antippen |
 
 ## Was drin ist
 
@@ -174,6 +223,8 @@ ob Installationen aus dieser Quelle erlaubt sind — bestätigen, fertig.
   - Division Rivals (Division 10 bis 1, Auf- und Abstieg)
   - Weekend League (10 Spiele, Belohnungsstufen Bronze bis Elite)
   - Bounce-Wurf (schwerer, nimmt zwei Cups) und Re-Rack im Spiel
+- **Halbautomatische Becher-Erkennung** (Web-Version) — Rack einmal ausrichten,
+  danach meldet die App jeden verschwundenen Becher und fragt nach
 - **Aufgaben & Erfolge** — drei Tagesaufgaben, zehn Saison-Stufen und neun
   modusübergreifende Erfolge, alle mit Coin-Belohnung
 - **Profil** — Statistiken über beide Modi, Sound-, Haptik- und Sprachschalter
@@ -187,11 +238,11 @@ ob Installationen aus dieser Quelle erlaubt sind — bestätigen, fertig.
 - **Kein echtes Online-Multiplayer.** Gegner in Rivals und Weekend League werden
   lokal simuliert (`lib/competition.ts`, `generateOnlineOpponent`). Das ist die
   Stelle, an der später ein Server andockt.
-- **Keine automatische Bechererkennung und kein Online-Spiel im Kamera-Modus.**
-  Der Kamera-Modus zählt per Tap und läuft nur an einem Tisch. Beides steht als
-  Pro-Funktion auf `app/pro.tsx` beschrieben (erreichbar über das Globus-Symbol
-  im Tracker und über das Profil) — kaufbar ist dort nichts, die Vormerkung
-  bleibt lokal auf dem Gerät.
+- **Die Becher-Erkennung ist halbautomatisch und nur im Web.** Sie schlägt vor,
+  entschieden wird per Knopfdruck — siehe eigenen Abschnitt unten. Vollautomatik
+  und Online-Spiel im Kamera-Modus stehen als Pro-Funktion auf `app/pro.tsx`
+  (erreichbar über das Globus-Symbol im Tracker und über das Profil) — kaufbar
+  ist dort nichts, die Vormerkung bleibt lokal auf dem Gerät.
 - **Keine echte Wurfphysik.** Treffer werden über eine Wahrscheinlichkeit
   entschieden und dann animiert; Fehlwürfe können am Becherrand abprallen.
 - **Sounds sind synthetisch erzeugt** — `tools/gen_sounds.py` baut sie aus
@@ -220,6 +271,7 @@ app/                     Routen (expo-router)
   pro.tsx                Pro-Vorschau (Modal)
 components/              UI-Bausteine, Arcade-Grafik (Becher, Ball, Würfe)
 lib/                     Store (zustand), Spiel-Logik, Layout, Sound, i18n
+                         cupVision.ts = Becher-Erkennung, frameSampler* = Bildquelle
 public/                  Wird 1:1 in die Web-Version kopiert (Manifest, Icons, sw.js)
 theme/                   Farben, Schriften, Glow-Effekt
 tools/                   Hilfsskripte (Logo/Icons und Sounds erzeugen)
