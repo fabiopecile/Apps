@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
+import { Reveal } from '@/components/ui/Reveal';
+import { CountUp } from '@/components/ui/CountUp';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import {
@@ -65,12 +67,13 @@ export default function ChallengesScreen() {
 
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <SectionLabel>{t('challenges.today')}</SectionLabel>
-          {challenges.map((challenge) => {
+          {challenges.map((challenge, position) => {
             const current = counters ? counters[challenge.metric] : 0;
             const done = current >= challenge.target;
             const claimed = counters?.claimed.includes(challenge.id) ?? false;
             return (
-              <View key={challenge.id} style={[styles.card, done && !claimed && glow('soft')]}>
+              <Reveal key={challenge.id} index={position}>
+              <View style={[styles.card, done && !claimed && glow('soft')]}>
                 <View style={styles.cardTop}>
                   <Text style={styles.cardTitle} selectable={false}>
                     {t(challenge.titleKey)}
@@ -103,6 +106,7 @@ export default function ChallengesScreen() {
                   ) : null}
                 </View>
               </View>
+              </Reveal>
             );
           })}
 
@@ -116,9 +120,7 @@ export default function ChallengesScreen() {
                   total: SEASON_TIERS.length,
                 })}
               </Text>
-              <Text style={styles.cardMeta} selectable={false}>
-                {t('challenges.xp', { xp: arcade.careerXP })}
-              </Text>
+              <CountUp value={arcade.careerXP} suffix=" XP" style={styles.cardMeta} />
             </View>
             <ProgressBar progress={season.progress} height={6} />
             {season.next ? (
@@ -136,12 +138,12 @@ export default function ChallengesScreen() {
           </View>
 
           <View style={styles.tierRow}>
-            {SEASON_TIERS.map((tier) => {
+            {SEASON_TIERS.map((tier, position) => {
               const unlocked = arcade.careerXP >= tier.xp;
               const claimed = claimedSeasonTiers.includes(tier.level);
               return (
+                <Reveal key={tier.level} index={position} stagger={35} distance={8}>
                 <Pressable
-                  key={tier.level}
                   disabled={!unlocked || claimed}
                   onPress={() => {
                     feedback.reward();
@@ -163,18 +165,20 @@ export default function ChallengesScreen() {
                     {claimed ? '✓' : `+${tier.coins}`}
                   </Text>
                 </Pressable>
+                </Reveal>
               );
             })}
           </View>
 
           <View style={styles.sectionGap} />
           <SectionLabel>{t('challenges.achievements')}</SectionLabel>
-          {ACHIEVEMENTS.map((achievement) => {
+          {ACHIEVEMENTS.map((achievement, position) => {
             const { current, target } = achievement.progress(stats);
             const done = current >= target;
             const claimed = claimedAchievements.includes(achievement.id);
             return (
-              <View key={achievement.id} style={[styles.card, done && !claimed && glow('soft')]}>
+              <Reveal key={achievement.id} index={position} delay={140}>
+              <View style={[styles.card, done && !claimed && glow('soft')]}>
                 <View style={styles.achievementRow}>
                   <View
                     style={[
@@ -217,6 +221,7 @@ export default function ChallengesScreen() {
                   )}
                 </View>
               </View>
+              </Reveal>
             );
           })}
         </ScrollView>

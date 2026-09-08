@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { Reveal } from '@/components/ui/Reveal';
 import { Card } from '@/components/ui/Card';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { AI_PRESETS, type AiDifficulty } from '@/lib/competition';
@@ -43,18 +45,17 @@ export default function OfflineScreen() {
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
           <Text style={styles.intro}>{t('offline.intro')}</Text>
 
-          {ORDER.map((id) => {
+          {ORDER.map((id, position) => {
             const preset = AI_PRESETS[id];
             const selected = aiDifficulty === id;
             return (
-              <Pressable
-                key={id}
+              <Reveal key={id} index={position}>
+              <PressableScale
                 onPress={() => start(id)}
-                style={({ pressed }) => [
+                style={[
                   styles.difficultyCard,
                   { borderColor: preset.color },
                   selected && glow('soft', preset.color),
-                  pressed && styles.pressed,
                 ]}
               >
                 <View style={styles.difficultyHead}>
@@ -86,16 +87,18 @@ export default function OfflineScreen() {
                     {t('offline.startWith', { coins: preset.rewardCoins })}
                   </Text>
                 </View>
-              </Pressable>
+              </PressableScale>
+              </Reveal>
             );
           })}
 
           <View style={styles.opponentsSection}>
             <SectionLabel>{t('offline.gallery')}</SectionLabel>
-            {LEAGUE_OPPONENTS.map((opponent) => {
+            {LEAGUE_OPPONENTS.map((opponent, position) => {
               const defeated = defeatedIds.includes(opponent.id);
               return (
-                <Card key={opponent.id} style={styles.opponentCard} highlighted={defeated}>
+                <Reveal key={opponent.id} index={position} delay={180}>
+                <Card style={styles.opponentCard} highlighted={defeated}>
                   <View style={[styles.avatar, { borderColor: opponent.color }]}>
                     <Ionicons
                       name={defeated ? 'checkmark' : 'person'}
@@ -124,6 +127,7 @@ export default function OfflineScreen() {
                     </Text>
                   ) : null}
                 </Card>
+                </Reveal>
               );
             })}
           </View>

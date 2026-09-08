@@ -7,6 +7,8 @@ import Animated, {
   Easing,
   useAnimatedStyle,
   useSharedValue,
+  withRepeat,
+  withSequence,
   withTiming,
 } from 'react-native-reanimated';
 
@@ -173,6 +175,14 @@ export default function MatchScreen() {
   }, [turn, cameraY]);
   const cameraStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: cameraY.value }],
+  }));
+
+  // The hint breathes while you are on the clock, and sits still otherwise —
+  // it is the only thing on screen telling you the game is waiting for you.
+  const hintPulse = useSharedValue(0);
+  const hintStyle = useAnimatedStyle(() => ({
+    opacity: 0.72 + hintPulse.value * 0.28,
+    transform: [{ scale: 0.99 + hintPulse.value * 0.02 }],
   }));
 
   const clearTimers = () => {
@@ -414,6 +424,20 @@ export default function MatchScreen() {
   };
 
   const playerTurn = turn === 'player' && roundResult == null;
+
+  useEffect(() => {
+    if (playerTurn && !handOver) {
+      hintPulse.value = withRepeat(
+        withSequence(
+          withTiming(1, { duration: 780, easing: Easing.inOut(Easing.ease) }),
+          withTiming(0, { duration: 780, easing: Easing.inOut(Easing.ease) })
+        ),
+        -1
+      );
+    } else {
+      hintPulse.value = withTiming(0, { duration: 220 });
+    }
+  }, [playerTurn, handOver, hintPulse]);
   const turnStatus =
     roundResult != null
       ? ''
@@ -582,12 +606,12 @@ export default function MatchScreen() {
           </Pressable>
         </View>
 
-        <Text
-          style={[styles.hint, { color: playerTurn ? colors.neon : colors.danger }]}
+        <Animated.Text
+          style={[styles.hint, { color: playerTurn ? colors.neon : colors.danger }, hintStyle]}
           selectable={false}
         >
           {bounceArmed ? t('match.bounceArmed') : turnStatus}
-        </Text>
+        </Animated.Text>
       </SafeAreaView>
 
       {showResultCard ? (

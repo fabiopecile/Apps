@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
+import { Reveal } from '@/components/ui/Reveal';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import {
@@ -129,13 +130,11 @@ export default function WeekendScreen() {
 
           <View style={styles.tiersSection}>
             <SectionLabel>{t('weekend.rewards')}</SectionLabel>
-            {WEEKEND_TIERS.map((tier) => {
+            {WEEKEND_TIERS.map((tier, position) => {
               const reached = weekend.wins >= tier.minWins;
               return (
-                <View
-                  key={tier.nameKey}
-                  style={[styles.tierRow, reached && { borderColor: tier.color }]}
-                >
+                <Reveal key={tier.nameKey} index={position} delay={120}>
+                <View style={[styles.tierRow, reached && { borderColor: tier.color }]}>
                   <View style={[styles.tierDot, { backgroundColor: tier.color }]} />
                   <View style={{ flex: 1 }}>
                     <Text style={[styles.tierName, { color: tier.color }]} selectable={false}>
@@ -149,6 +148,7 @@ export default function WeekendScreen() {
                     +{tier.coins}
                   </Text>
                 </View>
+                </Reveal>
               );
             })}
           </View>

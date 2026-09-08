@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
+import { Reveal } from '@/components/ui/Reveal';
+import { CountUp } from '@/components/ui/CountUp';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { ALL_DIVISIONS, getDivision } from '@/lib/competition';
@@ -81,12 +83,12 @@ export default function RivalsScreen() {
 
           <View style={styles.ladderSection}>
             <SectionLabel>{t('rivals.ladder')}</SectionLabel>
-            {ALL_DIVISIONS.map((entry) => {
+            {ALL_DIVISIONS.map((entry, position) => {
               const isCurrent = entry.id === rivals.division;
               const reached = entry.id >= rivals.bestDivision;
               return (
+                <Reveal key={entry.id} index={position} stagger={40} delay={120}>
                 <View
-                  key={entry.id}
                   style={[
                     styles.ladderRow,
                     isCurrent && { borderColor: entry.color, backgroundColor: colors.backgroundCard },
@@ -125,6 +127,7 @@ export default function RivalsScreen() {
                     </View>
                   ) : null}
                 </View>
+                </Reveal>
               );
             })}
           </View>
@@ -137,9 +140,7 @@ export default function RivalsScreen() {
 function Balance({ label, value, color }: { label: string; value: number; color: string }) {
   return (
     <View style={styles.balance}>
-      <Text style={[styles.balanceValue, { color }]} selectable={false}>
-        {value}
-      </Text>
+      <CountUp value={value} style={[styles.balanceValue, { color }]} />
       <Text style={styles.balanceLabel} selectable={false}>
         {label}
       </Text>

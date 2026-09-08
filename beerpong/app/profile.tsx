@@ -4,6 +4,8 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
+import { Reveal } from '@/components/ui/Reveal';
+import { CountUp } from '@/components/ui/CountUp';
 import { Card } from '@/components/ui/Card';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { NeonSwitch } from '@/components/ui/NeonSwitch';
@@ -48,10 +50,10 @@ export default function ProfileScreen() {
         <ScrollView contentContainerStyle={styles.scroll}>
           <SectionLabel>{t('profile.overall')}</SectionLabel>
           <View style={styles.statGrid}>
-            <StatCard label={t('profile.totalCups')} value={combined.totalCupsHit} />
-            <StatCard label={t('common.wins')} value={combined.totalWins} />
-            <StatCard label={t('profile.bestStreak')} value={combined.bestStreak} />
-            <StatCard label={t('profile.games')} value={combined.gamesPlayed} />
+            <StatCard index={0} label={t('profile.totalCups')} value={combined.totalCupsHit} />
+            <StatCard index={1} label={t('common.wins')} value={combined.totalWins} />
+            <StatCard index={2} label={t('profile.bestStreak')} value={combined.bestStreak} />
+            <StatCard index={3} label={t('profile.games')} value={combined.gamesPlayed} />
           </View>
 
           <SectionLabel>{t('profile.cameraTracker')}</SectionLabel>
@@ -131,12 +133,14 @@ export default function ProfileScreen() {
   );
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCard({ label, value, index }: { label: string; value: number; index: number }) {
   return (
-    <View style={styles.statCard}>
-      <Text style={styles.statValue}>{value}</Text>
-      <Text style={styles.statLabel}>{label}</Text>
-    </View>
+    <Reveal index={index} style={styles.statCardWrap}>
+      <View style={styles.statCard}>
+        <CountUp value={value} style={styles.statValue} />
+        <Text style={styles.statLabel}>{label}</Text>
+      </View>
+    </Reveal>
   );
 }
 
@@ -200,9 +204,11 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     marginBottom: spacing.lg,
   },
-  statCard: {
+  statCardWrap: {
     flexBasis: '47%',
     flexGrow: 1,
+  },
+  statCard: {
     backgroundColor: colors.backgroundCard,
     borderRadius: radius.lg,
     borderWidth: 1,
