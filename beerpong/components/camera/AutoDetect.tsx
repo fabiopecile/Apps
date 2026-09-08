@@ -26,10 +26,11 @@ type Mode = 'aligning' | 'watching';
 
 interface AutoDetectProps {
   cupCount: number;
-  /** Name of the team whose rack is being watched. */
-  targetName: string;
-  /** Called once the user confirms a cup really went down. */
-  onConfirmHit: () => void;
+  teamNames: [string, string];
+  /** Whose rack the camera is presumed to be pointing at when it opens. */
+  defaultTeam: 0 | 1;
+  /** Confirmed hit, against the team whose rack was actually watched. */
+  onConfirmHit: (againstTeam: 0 | 1) => void;
   onClose: () => void;
 }
 
@@ -42,7 +43,13 @@ interface AutoDetectProps {
  * have to work out. What is left is noticing that a patch stopped looking
  * like a cup, and that is what `lib/cupVision.ts` does.
  */
-export function AutoDetect({ cupCount, targetName, onConfirmHit, onClose }: AutoDetectProps) {
+export function AutoDetect({
+  cupCount,
+  teamNames,
+  defaultTeam,
+  onConfirmHit,
+  onClose,
+}: AutoDetectProps) {
   // Measured rather than taken from the window: the preview sits above the
   // tab bar, so the window is taller than the video. Sharing one box is what
   // keeps the rings and the sampled patches over the same cups.
@@ -55,8 +62,13 @@ export function AutoDetect({ cupCount, targetName, onConfirmHit, onClose }: Auto
   const feedback = useFeedback();
 
   const [mode, setMode] = useState<Mode>('aligning');
+  // Which rack the rings were placed on. Locked in at calibration and kept:
+  // whose turn it is changes constantly, the physical rack in frame does not,
+  // and only the rack can say who just lost a cup.
+  const [watchedTeam, setWatchedTeam] = useState<0 | 1>(defaultTeam);
   const [frame, setFrame] = useState<RackFrame>(DEFAULT_FRAME);
   const [detector, setDetector] = useState<DetectorState>(() => createDetector(cupCount));
+  const [pickedTeam, setPickedTeam] = useState<0 | 1>(defaultTeam);
   const [pending, setPending] = useState<number | null>(null);
   const [distances, setDistances] = useState<number[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -101,8 +113,9 @@ export function AutoDetect({ cupCount, targetName, onConfirmHit, onClose }: Auto
     }
     feedback.tap();
     setDetector(calibrate(createDetector(cupCount), samples));
+    setWatchedTeam(pickedTeam);
     setMode('watching');
-  }, [cupCount, feedback, flash, readFrame, t]);
+  }, [cupCount, feedback, flash, pickedTeam, readFrame, t]);
 
   // The watch loop. Deliberately an interval rather than a render loop: five
   // samples a second is plenty, and it keeps the phone cool.
@@ -142,7 +155,7 @@ export function AutoDetect({ cupCount, targetName, onConfirmHit, onClose }: Auto
     if (pending == null) return;
     setDetector((state) => acceptCup(state, pending));
     setPending(null);
-    onConfirmHit();
+    onConfirmHit(watchedTeam);
   };
 
   const dismiss = () => {
@@ -239,7 +252,27 @@ export function AutoDetect({ cupCount, targetName, onConfirmHit, onClose }: Auto
         {mode === 'aligning' ? (
           <>
             <Text style={styles.title}>{t('detect.alignTitle')}</Text>
-            <Text style={styles.body}>{t('detect.alignBody', { team: targetName })}</Text>
+            <Text style={styles.body}>{t('detect.alignBody')}</Text>
+            <View style={styles.teamRow}>
+              <Text style={styles.teamLabel} selectable={false}>
+                {t('detect.whichRack')}
+              </Text>
+              {([0, 1] as const).map((team) => (
+                <Pressable
+                  key={team}
+                  onPress={() => setPickedTeam(team)}
+                  style={[styles.teamChip, pickedTeam === team && styles.teamChipActive]}
+                >
+                  <Text
+                    style={[styles.teamText, pickedTeam === team && styles.teamTextActive]}
+                    selectable={false}
+                    numberOfLines={1}
+                  >
+                    {teamNames[team]}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
             <View style={styles.row}>
               <GlowButton
                 label={t('common.cancel')}
@@ -259,7 +292,9 @@ export function AutoDetect({ cupCount, targetName, onConfirmHit, onClose }: Auto
         ) : pending != null ? (
           <>
             <Text style={styles.title}>{t('detect.hitTitle')}</Text>
-            <Text style={styles.body}>{t('detect.hitBody', { team: targetName })}</Text>
+            <Text style={styles.body}>
+              {t('detect.hitBody', { team: teamNames[watchedTeam] })}
+            </Text>
             <View style={styles.row}>
               <GlowButton
                 label={t('detect.notAHit')}
@@ -342,6 +377,34 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   flexButton: { flex: 1 },
+  teamRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  teamLabel: {
+    fontFamily: fonts.label,
+    fontSize: 11,
+    color: colors.textMuted,
+  },
+  teamChip: {
+    flexShrink: 1,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderFaint,
+  },
+  teamChipActive: {
+    borderColor: colors.neon,
+    backgroundColor: colors.neonFaint,
+  },
+  teamText: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.textSecondary,
+  },
+  teamTextActive: { color: colors.neon },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',

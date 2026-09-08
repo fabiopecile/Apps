@@ -198,9 +198,10 @@ const STRINGS = {
   'detect.button': { de: 'Auto-Erkennung', en: 'Auto detect' },
   'detect.alignTitle': { de: 'Rack ausrichten', en: 'Line up the rack' },
   'detect.alignBody': {
-    de: 'Handy hinstellen und die Ringe auf die Becher von {team} schieben — ziehen zum Verschieben, zwei Finger zum Vergrößern.',
-    en: 'Stand the phone up and move the rings onto {team}’s cups — drag to move, pinch to resize.',
+    de: 'Handy hinstellen und die Ringe auf die echten Becher schieben — ziehen zum Verschieben, zwei Finger zum Vergrößern.',
+    en: 'Stand the phone up and move the rings onto the real cups — drag to move, pinch to resize.',
   },
+  'detect.whichRack': { de: 'Rack von', en: 'Rack of' },
   'detect.start': { de: 'Passt — los', en: 'Looks right — go' },
   'detect.watching': {
     de: 'Erkennung läuft · {left} Becher im Blick',
