@@ -58,14 +58,25 @@ export default function CameraTrackerScreen() {
     if ((shooter.streak + 1) % 3 === 0) feedback.streak();
   };
 
-  /** A detection the user confirmed counts exactly like a tap. */
-  const handleDetectedHit = () => {
+  /**
+   * A confirmed detection scores against the rack the camera was pointed at.
+   *
+   * `trackerHit` always credits whoever is active, so the turn has to agree
+   * with the rack first — a cup going down on Team 2's rack means Team 1 threw
+   * it, whatever the app currently believes about whose turn it is.
+   */
+  const handleDetectedHit = (againstTeam: TeamIndex) => {
     if (finished) return;
+    const scorer: TeamIndex = againstTeam === 0 ? 1 : 0;
+    if (tracker.activeTeam !== scorer) trackerSwitchTeam();
     trackerHit();
     trackDaily('trackerCups');
     feedback.cupHit();
     flashRef.current?.flash(colors.neon, 0.32);
-    if ((shooter.streak + 1) % 3 === 0) feedback.streak();
+    // Read back rather than reusing the render's copy, which predates the
+    // switch above.
+    const streak = useBeerpongStore.getState().tracker.teams[scorer].streak;
+    if (streak > 0 && streak % 3 === 0) feedback.streak();
   };
 
   const handleMiss = () => {
@@ -295,7 +306,8 @@ export default function CameraTrackerScreen() {
       {detectVisible && !finished ? (
         <AutoDetect
           cupCount={tracker.startCups}
-          targetName={target.name}
+          teamNames={[tracker.teams[0].name, tracker.teams[1].name]}
+          defaultTeam={targetIndex}
           onConfirmHit={handleDetectedHit}
           onClose={() => setDetectVisible(false)}
         />
