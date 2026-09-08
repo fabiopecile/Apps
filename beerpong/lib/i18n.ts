@@ -196,29 +196,34 @@ const STRINGS = {
   'tracker.throwingAt': { de: '{shooter} wirft auf {target}', en: '{shooter} is throwing at {target}' },
   // ------------------------------------------------------- cup auto-detect
   'detect.button': { de: 'Auto-Erkennung', en: 'Auto detect' },
-  'detect.alignTitle': { de: 'Rack ausrichten', en: 'Line up the rack' },
+  'detect.alignStep': { de: '{step}/2 · Rack von {team}', en: '{step}/2 · {team}’s rack' },
   'detect.alignBody': {
-    de: 'Handy hinstellen und die Ringe auf die echten Becher schieben — ziehen zum Verschieben, zwei Finger zum Vergrößern.',
-    en: 'Stand the phone up and move the rings onto the real cups — drag to move, pinch to resize.',
+    de: 'Ringe auf die echten Becher legen: ziehen zum Verschieben, zwei Finger zum Vergrößern und Drehen. Steht das Handy an der Längsseite, liegen die Racks quer — dafür ist der 90°-Knopf da.',
+    en: 'Put the rings on the real cups: drag to move, two fingers to resize and turn. With the phone at the side of the table the racks lie sideways — that is what the 90° button is for.',
   },
-  'detect.whichRack': { de: 'Rack von', en: 'Rack of' },
+  'detect.nextRack': { de: 'Weiter zum 2. Rack', en: 'On to rack 2' },
+  'detect.onlyOne': { de: 'Nur ein Rack', en: 'Just one rack' },
   'detect.start': { de: 'Passt — los', en: 'Looks right — go' },
-  'detect.watching': {
-    de: 'Erkennung läuft · {left} Becher im Blick',
-    en: 'Watching · {left} cups in view',
+  'detect.watchingBoth': {
+    de: 'Beide Racks im Blick · {left} Becher',
+    en: 'Watching both racks · {left} cups',
+  },
+  'detect.watchingOne': {
+    de: 'Ein Rack im Blick · {left} Becher',
+    en: 'Watching one rack · {left} cups',
   },
   'detect.recalibrate': { de: 'Neu ausrichten', en: 'Line up again' },
   'detect.stop': { de: 'Beenden', en: 'Stop' },
   'detect.hitTitle': { de: 'Becher weg — Treffer?', en: 'Cup gone — was that a hit?' },
   'detect.hitBody': {
-    de: 'Bestätige, dann zählt es als Treffer gegen {team}.',
-    en: 'Confirm and it counts as a hit against {team}.',
+    de: 'Bei {loser} fehlt ein Becher — bestätige, dann geht der Punkt an {scorer}.',
+    en: 'A cup is missing from {loser} — confirm and the point goes to {scorer}.',
   },
   'detect.wasAHit': { de: 'Treffer', en: 'Hit' },
   'detect.notAHit': { de: 'War nichts', en: 'False alarm' },
   'detect.disturbed': {
-    de: 'Kamera hat sich bewegt oder das Licht — bei Fehlern neu ausrichten.',
-    en: 'The camera or the light moved — line up again if it starts guessing.',
+    de: 'Rack von {team} komplett verändert — Kamera bewegt oder Licht gewechselt. Bei Fehlern neu ausrichten.',
+    en: '{team}’s rack changed all at once — camera moved or the light did. Line up again if it starts guessing.',
   },
   'detect.noFrame': {
     de: 'Kein Kamerabild — Zugriff erlaubt und Kamera frei?',

@@ -56,19 +56,34 @@ export interface DetectorState {
   streak: number[];
   /** Frames left to ignore per cup, after the user rejected a proposal. */
   cooldown: number[];
+  /**
+   * Which rack each cup belongs to. Two racks are watched at once when the
+   * camera sees the whole table, and they have to be judged separately — a
+   * hand over one rack is most of that rack but only half of everything, so a
+   * single pooled check would wave it through as ten individual hits.
+   */
+  rack: number[];
 }
 
 export type DetectorEvent =
-  | { type: 'cupGone'; index: number; distance: number }
+  | { type: 'cupGone'; index: number; rack: number; distance: number }
   /** Too much changed at once — the calibration can no longer be trusted. */
-  | { type: 'disturbed'; changed: number };
+  | { type: 'disturbed'; rack: number; changed: number };
 
-export function createDetector(cupCount: number): DetectorState {
+/**
+ * `racks` gives the cup count of each rack being watched, in the order their
+ * sample regions are concatenated: [10] for one rack, [10, 10] for both ends
+ * of the table.
+ */
+export function createDetector(racks: number[]): DetectorState {
+  const rack = racks.flatMap((count, index) => Array<number>(count).fill(index));
+  const total = rack.length;
   return {
     baseline: null,
-    watching: Array(cupCount).fill(true),
-    streak: Array(cupCount).fill(0),
-    cooldown: Array(cupCount).fill(0),
+    watching: Array(total).fill(true),
+    streak: Array(total).fill(0),
+    cooldown: Array(total).fill(0),
+    rack,
   };
 }
 
@@ -116,41 +131,46 @@ export function step(
 
   if (!state.baseline) return { state, events: [], distances };
 
-  const watchedCount = state.watching.filter(Boolean).length;
-  const changedNow = distances.filter(
-    (distance, i) => state.watching[i] && distance > config.threshold
-  ).length;
-
-  // A throw takes out one cup. Everything moving at once is the room, not
-  // the game — report it and start no streaks, or a passing shadow would
-  // empty the rack.
-  if (watchedCount > 0 && changedNow >= Math.ceil(watchedCount * config.disturbedRatio)) {
-    return {
-      state: { ...state, streak: state.streak.map(() => 0) },
-      events: [{ type: 'disturbed', changed: changedNow }],
-      distances,
-    };
-  }
-
+  const rackCount = state.rack.length > 0 ? Math.max(...state.rack) + 1 : 0;
   const streak = [...state.streak];
   const cooldown = [...state.cooldown];
   const events: DetectorEvent[] = [];
 
-  for (let i = 0; i < samples.length; i++) {
-    if (cooldown[i] > 0) {
-      cooldown[i] -= 1;
-      streak[i] = 0;
+  for (let rack = 0; rack < rackCount; rack++) {
+    const members = state.rack
+      .map((value, i) => (value === rack ? i : -1))
+      .filter((i) => i >= 0);
+    const watched = members.filter((i) => state.watching[i]);
+    const changedNow = watched.filter((i) => distances[i] > config.threshold).length;
+
+    // A throw takes out one cup. A whole rack moving at once is the room, not
+    // the game — report it and start no streaks, or a passing shadow would
+    // clear the table.
+    if (
+      watched.length > 0 &&
+      changedNow >= Math.ceil(watched.length * config.disturbedRatio)
+    ) {
+      events.push({ type: 'disturbed', rack, changed: changedNow });
+      for (const i of members) streak[i] = 0;
       continue;
     }
-    if (!state.watching[i]) continue;
 
-    if (distances[i] > config.threshold) {
-      streak[i] += 1;
-      if (streak[i] === config.confirmFrames) {
-        events.push({ type: 'cupGone', index: i, distance: distances[i] });
+    for (const i of members) {
+      if (cooldown[i] > 0) {
+        cooldown[i] -= 1;
+        streak[i] = 0;
+        continue;
       }
-    } else {
-      streak[i] = 0;
+      if (!state.watching[i]) continue;
+
+      if (distances[i] > config.threshold) {
+        streak[i] += 1;
+        if (streak[i] === config.confirmFrames) {
+          events.push({ type: 'cupGone', index: i, rack, distance: distances[i] });
+        }
+      } else {
+        streak[i] = 0;
+      }
     }
   }
 
