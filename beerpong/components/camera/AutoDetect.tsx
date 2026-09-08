@@ -5,7 +5,7 @@ import { runOnJS } from 'react-native-reanimated';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GlowButton } from '@/components/ui/GlowButton';
-import { RackOverlay, cupRegions, DEFAULT_FRAME, type RackFrame } from './RackOverlay';
+import { RackOverlay, cupRegions, DEFAULT_FRAMES, type RackFrame } from './RackOverlay';
 import {
   acceptCup,
   calibrate,
@@ -19,37 +19,35 @@ import { useT } from '@/lib/i18n';
 import { useFeedback } from '@/lib/feedback';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
-/** Roughly five looks per second — the rack is not going anywhere. */
+/** Roughly five looks per second — the racks are not going anywhere. */
 const SAMPLE_INTERVAL_MS = 180;
 
+type TeamIndex = 0 | 1;
 type Mode = 'aligning' | 'watching';
 
 interface AutoDetectProps {
   cupCount: number;
   teamNames: [string, string];
-  /** Whose rack the camera is presumed to be pointing at when it opens. */
-  defaultTeam: 0 | 1;
-  /** Confirmed hit, against the team whose rack was actually watched. */
-  onConfirmHit: (againstTeam: 0 | 1) => void;
+  /** Confirmed hit, against the team whose rack lost the cup. */
+  onConfirmHit: (againstTeam: TeamIndex) => void;
   onClose: () => void;
 }
 
 /**
- * Stage one of the camera feature: the app watches the rack and asks, the
+ * Stage one of the camera feature: the app watches the racks and asks, the
  * person decides.
  *
- * Alignment is the calibration — once the rings sit over the real cups, the
- * app knows where to look, which is the part a trained model would otherwise
- * have to work out. What is left is noticing that a patch stopped looking
- * like a cup, and that is what `lib/cupVision.ts` does.
+ * Both ends of the table can be watched at once, which is what makes the
+ * scoring unambiguous — a cup going down on Team 1's rack means Team 2 threw
+ * it, no matter what the app believes about whose turn it is. Only one rack in
+ * frame still works; the second is skippable.
+ *
+ * Alignment is the calibration. Once the rings sit over the real cups the app
+ * knows where to look, which is the part a trained model would otherwise have
+ * to work out; the rest is noticing that a patch stopped looking like a cup,
+ * and that is `lib/cupVision.ts`.
  */
-export function AutoDetect({
-  cupCount,
-  teamNames,
-  defaultTeam,
-  onConfirmHit,
-  onClose,
-}: AutoDetectProps) {
+export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoDetectProps) {
   // Measured rather than taken from the window: the preview sits above the
   // tab bar, so the window is taller than the video. Sharing one box is what
   // keeps the rings and the sampled patches over the same cups.
@@ -62,13 +60,15 @@ export function AutoDetect({
   const feedback = useFeedback();
 
   const [mode, setMode] = useState<Mode>('aligning');
-  // Which rack the rings were placed on. Locked in at calibration and kept:
-  // whose turn it is changes constantly, the physical rack in frame does not,
-  // and only the rack can say who just lost a cup.
-  const [watchedTeam, setWatchedTeam] = useState<0 | 1>(defaultTeam);
-  const [frame, setFrame] = useState<RackFrame>(DEFAULT_FRAME);
-  const [detector, setDetector] = useState<DetectorState>(() => createDetector(cupCount));
-  const [pickedTeam, setPickedTeam] = useState<0 | 1>(defaultTeam);
+  /** Which rack is being lined up: 0 first, then 1. */
+  const [aligning, setAligning] = useState<TeamIndex>(0);
+  const [frames, setFrames] = useState<[RackFrame, RackFrame]>(() => [
+    { ...DEFAULT_FRAMES[0] },
+    { ...DEFAULT_FRAMES[1] },
+  ]);
+  /** Teams whose racks ended up being watched, in sampling order. */
+  const [racks, setRacks] = useState<TeamIndex[]>([0, 1]);
+  const [detector, setDetector] = useState<DetectorState>(() => createDetector([cupCount]));
   const [pending, setPending] = useState<number | null>(null);
   const [distances, setDistances] = useState<number[]>([]);
   const [notice, setNotice] = useState<string | null>(null);
@@ -76,12 +76,16 @@ export function AutoDetect({
   const samplerRef = useRef<FrameSampler | null>(null);
   const detectorRef = useRef(detector);
   const pendingRef = useRef<number | null>(null);
-  const frameRef = useRef(frame);
+  const framesRef = useRef(frames);
+  const racksRef = useRef(racks);
+  const sizeRef = useRef(size);
   const noticeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   detectorRef.current = detector;
   pendingRef.current = pending;
-  frameRef.current = frame;
+  framesRef.current = frames;
+  racksRef.current = racks;
+  sizeRef.current = size;
 
   useEffect(() => {
     samplerRef.current = createFrameSampler();
@@ -95,27 +99,39 @@ export function AutoDetect({
   const flash = useCallback((message: string) => {
     setNotice(message);
     if (noticeTimer.current) clearTimeout(noticeTimer.current);
-    noticeTimer.current = setTimeout(() => setNotice(null), 2600);
+    noticeTimer.current = setTimeout(() => setNotice(null), 2800);
   }, []);
 
-  const readFrame = useCallback(() => {
-    const sampler = samplerRef.current;
-    if (!sampler) return null;
-    return sampler.sample(cupRegions(frameRef.current, cupCount));
-  }, [cupCount]);
+  /** Every watched rack's patches, laid end to end in `racks` order. */
+  const readFrame = useCallback(
+    (forRacks: TeamIndex[]) => {
+      const sampler = samplerRef.current;
+      if (!sampler) return null;
+      const aspect = sizeRef.current.width / Math.max(1, sizeRef.current.height);
+      const regions = forRacks.flatMap((team) =>
+        cupRegions(framesRef.current[team], cupCount, aspect)
+      );
+      return sampler.sample(regions);
+    },
+    [cupCount]
+  );
 
-  /** Locks in what a full rack looks like and starts watching. */
-  const startWatching = useCallback(() => {
-    const samples = readFrame();
-    if (!samples) {
-      flash(t('detect.noFrame'));
-      return;
-    }
-    feedback.tap();
-    setDetector(calibrate(createDetector(cupCount), samples));
-    setWatchedTeam(pickedTeam);
-    setMode('watching');
-  }, [cupCount, feedback, flash, pickedTeam, readFrame, t]);
+  /** Locks in what full racks look like and starts watching. */
+  const startWatching = useCallback(
+    (forRacks: TeamIndex[]) => {
+      const samples = readFrame(forRacks);
+      if (!samples) {
+        flash(t('detect.noFrame'));
+        return;
+      }
+      feedback.tap();
+      setRacks(forRacks);
+      racksRef.current = forRacks;
+      setDetector(calibrate(createDetector(forRacks.map(() => cupCount)), samples));
+      setMode('watching');
+    },
+    [cupCount, feedback, flash, readFrame, t]
+  );
 
   // The watch loop. Deliberately an interval rather than a render loop: five
   // samples a second is plenty, and it keeps the phone cool.
@@ -127,7 +143,7 @@ export function AutoDetect({
       // would queue up behind itself.
       if (pendingRef.current != null) return;
 
-      const samples = readFrame();
+      const samples = readFrame(racksRef.current);
       if (!samples) return;
 
       const result = step(detectorRef.current, samples);
@@ -141,7 +157,7 @@ export function AutoDetect({
           break;
         }
         if (event.type === 'disturbed') {
-          flash(t('detect.disturbed'));
+          flash(t('detect.disturbed', { team: teamNames[racksRef.current[event.rack]] }));
           break;
         }
       }
@@ -149,13 +165,17 @@ export function AutoDetect({
 
     const id = setInterval(tick, SAMPLE_INTERVAL_MS);
     return () => clearInterval(id);
-  }, [mode, readFrame, feedback, flash, t]);
+  }, [mode, readFrame, feedback, flash, t, teamNames]);
+
+  /** Sampling order maps straight back to the team that lost the cup. */
+  const teamForIndex = (index: number): TeamIndex => racks[Math.floor(index / cupCount)];
 
   const confirm = () => {
     if (pending == null) return;
+    const team = teamForIndex(pending);
     setDetector((state) => acceptCup(state, pending));
     setPending(null);
-    onConfirmHit(watchedTeam);
+    onConfirmHit(team);
   };
 
   const dismiss = () => {
@@ -165,23 +185,37 @@ export function AutoDetect({
     setPending(null);
   };
 
-  // Drag to move the guide, pinch to size it. Committed to React state as it
-  // moves so the sampler and the drawing never disagree about where the rack
-  // is; it only runs while aligning.
-  const applyPan = (dx: number, dy: number) => {
-    setFrame((current) => ({
-      ...current,
-      x: clamp(current.x + dx / size.width, 0.1, 0.9),
-      y: clamp(current.y + dy / size.height, 0.1, 0.9),
-    }));
+  // Drag, pinch and twist the rack being aligned. Committed to React state as
+  // it moves so the sampler and the drawing never disagree about where the
+  // rack is; it only runs while aligning.
+  const editFrame = (change: (frame: RackFrame) => RackFrame) => {
+    setFrames((current) => {
+      const next: [RackFrame, RackFrame] = [{ ...current[0] }, { ...current[1] }];
+      next[aligning] = change(next[aligning]);
+      return next;
+    });
   };
 
-  const applyScale = (factor: number) => {
-    setFrame((current) => ({
-      ...current,
-      width: clamp(current.width * factor, 0.2, 0.98),
-      height: clamp(current.height * factor, 0.12, 0.8),
+  const applyPan = (dx: number, dy: number) =>
+    editFrame((frame) => ({
+      ...frame,
+      x: clamp(frame.x + dx / size.width, 0.05, 0.95),
+      y: clamp(frame.y + dy / size.height, 0.05, 0.95),
     }));
+
+  const applyScale = (factor: number) =>
+    editFrame((frame) => ({
+      ...frame,
+      width: clamp(frame.width * factor, 0.12, 0.98),
+      height: clamp(frame.height * factor, 0.08, 0.9),
+    }));
+
+  const applyRotation = (delta: number) =>
+    editFrame((frame) => ({ ...frame, rotation: frame.rotation + delta }));
+
+  const turnQuarter = () => {
+    feedback.tap();
+    applyRotation(Math.PI / 2);
   };
 
   const pan = Gesture.Pan()
@@ -196,7 +230,13 @@ export function AutoDetect({
       runOnJS(applyScale)(event.scaleChange);
     });
 
-  const gesture = Gesture.Simultaneous(pan, pinch);
+  const rotate = Gesture.Rotation()
+    .enabled(mode === 'aligning')
+    .onChange((event) => {
+      runOnJS(applyRotation)(event.rotationChange);
+    });
+
+  const gesture = Gesture.Simultaneous(pan, pinch, rotate);
 
   if (!FRAME_SAMPLING_SUPPORTED) {
     return (
@@ -208,17 +248,33 @@ export function AutoDetect({
     );
   }
 
-  const overlay = (
-    <RackOverlay
-      frame={frame}
-      cupCount={cupCount}
-      size={size}
-      watching={detector.watching}
-      distances={distances}
-      mode={mode}
-      highlightIndex={pending}
-    />
-  );
+  const watchedRacks = mode === 'aligning' ? ([0, 1] as TeamIndex[]) : racks;
+  const overlay = watchedRacks.map((team, position) => {
+    const offset = position * cupCount;
+    // While aligning, the rack not being touched is drawn dim for context.
+    const dim = mode === 'aligning' && team !== aligning;
+    return (
+      <RackOverlay
+        key={team}
+        frame={frames[team]}
+        cupCount={cupCount}
+        size={size}
+        watching={
+          mode === 'watching'
+            ? detector.watching.slice(offset, offset + cupCount)
+            : Array(cupCount).fill(true)
+        }
+        distances={mode === 'watching' ? distances.slice(offset, offset + cupCount) : undefined}
+        mode={mode}
+        dim={dim}
+        highlightIndex={
+          pending != null && pending >= offset && pending < offset + cupCount
+            ? pending - offset
+            : null
+        }
+      />
+    );
+  });
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none" onLayout={onLayout}>
@@ -251,49 +307,65 @@ export function AutoDetect({
       <View style={styles.panel}>
         {mode === 'aligning' ? (
           <>
-            <Text style={styles.title}>{t('detect.alignTitle')}</Text>
-            <Text style={styles.body}>{t('detect.alignBody')}</Text>
-            <View style={styles.teamRow}>
-              <Text style={styles.teamLabel} selectable={false}>
-                {t('detect.whichRack')}
+            <View style={styles.stepRow}>
+              <Text style={styles.title}>
+                {t('detect.alignStep', { step: aligning + 1, team: teamNames[aligning] })}
               </Text>
-              {([0, 1] as const).map((team) => (
-                <Pressable
-                  key={team}
-                  onPress={() => setPickedTeam(team)}
-                  style={[styles.teamChip, pickedTeam === team && styles.teamChipActive]}
-                >
-                  <Text
-                    style={[styles.teamText, pickedTeam === team && styles.teamTextActive]}
-                    selectable={false}
-                    numberOfLines={1}
-                  >
-                    {teamNames[team]}
-                  </Text>
-                </Pressable>
-              ))}
+              <Pressable onPress={turnQuarter} style={styles.turnButton} hitSlop={6}>
+                <Ionicons name="refresh" size={14} color={colors.neon} />
+                <Text style={styles.turnText} selectable={false}>
+                  90°
+                </Text>
+              </Pressable>
             </View>
+            <Text style={styles.body}>{t('detect.alignBody')}</Text>
             <View style={styles.row}>
-              <GlowButton
-                label={t('common.cancel')}
-                variant="ghost"
-                size="sm"
-                onPress={onClose}
-                style={styles.flexButton}
-              />
-              <GlowButton
-                label={t('detect.start')}
-                size="sm"
-                onPress={startWatching}
-                style={styles.flexButton}
-              />
+              {aligning === 0 ? (
+                <>
+                  <GlowButton
+                    label={t('common.cancel')}
+                    variant="ghost"
+                    size="sm"
+                    onPress={onClose}
+                    style={styles.flexButton}
+                  />
+                  <GlowButton
+                    label={t('detect.nextRack')}
+                    size="sm"
+                    onPress={() => {
+                      feedback.tap();
+                      setAligning(1);
+                    }}
+                    style={styles.flexButton}
+                  />
+                </>
+              ) : (
+                <>
+                  <GlowButton
+                    label={t('detect.onlyOne')}
+                    variant="ghost"
+                    size="sm"
+                    onPress={() => startWatching([0])}
+                    style={styles.flexButton}
+                  />
+                  <GlowButton
+                    label={t('detect.start')}
+                    size="sm"
+                    onPress={() => startWatching([0, 1])}
+                    style={styles.flexButton}
+                  />
+                </>
+              )}
             </View>
           </>
         ) : pending != null ? (
           <>
             <Text style={styles.title}>{t('detect.hitTitle')}</Text>
             <Text style={styles.body}>
-              {t('detect.hitBody', { team: teamNames[watchedTeam] })}
+              {t('detect.hitBody', {
+                loser: teamNames[teamForIndex(pending)],
+                scorer: teamNames[teamForIndex(pending) === 0 ? 1 : 0],
+              })}
             </Text>
             <View style={styles.row}>
               <GlowButton
@@ -316,13 +388,19 @@ export function AutoDetect({
             <View style={styles.statusRow}>
               <View style={styles.dot} />
               <Text style={styles.status} selectable={false}>
-                {t('detect.watching', {
+                {t(racks.length > 1 ? 'detect.watchingBoth' : 'detect.watchingOne', {
                   left: detector.watching.filter(Boolean).length,
                 })}
               </Text>
             </View>
             <View style={styles.row}>
-              <Pressable onPress={() => setMode('aligning')} style={styles.linkButton}>
+              <Pressable
+                onPress={() => {
+                  setAligning(0);
+                  setMode('aligning');
+                }}
+                style={styles.linkButton}
+              >
                 <Ionicons name="scan-outline" size={14} color={colors.neon} />
                 <Text style={styles.link} selectable={false}>
                   {t('detect.recalibrate')}
@@ -360,10 +438,32 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
     ...glow('soft'),
   },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+  },
   title: {
+    flex: 1,
     fontFamily: fonts.headingBlack,
     fontSize: 17,
     color: colors.textPrimary,
+  },
+  turnButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.neon,
+  },
+  turnText: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.neon,
   },
   body: {
     fontFamily: fonts.bodyRegular,
@@ -377,34 +477,6 @@ const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   flexButton: { flex: 1 },
-  teamRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  teamLabel: {
-    fontFamily: fonts.label,
-    fontSize: 11,
-    color: colors.textMuted,
-  },
-  teamChip: {
-    flexShrink: 1,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.borderFaint,
-  },
-  teamChipActive: {
-    borderColor: colors.neon,
-    backgroundColor: colors.neonFaint,
-  },
-  teamText: {
-    fontFamily: fonts.label,
-    fontSize: 12,
-    color: colors.textSecondary,
-  },
-  teamTextActive: { color: colors.neon },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',

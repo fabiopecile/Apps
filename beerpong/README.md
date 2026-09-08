@@ -152,22 +152,36 @@ ob Installationen aus dieser Quelle erlaubt sind — bestätigen, fertig.
 Im Tracker gibt es oben das Scan-Symbol. Damit muss die App nicht mehr bei
 jedem Treffer angetippt werden.
 
+**Wo das Handy hin muss:** an ein **Tischende**, erhöht und leicht nach unten
+geneigt, sodass beide Racks im Bild sind — das nahe unten, das ferne oben.
+Von der Seite zu filmen klingt naheliegend, funktioniert im Hochformat aber
+nicht: der sichtbare Ausschnitt ist viel zu schmal für einen ganzen Tisch.
+
 **So läuft es ab:**
 
 1. Handy hinstellen — angelehnt oder auf einem Stativ, es darf sich nicht mehr
    bewegen
-2. Scan-Symbol antippen, dann die Ringe auf die echten Becher schieben
-   (ziehen zum Verschieben, zwei Finger zum Vergrößern)
-3. **Passt — los** drücken. Ab jetzt beobachtet die App die Becher
-4. Verschwindet einer, fragt sie **„Becher weg — Treffer?"** — bestätigen oder
-   verwerfen
+2. Scan-Symbol antippen. Schritt **1/2**: Ringe auf das erste Rack legen
+   (ziehen zum Verschieben, zwei Finger zum Vergrößern und Drehen, **90°** für
+   Vierteldrehungen)
+3. **Weiter zum 2. Rack**, dasselbe für die andere Seite. Ist nur ein Rack im
+   Bild: **Nur ein Rack** drücken
+4. **Passt — los**. Ab jetzt beobachtet die App beide Racks
+5. Verschwindet ein Becher, fragt sie **„Becher weg — Treffer?"** und sagt
+   dazu, bei welchem Team er fehlt — bestätigen oder verwerfen
 
 Antippen funktioniert weiter wie bisher; die Erkennung ist nur eine Abkürzung.
 
+**Warum beide Racks besser sind:** Der Punkt geht immer an das Team, dessen
+Rack *nicht* verloren hat — unabhängig davon, wen die App gerade als „am Zug"
+führt. Mit nur einem Rack im Bild ist bloß die Hälfte des Spiels automatisch.
+
 **Warum sie nachfragt statt selbst zu zählen:** Am Tisch stehen Leute, Hände
 greifen ins Bild, jemand räumt um. Die Nachfrage kostet einen Knopfdruck und
-verhindert falsche Punkte. Bewegt sich die Kamera oder ändert sich das Licht
-stark, merkt die App das und meldet es, statt das Rack leerzuräumen.
+verhindert falsche Punkte. Verändert sich ein ganzes Rack auf einmal, meldet
+die App das als Störung — und zwar **pro Rack**: eine Hand über einem Rack ist
+zwar nur die Hälfte aller Becher, aber das komplette Rack, und würde bei einer
+gemeinsamen Prüfung als fünf einzelne Treffer durchrutschen.
 
 **Einschränkungen, ehrlich:**
 
@@ -180,19 +194,22 @@ stark, merkt die App das und meldet es, statt das Rack leerzuräumen.
 - **Das Handy muss stillstehen.** Wackelt es, stimmt die Ausrichtung nicht mehr
   → „Neu ausrichten" drücken.
 - **Nach einem Re-Rack neu ausrichten**, weil die Becher dann woanders stehen.
-- Es wird **ein Rack beobachtet** — das der Gegner-Mannschaft.
+- **Das ferne Rack ist klein im Bild.** Je länger der Tisch, desto weniger
+  Pixel pro Becher — irgendwann reicht es nicht mehr. Wie weit das trägt, zeigt
+  erst der echte Tisch.
 
 **Getestet mit:**
 
 ```bash
-npm run test:vision          # 13 Prüfungen der Erkennungslogik, ohne Kamera
-python3 tools/gen_test_table_video.py table.y4m   # Testvideo für den Browser
+npm run test:vision                                    # 17 Prüfungen der Logik, ohne Kamera
+python3 tools/gen_test_table_video.py t.y4m one        # Testvideo: ein Rack
+python3 tools/gen_test_table_video.py t.y4m both       # Testvideo: beide Racks
 ```
 
-Das Testvideo zeigt ein Rack, über das erst eine Hand streicht (darf **nicht**
-zählen) und aus dem danach ein Becher verschwindet (muss **genau einmal**
-melden). Chromium kann es per
-`--use-file-for-fake-video-capture=table.y4m` als Kamera ausgeben.
+Die Testvideos zeigen Racks, über die erst eine Hand streicht (darf **nicht**
+zählen) und aus denen danach Becher verschwinden (müssen **genau einmal** und
+dem **richtigen Team** gemeldet werden). Chromium kann sie per
+`--use-file-for-fake-video-capture=t.y4m` als Kamera ausgeben.
 
 ## Wenn etwas nicht läuft
 
@@ -223,8 +240,9 @@ melden). Chromium kann es per
   - Division Rivals (Division 10 bis 1, Auf- und Abstieg)
   - Weekend League (10 Spiele, Belohnungsstufen Bronze bis Elite)
   - Bounce-Wurf (schwerer, nimmt zwei Cups) und Re-Rack im Spiel
-- **Halbautomatische Becher-Erkennung** (Web-Version) — Rack einmal ausrichten,
-  danach meldet die App jeden verschwundenen Becher und fragt nach
+- **Halbautomatische Becher-Erkennung** (Web-Version) — beide Racks einmal
+  ausrichten, danach meldet die App jeden verschwundenen Becher, ordnet ihn dem
+  richtigen Team zu und fragt nach
 - **Aufgaben & Erfolge** — drei Tagesaufgaben, zehn Saison-Stufen und neun
   modusübergreifende Erfolge, alle mit Coin-Belohnung
 - **Profil** — Statistiken über beide Modi, Sound-, Haptik- und Sprachschalter

@@ -68,13 +68,13 @@ check('layout stays inside its box', () => {
 
 console.log('detection');
 check('a steady rack reports nothing', () => {
-  let state = calibrate(createDetector(10), full(10));
+  let state = calibrate(createDetector([10]), full(10));
   const { events } = run(state, Array.from({ length: 30 }, () => full(10)));
   assert.deepEqual(events, []);
 });
 
 check('a removed cup is reported once, not every frame', () => {
-  let state = calibrate(createDetector(10), full(10));
+  let state = calibrate(createDetector([10]), full(10));
   const frames = Array.from({ length: 20 }, () => {
     const f = full(10);
     f[3] = { ...EMPTY };
@@ -87,7 +87,7 @@ check('a removed cup is reported once, not every frame', () => {
 });
 
 check('a brief flicker never reports', () => {
-  let state = calibrate(createDetector(10), full(10));
+  let state = calibrate(createDetector([10]), full(10));
   // Changed for two frames — below the four-frame confirmation.
   const frames = [full(10), full(10)].concat(
     [0, 1].map(() => {
@@ -102,7 +102,7 @@ check('a brief flicker never reports', () => {
 });
 
 check('a hand over the whole rack is called a disturbance, not ten hits', () => {
-  let state = calibrate(createDetector(10), full(10));
+  let state = calibrate(createDetector([10]), full(10));
   const frames = Array.from({ length: 10 }, () => Array.from({ length: 10 }, () => ({ ...HAND })));
   const { events } = run(state, frames);
   assert.ok(events.every((e) => e.type === 'disturbed'), 'only disturbance events');
@@ -110,7 +110,7 @@ check('a hand over the whole rack is called a disturbance, not ten hits', () => 
 });
 
 check('a hand over one cup can be rejected and then stays quiet', () => {
-  let state = calibrate(createDetector(10), full(10));
+  let state = calibrate(createDetector([10]), full(10));
   const covered = () => {
     const f = full(10);
     f[7] = { ...HAND };
@@ -127,7 +127,7 @@ check('a hand over one cup can be rejected and then stays quiet', () => {
 });
 
 check('an accepted cup stops being watched', () => {
-  let state = calibrate(createDetector(10), full(10));
+  let state = calibrate(createDetector([10]), full(10));
   const missing = () => {
     const f = full(10);
     f[0] = { ...EMPTY };
@@ -140,7 +140,7 @@ check('an accepted cup stops being watched', () => {
 });
 
 check('a second cup is still found after the first was scored', () => {
-  let state = calibrate(createDetector(10), full(10));
+  let state = calibrate(createDetector([10]), full(10));
   const oneGone = () => {
     const f = full(10);
     f[0] = { ...EMPTY };
@@ -160,13 +160,13 @@ check('a second cup is still found after the first was scored', () => {
 });
 
 check('nothing is reported before calibration', () => {
-  const state = createDetector(10);
+  const state = createDetector([10]);
   const { events } = run(state, [Array.from({ length: 10 }, () => ({ ...EMPTY }))]);
   assert.deepEqual(events, []);
 });
 
 check('a dimmer room does not empty the rack', () => {
-  let state = calibrate(createDetector(10), full(10));
+  let state = calibrate(createDetector([10]), full(10));
   // Everything drops ~18% in brightness at once.
   const dim = () =>
     Array.from({ length: 10 }, () => ({
@@ -177,6 +177,75 @@ check('a dimmer room does not empty the rack', () => {
     }));
   const { events } = run(state, Array.from({ length: 12 }, dim));
   assert.equal(events.filter((e) => e.type === 'cupGone').length, 0);
+});
+
+console.log('two racks');
+const both = (n) => full(2 * n);
+
+check('a cup on the second rack reports against the second rack', () => {
+  let state = calibrate(createDetector([10, 10]), both(10));
+  const frames = Array.from({ length: 8 }, () => {
+    const f = both(10);
+    f[13] = { ...EMPTY };
+    return f;
+  });
+  const { events } = run(state, frames);
+  const gone = events.filter((e) => e.type === 'cupGone');
+  assert.equal(gone.length, 1);
+  assert.equal(gone[0].index, 13);
+  assert.equal(gone[0].rack, 1, 'attributed to the second rack');
+});
+
+check('a hand over one of two racks is a disturbance, not five hits', () => {
+  // This is the case a pooled check would miss: ten of twenty cups changing
+  // is only half of everything, but it is the whole of one rack.
+  let state = calibrate(createDetector([10, 10]), both(10));
+  const frames = Array.from({ length: 10 }, () => {
+    const f = both(10);
+    for (let i = 0; i < 10; i++) f[i] = { ...HAND };
+    return f;
+  });
+  const { events } = run(state, frames);
+  assert.equal(events.filter((e) => e.type === 'cupGone').length, 0, 'no hits');
+  const disturbed = events.filter((e) => e.type === 'disturbed');
+  assert.ok(disturbed.length > 0, 'reported as a disturbance');
+  assert.ok(disturbed.every((e) => e.rack === 0), 'only the covered rack');
+});
+
+check('one disturbed rack does not deafen the other', () => {
+  let state = calibrate(createDetector([10, 10]), both(10));
+  const frames = Array.from({ length: 8 }, () => {
+    const f = both(10);
+    for (let i = 0; i < 10; i++) f[i] = { ...HAND };  // rack 0 covered
+    f[16] = { ...EMPTY };                              // real hit on rack 1
+    return f;
+  });
+  const { events } = run(state, frames);
+  const gone = events.filter((e) => e.type === 'cupGone');
+  assert.equal(gone.length, 1, 'the good rack still scores');
+  assert.equal(gone[0].rack, 1);
+});
+
+check('both racks can lose a cup in the same session', () => {
+  let state = calibrate(createDetector([10, 10]), both(10));
+  const first = () => {
+    const f = both(10);
+    f[2] = { ...EMPTY };
+    return f;
+  };
+  let result = run(state, Array.from({ length: 6 }, first));
+  assert.equal(result.events[0].rack, 0);
+  state = acceptCup(result.state, 2);
+
+  const second = () => {
+    const f = first();
+    f[15] = { ...EMPTY };
+    return f;
+  };
+  result = run(state, Array.from({ length: 8 }, second));
+  const gone = result.events.filter((e) => e.type === 'cupGone');
+  assert.equal(gone.length, 1);
+  assert.equal(gone[0].rack, 1);
 });
 
 console.log(`\n${passed} checks passed`);

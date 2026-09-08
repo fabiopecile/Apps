@@ -20,9 +20,33 @@ export interface RackFrame {
   width: number;
   /** Height, as a fraction of the preview height. */
   height: number;
+  /**
+   * Radians, clockwise. Filmed from the side of the table a rack does not
+   * point up the screen, it points across it — without this the rings can
+   * never be made to sit on the cups.
+   */
+  rotation: number;
 }
 
-export const DEFAULT_FRAME: RackFrame = { x: 0.5, y: 0.52, width: 0.62, height: 0.34 };
+/** One rack, phone standing at the end of the table. */
+export const DEFAULT_FRAME: RackFrame = {
+  x: 0.5,
+  y: 0.52,
+  width: 0.62,
+  height: 0.34,
+  rotation: 0,
+};
+
+/**
+ * Both racks, phone standing at one end of the table and tilted down: the near
+ * rack fills the lower half pointing away, the far rack sits above it pointing
+ * back. Filming from the side is the obvious idea and the wrong one — a
+ * portrait frame is far too narrow to hold a whole table sideways.
+ */
+export const DEFAULT_FRAMES: [RackFrame, RackFrame] = [
+  { x: 0.5, y: 0.72, width: 0.44, height: 0.3, rotation: Math.PI },
+  { x: 0.5, y: 0.28, width: 0.44, height: 0.3, rotation: 0 },
+];
 
 /** Radius of a cup's sample patch, as a fraction of the preview width. */
 export function cupRadius(frame: RackFrame, cupCount: number): number {
@@ -30,14 +54,29 @@ export function cupRadius(frame: RackFrame, cupCount: number): number {
   return Math.max(0.02, (frame.width / columns) * 0.34);
 }
 
-/** Where each cup's patch sits in the preview, given the aligned frame. */
-export function cupRegions(frame: RackFrame, cupCount: number) {
+/**
+ * Where each cup's patch sits in the preview, given the aligned frame.
+ *
+ * `aspect` is the preview's width divided by its height. Rotation has to
+ * happen in real screen proportions, otherwise a quarter turn skews the rack
+ * — the same offset means different distances horizontally and vertically
+ * once it is expressed as a fraction of each axis.
+ */
+export function cupRegions(frame: RackFrame, cupCount: number, aspect = 1) {
   const radius = cupRadius(frame, cupCount);
-  return rackLayout(cupCount).map((point) => ({
-    x: frame.x + (point.x - 0.5) * frame.width,
-    y: frame.y + (point.y - 0.5) * frame.height,
-    radius,
-  }));
+  const cos = Math.cos(frame.rotation);
+  const sin = Math.sin(frame.rotation);
+
+  return rackLayout(cupCount).map((point) => {
+    const localX = (point.x - 0.5) * frame.width;
+    // Into the horizontal scale, rotate, then back — so a turn keeps its shape.
+    const localY = (point.y - 0.5) * frame.height / aspect;
+    return {
+      x: frame.x + (localX * cos - localY * sin),
+      y: frame.y + (localX * sin + localY * cos) * aspect,
+      radius,
+    };
+  });
 }
 
 interface RackOverlayProps {
@@ -50,6 +89,8 @@ interface RackOverlayProps {
   /** 0-1 per cup, from the detector. Only shown while calibrating. */
   distances?: number[];
   mode: 'aligning' | 'watching';
+  /** Drawn faint: this is the rack the user is not currently lining up. */
+  dim?: boolean;
   /** Highlighted while the user answers a proposal. */
   highlightIndex?: number | null;
 }
@@ -68,12 +109,13 @@ export function RackOverlay({
   watching,
   distances,
   mode,
+  dim = false,
   highlightIndex,
 }: RackOverlayProps) {
   const pulse = useSharedValue(0);
 
   useEffect(() => {
-    if (mode !== 'aligning') {
+    if (mode !== 'aligning' || dim) {
       pulse.value = withTiming(0, { duration: 200 });
       return;
     }
@@ -84,13 +126,13 @@ export function RackOverlay({
       ),
       -1
     );
-  }, [mode, pulse]);
+  }, [mode, dim, pulse]);
 
   const pulseStyle = useAnimatedStyle(() => ({
     opacity: 0.55 + pulse.value * 0.45,
   }));
 
-  const regions = cupRegions(frame, cupCount);
+  const regions = cupRegions(frame, cupCount, size.width / Math.max(1, size.height));
   const radiusPx = cupRadius(frame, cupCount) * size.width;
 
   return (
@@ -120,9 +162,9 @@ export function RackOverlay({
                 borderRadius: radiusPx,
                 borderColor: colour,
                 borderWidth: active ? 3 : scored ? 1 : 2,
-                opacity: scored ? 0.28 : 1,
+                opacity: scored ? 0.28 : dim ? 0.35 : 1,
               },
-              mode === 'aligning' && pulseStyle,
+              mode === 'aligning' && !dim && pulseStyle,
             ]}
           />
         );
@@ -134,9 +176,10 @@ export function RackOverlay({
             styles.bounds,
             {
               left: (frame.x - frame.width / 2) * size.width,
-              top: (frame.y - frame.height / 2) * size.height,
+              top: frame.y * size.height - (frame.width * size.width) / 2 * (frame.height / frame.width),
               width: frame.width * size.width,
-              height: frame.height * size.height,
+              height: (frame.height / frame.width) * frame.width * size.width,
+              transform: [{ rotate: `${frame.rotation}rad` }],
             },
           ]}
         >

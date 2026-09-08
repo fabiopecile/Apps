@@ -307,7 +307,6 @@ export default function CameraTrackerScreen() {
         <AutoDetect
           cupCount={tracker.startCups}
           teamNames={[tracker.teams[0].name, tracker.teams[1].name]}
-          defaultTeam={targetIndex}
           onConfirmHit={handleDetectedHit}
           onClose={() => setDetectVisible(false)}
         />
