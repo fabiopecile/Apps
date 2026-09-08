@@ -68,22 +68,17 @@ export default function MatchScreen() {
   const isPassPlay = mode === 'passplay';
 
   const { width, height } = useWindowDimensions();
-  // Sideways there is no vertical room to stack table over buttons, so the
-  // table takes the left and everything else moves into a column beside it.
+  const tableWidth = width - spacing.lg * 2;
+  // Arcade is a portrait game: the table's landmarks — net, ball, both racks —
+  // sit at fixed distances down a tall board, and swiping up at a rack only
+  // reads right that way round. Sideways the game asks to be turned back
+  // (see `landscape` below) rather than rearranging itself.
   //
-  // Cropping the viewport is not an option: the table's landmarks — net, ball,
-  // both racks — sit at fixed distances, and a 294pt window would leave the
-  // ball off screen. So the full viewport is rendered and then scaled down to
-  // whatever height there is. Every coordinate inside stays as it was.
+  // The clamp is for short phones, not for landscape: on a 667pt screen the
+  // full viewport would push the action buttons under the tab bar. The table
+  // just shows a little less of itself; the camera pan already scrolls it.
   const landscape = width > height;
-  const stageHeight = landscape
-    ? Math.max(200, height - 96)
-    : Math.min(VIEWPORT_HEIGHT, Math.max(220, height - 260));
-  const stageScale = landscape ? Math.min(1, stageHeight / VIEWPORT_HEIGHT) : 1;
-  const viewportHeight = landscape ? VIEWPORT_HEIGHT : stageHeight;
-  const tableWidth = landscape
-    ? Math.min(430, (width * 0.55) / stageScale)
-    : width - spacing.lg * 2;
+  const viewportHeight = Math.min(VIEWPORT_HEIGHT, Math.max(220, height - 280));
   const opponentCups = useMemo(() => generateOpponentRack(tableWidth), [tableWidth]);
   const playerCups = useMemo(() => generatePlayerRack(tableWidth), [tableWidth]);
 
@@ -462,24 +457,6 @@ export default function MatchScreen() {
 
   const showResultCard = roundResult != null && celebration == null;
 
-  // Above the table in portrait, beside it in landscape — same markup either
-  // way, so the two layouts can never drift apart.
-  const scoreBlock = (
-    <View style={[styles.scoreRow, landscape && styles.scoreRowLandscape]}>
-      <RackBadge label={setup.name} count={opponentRemaining} color={setup.color} active={playerTurn} />
-      <Text style={styles.vsText} selectable={false}>
-        VS
-      </Text>
-      <RackBadge
-        label={t('common.you')}
-        count={playerRemaining}
-        color={colors.neon}
-        active={!playerTurn && roundResult == null}
-        align="right"
-      />
-    </View>
-  );
-
   return (
     <View style={styles.container}>
       <GridBackground />
@@ -510,29 +487,21 @@ export default function MatchScreen() {
           </View>
         </View>
 
-        {landscape ? null : scoreBlock}
+        <View style={styles.scoreRow}>
+          <RackBadge label={setup.name} count={opponentRemaining} color={setup.color} active={playerTurn} />
+          <Text style={styles.vsText} selectable={false}>
+            VS
+          </Text>
+          <RackBadge
+            label={t('common.you')}
+            count={playerRemaining}
+            color={colors.neon}
+            active={!playerTurn && roundResult == null}
+            align="right"
+          />
+        </View>
 
-        <View style={landscape ? styles.stage : undefined}>
-        <View
-          style={
-            landscape
-              ? {
-                  width: tableWidth * stageScale,
-                  height: viewportHeight * stageScale,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }
-              : undefined
-          }
-        >
-        <View
-          style={[
-            styles.viewport,
-            landscape && styles.viewportLandscape,
-            { width: tableWidth, height: viewportHeight },
-            landscape && { transform: [{ scale: stageScale }] },
-          ]}
-        >
+        <View style={[styles.viewport, { width: tableWidth, height: viewportHeight }]}>
           <Animated.View
             style={[styles.table, { width: tableWidth, height: TABLE_HEIGHT }, cameraStyle]}
           >
@@ -594,10 +563,7 @@ export default function MatchScreen() {
             <FlashOverlay ref={flashRef} />
           </Animated.View>
         </View>
-        </View>
 
-        <View style={landscape ? styles.sideColumn : undefined}>
-        {landscape ? scoreBlock : null}
         <View style={styles.actionRow}>
           <Pressable
             onPress={() => {
@@ -656,9 +622,22 @@ export default function MatchScreen() {
         >
           {bounceArmed ? t('match.bounceArmed') : turnStatus}
         </Animated.Text>
-        </View>
-        </View>
       </SafeAreaView>
+
+      {/* Arcade is played upright. Rather than squeeze the board sideways, the
+          game keeps running underneath and asks for the phone back. */}
+      {landscape ? (
+        <View style={styles.rotateOverlay}>
+          <Ionicons name="phone-portrait-outline" size={48} color={colors.neon} />
+          <Text style={styles.rotateTitle} selectable={false}>
+            {t('match.rotateTitle')}
+          </Text>
+          <Text style={styles.rotateBody} selectable={false}>
+            {t('match.rotateBody')}
+          </Text>
+          <GlowButton label={t('common.back')} variant="outline" size="sm" onPress={() => router.back()} />
+        </View>
+      ) : null}
 
       {showResultCard ? (
         <View style={styles.resultOverlay}>
@@ -875,25 +854,29 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     marginHorizontal: spacing.sm,
   },
-  /** Landscape only: table on the left, score and controls on the right. */
-  stage: {
-    flex: 1,
-    flexDirection: 'row',
+  rotateOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.lg,
-  },
-  sideColumn: {
-    flex: 1,
     justifyContent: 'center',
-    gap: spacing.xs,
+    gap: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: 'rgba(10,10,10,0.96)',
   },
-  scoreRowLandscape: {
-    paddingHorizontal: 0,
-    marginTop: 0,
+  rotateTitle: {
+    fontFamily: fonts.headingBlack,
+    fontSize: 20,
+    color: colors.textPrimary,
+    textAlign: 'center',
   },
-  viewportLandscape: {
-    marginTop: 0,
+  rotateBody: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
   },
   viewport: {
     alignSelf: 'center',

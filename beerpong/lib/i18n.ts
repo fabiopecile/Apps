@@ -358,6 +358,11 @@ const STRINGS = {
     en: 'Bounce shot armed — harder, but takes two cups',
   },
   'match.reRack': { de: 'Re-Rack {left}', en: 'Re-rack {left}' },
+  'match.rotateTitle': { de: 'Handy hochkant halten', en: 'Hold the phone upright' },
+  'match.rotateBody': {
+    de: 'Arcade wird im Hochformat gespielt — der Tisch ist lang, und nach oben gewischt wird auch. Das Spiel läuft weiter, sobald du drehst.',
+    en: 'Arcade is played upright — the table is long, and so is the swipe. The game picks up again as soon as you turn back.',
+  },
   'match.win': { de: 'SIEG!', en: 'WIN!' },
   'match.lose': { de: 'NIEDERLAGE', en: 'DEFEAT' },
   'match.teamWins': { de: '{team} gewinnt!', en: '{team} wins!' },

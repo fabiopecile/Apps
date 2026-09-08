@@ -166,6 +166,10 @@ Die App merkt selbst, wie das Handy gehalten wird, und setzt die Ringe beim
 Drehen passend neu — eine schon gestartete Ausrichtung geht dabei verloren und
 muss einmal neu bestätigt werden.
 
+Quer drehen lohnt sich nur hier. **Arcade bleibt Hochformat** — der Tisch ist
+lang, und nach oben gewischt wird auch. Wird das Handy im Match gedreht, fragt
+die App danach, es zurückzudrehen; das laufende Spiel bleibt dabei stehen.
+
 **So läuft es ab:**
 
 1. Handy hinstellen — angelehnt oder auf einem Stativ, es darf sich nicht mehr
