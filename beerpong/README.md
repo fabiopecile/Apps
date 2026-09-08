@@ -197,6 +197,11 @@ ob Installationen aus dieser Quelle erlaubt sind — bestätigen, fertig.
 - **Sounds sind synthetisch erzeugt** — `tools/gen_sounds.py` baut sie aus
   Rauschen, Sinus- und Dreieckstönen; kein aufgenommenes Sounddesign.
   Neu erzeugen mit `python3 tools/gen_sounds.py`.
+- **Das Logo wird gezeichnet, nicht gemalt** — `tools/gen_icons.py` erzeugt
+  alle App-, Android- und Web-Icons aus einer Beschreibung. Nach einer
+  Änderung `python3 tools/gen_icons.py` laufen lassen; die Geometrie steckt
+  parallel in `components/ui/LogoMark.tsx`, damit In-App-Logo und Icon
+  identisch aussehen.
 - `expo-av` ist veraltet und sollte vor einem Release auf `expo-audio` umziehen.
 - **Kein Fortschritt in der Cloud.** Alles liegt in AsyncStorage auf dem Gerät;
   App löschen heißt Fortschritt weg.
@@ -217,7 +222,7 @@ components/              UI-Bausteine, Arcade-Grafik (Becher, Ball, Würfe)
 lib/                     Store (zustand), Spiel-Logik, Layout, Sound, i18n
 public/                  Wird 1:1 in die Web-Version kopiert (Manifest, Icons, sw.js)
 theme/                   Farben, Schriften, Glow-Effekt
-tools/                   Hilfsskripte (Sounds und PWA-Icons erzeugen)
+tools/                   Hilfsskripte (Logo/Icons und Sounds erzeugen)
 ```
 
 ## Sprache ergänzen oder Texte ändern

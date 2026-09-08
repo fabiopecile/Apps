@@ -4,6 +4,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
+import { Reveal } from '@/components/ui/Reveal';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { useBeerpongStore } from '@/lib/store';
@@ -56,8 +57,9 @@ export default function ProScreen() {
           </View>
 
           <SectionLabel>{t('pro.whatsInside')}</SectionLabel>
-          {FEATURES.map((feature) => (
-            <View key={feature.titleKey} style={styles.featureRow}>
+          {FEATURES.map((feature, position) => (
+            <Reveal key={feature.titleKey} index={position} delay={120}>
+            <View style={styles.featureRow}>
               <View style={styles.featureIcon}>
                 <Ionicons name={feature.icon} size={18} color={colors.gold} />
               </View>
@@ -66,6 +68,7 @@ export default function ProScreen() {
                 <Text style={styles.featureBody}>{t(feature.bodyKey)}</Text>
               </View>
             </View>
+            </Reveal>
           ))}
 
           <SectionLabel>{t('pro.howItWorks')}</SectionLabel>

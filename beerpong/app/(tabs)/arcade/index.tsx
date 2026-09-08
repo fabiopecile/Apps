@@ -4,6 +4,9 @@ import { router, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
+import { PressableScale } from '@/components/ui/PressableScale';
+import { Reveal } from '@/components/ui/Reveal';
+import { CountUp } from '@/components/ui/CountUp';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { SectionLabel } from '@/components/ui/SectionLabel';
@@ -79,9 +82,7 @@ export default function ArcadeHubScreen() {
             right={
               <View style={styles.coinChip}>
                 <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
-                <Text style={styles.coinText} selectable={false}>
-                  {coins}
-                </Text>
+                <CountUp value={coins} style={styles.coinText} />
               </View>
             }
           />
@@ -99,6 +100,7 @@ export default function ArcadeHubScreen() {
               subtitle={t('hub.offline.subtitle', { last: t(preset.labelKey) })}
               accent={colors.neon}
               href="/(tabs)/arcade/offline"
+              index={0}
             />
 
             <ModeCard
@@ -107,6 +109,7 @@ export default function ArcadeHubScreen() {
               subtitle={t('hub.passplay.subtitle')}
               accent={colors.gold}
               href="/(tabs)/arcade/passplay"
+              index={1}
             />
 
             <ModeCard
@@ -119,6 +122,7 @@ export default function ArcadeHubScreen() {
               })}
               accent={division.color}
               href="/(tabs)/arcade/rivals"
+              index={2}
             />
 
             <ModeCard
@@ -137,6 +141,7 @@ export default function ArcadeHubScreen() {
               }
               accent={weekendUnlocked ? colors.gold : colors.textMuted}
               href="/(tabs)/arcade/weekend"
+              index={3}
               locked={!weekendUnlocked}
             />
           </View>
@@ -155,6 +160,7 @@ export default function ArcadeHubScreen() {
               }
               accent={claimable > 0 ? colors.gold : colors.neon}
               href="/(tabs)/arcade/challenges"
+              index={4}
               badge={claimable > 0 ? claimable : undefined}
             />
           </View>
@@ -167,6 +173,7 @@ export default function ArcadeHubScreen() {
               subtitle={t('hub.skins.subtitle')}
               accent={colors.neonAlt}
               href="/(tabs)/arcade/skins"
+              index={5}
               compact
             />
           </View>
@@ -191,6 +198,7 @@ function ModeCard({
   locked,
   compact,
   badge,
+  index = 0,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   title: string;
@@ -200,20 +208,21 @@ function ModeCard({
   locked?: boolean;
   compact?: boolean;
   badge?: number;
+  index?: number;
 }) {
   const feedback = useFeedback();
   return (
-    <Pressable
+    <Reveal index={index}>
+    <PressableScale
       onPress={() => {
         feedback.tap();
         router.push(href);
       }}
-      style={({ pressed }) => [
+      style={[
         styles.modeCard,
         compact && styles.modeCardCompact,
         { borderColor: locked ? colors.borderFaint : accent },
         !locked && glow('soft', accent),
-        pressed && styles.modeCardPressed,
       ]}
     >
       <View style={[styles.modeIcon, { borderColor: locked ? colors.borderFaint : accent }]}>
@@ -242,7 +251,8 @@ function ModeCard({
         </View>
       ) : null}
       <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-    </Pressable>
+    </PressableScale>
+    </Reveal>
   );
 }
 

@@ -5,6 +5,8 @@ import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
+import { Reveal } from '@/components/ui/Reveal';
+import { CountUp } from '@/components/ui/CountUp';
 import { Card } from '@/components/ui/Card';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { BallArt } from '@/components/arcade/BallArt';
@@ -38,7 +40,7 @@ export default function SkinsScreen() {
           <Text style={styles.title}>{t('skins.title')}</Text>
           <View style={styles.coinChip}>
             <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
-            <Text style={styles.coinText}>{coins}</Text>
+            <CountUp value={coins} style={styles.coinText} />
           </View>
         </View>
 
@@ -62,12 +64,13 @@ export default function SkinsScreen() {
           numColumns={2}
           columnWrapperStyle={{ gap: spacing.md }}
           contentContainerStyle={styles.grid}
-          renderItem={({ item }) => {
+          renderItem={({ item, index }) => {
             const owned = ownedSkinIds.includes(item.id);
             const equipped = equippedId === item.id;
             const canAfford = coins >= item.cost;
 
             return (
+              <Reveal index={index} style={styles.skinCardWrap}>
               <Card style={styles.skinCard} highlighted={equipped}>
                 {item.type === 'ball' ? (
                   <View
@@ -117,6 +120,7 @@ export default function SkinsScreen() {
                   />
                 )}
               </Card>
+              </Reveal>
             );
           }}
           ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
@@ -187,6 +191,9 @@ const styles = StyleSheet.create({
   grid: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xl,
+  },
+  skinCardWrap: {
+    flex: 1,
   },
   skinCard: {
     flex: 1,

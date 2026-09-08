@@ -2,9 +2,9 @@ import { forwardRef, useRef, useState } from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import ViewShot, { captureRef } from 'react-native-view-shot';
 import * as Sharing from 'expo-sharing';
-import { Ionicons } from '@expo/vector-icons';
 
 import { GlowButton } from './GlowButton';
+import { LogoMark } from './LogoMark';
 import { useT } from '@/lib/i18n';
 import { colors, fonts, radius, spacing } from '@/theme';
 
@@ -25,9 +25,7 @@ const ShareCard = forwardRef<View, { data: ShareCardData; footer: string }>(
   ({ data, footer }, ref) => (
   <View ref={ref} style={styles.card} collapsable={false}>
     <View style={styles.cardHeader}>
-      <View style={styles.logoRing}>
-        <Ionicons name="ellipse-outline" size={26} color={colors.neon} />
-      </View>
+      <LogoMark size={46} />
       <Text style={styles.brand}>BEERPONG</Text>
     </View>
 
@@ -119,15 +117,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
     marginBottom: 30,
-  },
-  logoRing: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: colors.neon,
   },
   brand: {
     fontFamily: fonts.displayBlack,

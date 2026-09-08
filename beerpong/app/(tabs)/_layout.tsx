@@ -1,6 +1,14 @@
+import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet, View } from 'react-native';
+import { StyleSheet } from 'react-native';
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withSequence,
+  withSpring,
+  withTiming,
+} from 'react-native-reanimated';
 import { useT } from '@/lib/i18n';
 import { colors, fonts } from '@/theme';
 
@@ -39,6 +47,7 @@ export default function TabsLayout() {
   );
 }
 
+/** Pops when it becomes the active tab, and the pill fades in behind it. */
 function TabIcon({
   name,
   color,
@@ -48,10 +57,31 @@ function TabIcon({
   color: string;
   focused: boolean;
 }) {
+  const pop = useSharedValue(focused ? 1 : 0);
+
+  useEffect(() => {
+    if (focused) {
+      pop.value = withSequence(
+        withSpring(1.18, { damping: 9, stiffness: 400 }),
+        withSpring(1, { damping: 12, stiffness: 260 })
+      );
+    } else {
+      pop.value = withTiming(0.94, { duration: 180 });
+    }
+  }, [focused, pop]);
+
+  const iconStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: pop.value }],
+  }));
+
   return (
-    <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-      <Ionicons name={focused ? name : (`${name}-outline` as keyof typeof Ionicons.glyphMap)} size={22} color={color} />
-    </View>
+    <Animated.View style={[styles.iconWrap, focused && styles.iconWrapActive, iconStyle]}>
+      <Ionicons
+        name={focused ? name : (`${name}-outline` as keyof typeof Ionicons.glyphMap)}
+        size={22}
+        color={color}
+      />
+    </Animated.View>
   );
 }
 

@@ -674,9 +674,40 @@ export const useBeerpongStore = create<BeerpongStore>()(
         rivals: state.rivals,
         weekend: state.weekend,
       }),
+      merge: (persisted, current) => mergeSaved(persisted, current),
     }
   )
 );
+
+/**
+ * Folds a saved state into the defaults, one level into the nested objects.
+ *
+ * The built-in merge is shallow, so a save written before a field existed
+ * would replace a whole group — `arcade`, say — and leave the new field
+ * undefined. That surfaces as NaN in the stats, not as a crash, which is
+ * worse. Anything the save does not mention keeps its default.
+ */
+function mergeSaved(persisted: unknown, current: BeerpongStore): BeerpongStore {
+  if (!persisted || typeof persisted !== 'object') return current;
+  const saved = persisted as Record<string, unknown>;
+  const merged: Record<string, unknown> = { ...current };
+
+  for (const [key, value] of Object.entries(saved)) {
+    const fallback = (current as unknown as Record<string, unknown>)[key];
+    const isPlainGroup =
+      value !== null &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      fallback !== null &&
+      typeof fallback === 'object' &&
+      !Array.isArray(fallback);
+    merged[key] = isPlainGroup
+      ? { ...(fallback as object), ...(value as object) }
+      : value;
+  }
+
+  return merged as unknown as BeerpongStore;
+}
 
 export function selectCareerLevel(careerXP: number) {
   return Math.floor(careerXP / 200) + 1;
