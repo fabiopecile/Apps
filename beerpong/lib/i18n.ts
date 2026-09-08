@@ -97,8 +97,8 @@ const STRINGS = {
   },
   'pro.heroTitle': { de: 'Die Kamera zählt mit', en: 'Let the camera keep score' },
   'pro.heroBody': {
-    de: 'Heute tippst du jeden Treffer selbst. Pro soll den Tisch erkennen und die Cups von allein abziehen.',
-    en: 'Today you tap every hit yourself. Pro is meant to recognise the table and remove cups on its own.',
+    de: 'Die App erkennt heute schon, wenn ein Becher verschwindet — fragt aber jedes Mal nach. Pro soll ohne Nachfrage auskommen.',
+    en: 'The app already spots a cup going missing — but asks every time. Pro is meant to do without the question.',
   },
   'pro.inDevelopment': { de: 'In Entwicklung', en: 'In development' },
   'pro.whatsInside': { de: 'Was geplant ist', en: "What's planned" },
@@ -143,8 +143,8 @@ const STRINGS = {
     en: 'One side opens a game and shares the code, the other joins. From then on each team only counts its own rack — the score syncs between the phones and both screens show whose turn it is. Only hits and turns travel over the network, never video.',
   },
   'pro.explainBody': {
-    de: 'Ein kleines Bilderkennungsmodell läuft direkt auf dem Handy und sucht in jedem Kamerabild nach den runden Cup-Öffnungen und dem Ball. Verschwindet eine Öffnung genau dann, wenn der Ball sie erreicht, war es ein Treffer. Alles bleibt auf dem Gerät — es werden keine Videos hochgeladen.',
-    en: 'A small vision model runs directly on the phone and looks for the round cup openings and the ball in every frame. When an opening disappears exactly as the ball reaches it, that was a hit. Everything stays on the device — no video is uploaded.',
+    de: 'Heute musst du das Rack einmal von Hand ausrichten, und bei jedem erkannten Becher fragt die App nach. Mit Pro soll ein kleines Bilderkennungsmodell direkt auf dem Handy die Becher selbst finden — dann fallen Ausrichten und Nachfragen weg. Alles bleibt auf dem Gerät, es werden keine Videos hochgeladen.',
+    en: 'Today you line the rack up by hand once, and the app asks about every cup it spots. With Pro a small vision model on the phone would find the cups itself — no lining up, no questions. Everything stays on the device; no video is uploaded.',
   },
   'pro.notifyCta': { de: 'Benachrichtige mich', en: 'Notify me' },
   'pro.notifyOn': { de: 'Vorgemerkt ✓', en: 'On the list ✓' },
@@ -194,6 +194,40 @@ const STRINGS = {
   'tracker.permission.cta': { de: 'Kamera erlauben', en: 'Allow camera' },
   'tracker.finished': { de: 'Spiel beendet', en: 'Game over' },
   'tracker.throwingAt': { de: '{shooter} wirft auf {target}', en: '{shooter} is throwing at {target}' },
+  // ------------------------------------------------------- cup auto-detect
+  'detect.button': { de: 'Auto-Erkennung', en: 'Auto detect' },
+  'detect.alignTitle': { de: 'Rack ausrichten', en: 'Line up the rack' },
+  'detect.alignBody': {
+    de: 'Handy hinstellen und die Ringe auf die Becher von {team} schieben — ziehen zum Verschieben, zwei Finger zum Vergrößern.',
+    en: 'Stand the phone up and move the rings onto {team}’s cups — drag to move, pinch to resize.',
+  },
+  'detect.start': { de: 'Passt — los', en: 'Looks right — go' },
+  'detect.watching': {
+    de: 'Erkennung läuft · {left} Becher im Blick',
+    en: 'Watching · {left} cups in view',
+  },
+  'detect.recalibrate': { de: 'Neu ausrichten', en: 'Line up again' },
+  'detect.stop': { de: 'Beenden', en: 'Stop' },
+  'detect.hitTitle': { de: 'Becher weg — Treffer?', en: 'Cup gone — was that a hit?' },
+  'detect.hitBody': {
+    de: 'Bestätige, dann zählt es als Treffer gegen {team}.',
+    en: 'Confirm and it counts as a hit against {team}.',
+  },
+  'detect.wasAHit': { de: 'Treffer', en: 'Hit' },
+  'detect.notAHit': { de: 'War nichts', en: 'False alarm' },
+  'detect.disturbed': {
+    de: 'Kamera hat sich bewegt oder das Licht — bei Fehlern neu ausrichten.',
+    en: 'The camera or the light moved — line up again if it starts guessing.',
+  },
+  'detect.noFrame': {
+    de: 'Kein Kamerabild — Zugriff erlaubt und Kamera frei?',
+    en: 'No camera image — is access allowed and the lens clear?',
+  },
+  'detect.unsupported': {
+    de: 'Die Auto-Erkennung läuft nur in der Web-Version. In der installierten App fehlt der Zugriff auf einzelne Kamerabilder.',
+    en: 'Auto detection only runs in the web version. The installed app has no access to individual camera frames.',
+  },
+
   'tracker.openOnline': {
     de: 'Online gegen anderen Tisch spielen (Pro)',
     en: 'Play online against another table (Pro)',

@@ -14,6 +14,7 @@ import { ParticleBurst, type ParticleBurstHandle } from '@/components/ui/Particl
 import { FlashOverlay, type FlashOverlayHandle } from '@/components/ui/FlashOverlay';
 import { HouseRulesPanel } from '@/components/camera/HouseRulesPanel';
 import { TeamScoreboard } from '@/components/camera/TeamScoreboard';
+import { AutoDetect } from '@/components/camera/AutoDetect';
 import { ShareResultButton } from '@/components/ui/ShareableResult';
 import { useBeerpongStore, type TeamIndex } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
@@ -23,6 +24,7 @@ import { colors, fonts, radius, spacing } from '@/theme';
 export default function CameraTrackerScreen() {
   const [permission, requestPermission] = useCameraPermissions();
   const [rulesVisible, setRulesVisible] = useState(false);
+  const [detectVisible, setDetectVisible] = useState(false);
 
   const tracker = useBeerpongStore((s) => s.tracker);
   const houseRules = useBeerpongStore((s) => s.houseRules);
@@ -53,6 +55,16 @@ export default function CameraTrackerScreen() {
     feedback.cupHit();
     flashRef.current?.flash(colors.neon, 0.32);
     particleRef.current?.burst(locationX, locationY);
+    if ((shooter.streak + 1) % 3 === 0) feedback.streak();
+  };
+
+  /** A detection the user confirmed counts exactly like a tap. */
+  const handleDetectedHit = () => {
+    if (finished) return;
+    trackerHit();
+    trackDaily('trackerCups');
+    feedback.cupHit();
+    flashRef.current?.flash(colors.neon, 0.32);
     if ((shooter.streak + 1) % 3 === 0) feedback.streak();
   };
 
@@ -137,6 +149,19 @@ export default function CameraTrackerScreen() {
               accessibilityLabel={t('tracker.openTournament')}
             >
               <Ionicons name="git-network" size={17} color={colors.neon} />
+            </Pressable>
+            <Pressable
+              onPress={() => setDetectVisible((visible) => !visible)}
+              style={[styles.iconButton, detectVisible && styles.iconButtonActive]}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('detect.button')}
+            >
+              <Ionicons
+                name="scan"
+                size={17}
+                color={detectVisible ? colors.background : colors.neon}
+              />
             </Pressable>
             <Pressable
               onPress={() => setRulesVisible(true)}
@@ -267,6 +292,15 @@ export default function CameraTrackerScreen() {
         </View>
       ) : null}
 
+      {detectVisible && !finished ? (
+        <AutoDetect
+          cupCount={tracker.startCups}
+          targetName={target.name}
+          onConfirmHit={handleDetectedHit}
+          onClose={() => setDetectVisible(false)}
+        />
+      ) : null}
+
       <HouseRulesPanel visible={rulesVisible} onClose={() => setRulesVisible(false)} />
     </View>
   );
@@ -376,6 +410,10 @@ const styles = StyleSheet.create({
   },
   iconButtonPro: {
     borderColor: colors.gold,
+  },
+  iconButtonActive: {
+    backgroundColor: colors.neon,
+    borderColor: colors.neon,
   },
   iconLock: {
     position: 'absolute',
