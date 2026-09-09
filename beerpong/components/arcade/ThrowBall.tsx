@@ -1,11 +1,18 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, runOnJS, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
-import { previewFlight, resolveThrow, sampleFlight, type Flight } from '@/lib/throwPhysics';
+import {
+  RESTITUTION,
+  previewFlight,
+  resolveThrow,
+  sampleFlight,
+  type Flight,
+  type Point,
+} from '@/lib/throwPhysics';
 import { BallArt } from './BallArt';
 import { BALL_SIZE, HEIGHT_LIFT, useBallFlight } from './useBallFlight';
 
@@ -21,12 +28,24 @@ const STALE_HAND_MS = 120;
  * pull back for a run-up, short enough that it is still a throw.
  */
 const DRAG_SIDEWAYS = 120;
-const DRAG_FORWARD = 90;
+const DRAG_FORWARD = 45;
 const DRAG_BACK = 60;
 
-function clampWorklet(value: number, min: number, max: number) {
+/**
+ * Past the limit the ball keeps following the finger, but only barely — the
+ * way a list keeps moving when pulled past its end.
+ *
+ * A hard stop was tried first and measured wrong twice over: a flick covers a
+ * couple of hundred points in a fraction of a second, so the ball ran to the
+ * limit and then sat there while the finger carried on without it — and every
+ * throw then left from exactly the same spot, which added the whole limit to
+ * its range and sent throws sailing over the rack.
+ */
+function rubberBand(value: number, min: number, max: number) {
   'worklet';
-  return Math.max(min, Math.min(max, value));
+  if (value > max) return max + (value - max) * 0.2;
+  if (value < min) return min + (value - min) * 0.2;
+  return value;
 }
 
 export interface ThrowResult {
@@ -130,7 +149,7 @@ export function ThrowBall({
     setAim(null);
     onResult({ ...result, bounce });
     if (resetTimer.current) clearTimeout(resetTimer.current);
-    resetTimer.current = setTimeout(() => flight.settle(startX, startY), 220);
+    resetTimer.current = setTimeout(() => flight.settle(startX, startY), 140);
   };
 
   /**
@@ -167,27 +186,52 @@ export function ThrowBall({
     });
 
     flight.play(outcome.flight, () => {
-      flight.trail.value = withTiming(0, { duration: 200 });
+      flight.trail.value = withTiming(0, { duration: 180 });
       if (rimOut) {
-        // Caught the lip: a short, low hop away from the rack.
-        const away = direction === 'up' ? 1 : -1;
-        rimContact();
-        flight.playLeg(
-          landing,
-          {
-            x: landing.x + (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 28),
-            y: landing.y + away * (26 + Math.random() * 20),
-          },
-          0.34,
-          190,
-          () => {}
-        );
-        if (resultTimer.current) clearTimeout(resultTimer.current);
-        resultTimer.current = setTimeout(() => finishThrow(result), 400);
+        bounceOffRim(landing, result);
+        return;
+      }
+      if (hit) {
+        dropIntoCup(landing, result);
         return;
       }
       finishThrow(result);
     });
+  };
+
+  /**
+   * Into the cup. The ball drops the last little way and shrinks out of sight
+   * behind the rim, rather than simply stopping on top of it.
+   */
+  const dropIntoCup = (at: Point, result: Omit<ThrowResult, 'bounce'>) => {
+    flight.scale.value = withTiming(0.12, { duration: 190, easing: Easing.in(Easing.quad) });
+    flight.playLeg(at, { x: at.x, y: at.y + 14 }, 0.19, 0, () => {});
+    if (resultTimer.current) clearTimeout(resultTimer.current);
+    resultTimer.current = setTimeout(() => finishThrow(result), 200);
+  };
+
+  /**
+   * Off the rim. Two hops, the second keeping `RESTITUTION` of the first's
+   * bounce — the same number the bounce shot uses, so a ball coming off a cup
+   * behaves like a ball coming off the table.
+   */
+  const bounceOffRim = (at: Point, result: Omit<ThrowResult, 'bounce'>) => {
+    const away = direction === 'up' ? 1 : -1;
+    const side = Math.random() < 0.5 ? -1 : 1;
+    rimContact();
+    const first = {
+      x: at.x + side * (20 + Math.random() * 14),
+      y: at.y + away * (16 + Math.random() * 12),
+    };
+    const second = {
+      x: first.x + side * (12 + Math.random() * 10),
+      y: first.y + away * (10 + Math.random() * 8),
+    };
+    flight.playLeg(at, first, 0.2, 300, () => {
+      flight.playLeg(first, second, 0.13, 300 * RESTITUTION, () => {});
+    });
+    if (resultTimer.current) clearTimeout(resultTimer.current);
+    resultTimer.current = setTimeout(() => finishThrow(result), 360);
   };
 
   /**
@@ -231,8 +275,8 @@ export function ThrowBall({
       // the way up to the cups.
       const dragX = (e.absoluteX - grabX.value) * factor;
       const dragY = (e.absoluteY - grabY.value) * factor;
-      flight.groundX.value = startX + clampWorklet(dragX, -DRAG_SIDEWAYS, DRAG_SIDEWAYS);
-      flight.groundY.value = startY + clampWorklet(dragY, -DRAG_FORWARD, DRAG_BACK);
+      flight.groundX.value = startX + rubberBand(dragX, -DRAG_SIDEWAYS, DRAG_SIDEWAYS);
+      flight.groundY.value = startY + rubberBand(dragY, -DRAG_FORWARD, DRAG_BACK);
 
       const now = Date.now();
       const dt = (now - lastAt.value) / 1000;
