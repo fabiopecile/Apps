@@ -285,10 +285,17 @@ Jetzt wirfst du wirklich — die Geste ist die von Pokémon GO:
    seinen Scheitel bei rund 140 Punkten Höhe und fällt wieder herunter. Am
    Schatten unter ihm siehst du, wo er auf dem Tisch gerade ist — Höhe und
    Entfernung teilen sich sonst dieselbe Bildschirmachse.
-5. **Getroffen ist der Becher, in dem er aufkommt** — und dann fällt er sichtbar
-   hinein, statt oben liegen zu bleiben. Am Rand prallt er ab: zwei Hüpfer, der
-   zweite mit 60 % vom ersten, dieselbe Zahl wie beim Aufsetzer. Zu fest
-   geworfen segelt er über das Rack, zu sanft fällt er davor auf den Tisch.
+5. **Getroffen ist der Becher, in dessen Öffnung er aufkommt** — und dann fällt
+   er sichtbar hinein. Am Rand prallt er ab: zwei Hüpfer, der zweite mit 60 %
+   vom ersten, dieselbe Zahl wie beim Aufsetzer. Zu fest geworfen segelt er über
+   das Rack, zu sanft fällt er davor auf den Tisch.
+
+**Gezielt wird auf das Loch, nicht auf den Becher.** Ein Becher wird auf einem
+100×125-Feld gezeichnet, seine Öffnung liegt bei y=21 — also **ein Drittel der
+Becherhöhe über** dem Punkt, den das Layout speichert. Beim vorderen Becher sind
+das 25 Punkte. Genau darauf hatte die Physik gezielt, und deshalb landete der
+Ball mitten in der Plastikwand: es zählte als Treffer, sah aber nie wie einer
+aus.
 
 Dazu kommt ein kleiner Streuungsfehler für die ruhige Hand
 (`88 × (1 − Ruhe) × (0,8 + Kraft × 0,35)`, dreieckig verteilt). Er wird größer,
@@ -310,13 +317,19 @@ Trefferquoten bei perfektem Schwung, je 8 000 simulierte Würfe:
 
 | gezielt auf | wacklig | normal | ruhig |
 |---|---|---|---|
-| nächster Becher | 58 % | 70 % | 82 % |
-| hintere Reihe | 31 % | 34 % | 40 % |
+| nächster Becher | 73 % | 82 % | 91 % |
+| hintere Reihe | 38 % | 44 % | 54 % |
 
-Das ist die entschärfte Fassung: der Bechermund ist etwas großzügiger als der
-gezeichnete Becher (ein Ball, der die Innenkante streift, fällt am echten Tisch
-auch hinein), und die Streuung ist kleiner. Vorher lagen die Werte bei 52 % und
-27 %.
+Das ist die entschärfte Fassung: die Trefferfläche ist großzügiger als das
+gezeichnete Loch (0,52 statt 0,37 der Becherbreite — ein Ball, der die
+Innenkante streift, fällt am echten Tisch auch hinein), und die Streuung ist
+kleiner. Ursprünglich lagen die Werte bei 52 % und 27 %.
+
+**Der Aufsetzer nimmt den Nachbarbecher.** Zwei Becher pro Aufsetzer ist eine
+echte Beerpong-Regel, aber der zweite wurde vorher **zufällig** aus dem ganzen
+Rack gezogen — ein Becher am anderen Ende verschwand, ohne dass der Ball in
+seiner Nähe war. Das liest sich wie ein Fehler, nicht wie eine Regel. Jetzt ist
+es der nächststehende.
 
 **Wichtig beim Ändern dieser Zahlen:** Der Bechermund gilt auch für den Gegner.
 Ihn zu vergrößern hat jeden Gegner still besser gemacht, als sein Profil
