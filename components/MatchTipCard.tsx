@@ -1,0 +1,510 @@
+import { useEffect, useRef, useState } from 'react';
+import { View, Text, TextInput, Pressable, Animated, StyleSheet } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { colors, fontSizes, radii, spacing } from '@/constants/theme';
+import { formatMatchTime } from '@/lib/dates';
+import { JokerTypeModal } from '@/components/JokerTypeModal';
+import { OtherTipsSection } from '@/components/OtherTipsSection';
+import { SuccessStamp } from '@/components/SuccessStamp';
+import { supabase } from '@/lib/supabase';
+import type { MatchWithTip } from '@/hooks/useTipps';
+import type { JokerType } from '@/lib/database.types';
+
+const JOKER_LABELS: Record<JokerType, { emoji: string; label: string }> = {
+  risk: { emoji: '🎲', label: 'RISIKO' },
+  boost: { emoji: '⚡', label: 'BOOST' },
+  safe: { emoji: '🛡️', label: 'SICHER' },
+};
+
+/**
+ * Turns one team-stats call into the text shown in the card.
+ *
+ * Every failure used to collapse into "Keine Daten verfügbar" - a missing
+ * secret, a function that was never deployed and an expired Pro period all
+ * looked identical, which is the one thing you cannot debug. The Edge Function
+ * puts its reason in the response body, and supabase-js hides that body inside
+ * error.context rather than in error.message ("non-2xx status").
+ */
+async function statsMessage(res: { data: any; error: any }): Promise<string> {
+  if (res.data?.summary) return res.data.summary;
+
+  const context = (res.error as any)?.context;
+  if (context && typeof context.json === 'function') {
+    try {
+      const body = await context.json();
+      if (body?.error) return `Nicht verfügbar: ${body.error}`;
+    } catch {
+      // Not JSON - fall through to the status-based messages below.
+    }
+  }
+  if (context?.status === 404) {
+    return 'Nicht verfügbar: Die Funktion "team-stats" ist nicht deployed.';
+  }
+  return `Nicht verfügbar${res.error?.message ? `: ${res.error.message}` : '.'}`;
+}
+
+interface MatchTipCardProps {
+  match: MatchWithTip;
+  jokersRemaining: number;
+  isPro?: boolean;
+  currentUserId?: string;
+  onSubmit: (homeScore: number, awayScore: number, jokerType: JokerType | null) => Promise<{ error: string | null }>;
+  onSuccess?: () => void;
+  onOpenProfile?: (userId: string) => void;
+}
+
+export function MatchTipCard({
+  match,
+  jokersRemaining,
+  isPro,
+  currentUserId,
+  onSubmit,
+  onSuccess,
+  onOpenProfile,
+}: MatchTipCardProps) {
+  const isLocked = new Date(match.kickoff).getTime() <= Date.now();
+  const [homeScore, setHomeScore] = useState(match.tip?.home_score?.toString() ?? '');
+  const [awayScore, setAwayScore] = useState(match.tip?.away_score?.toString() ?? '');
+  const [jokerType, setJokerType] = useState<JokerType | null>(match.tip?.joker_type ?? null);
+  const [jokerModalOpen, setJokerModalOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [justSubmitted, setJustSubmitted] = useState(false);
+  const [stats, setStats] = useState<{ home: string; away: string } | null>(null);
+  const [statsLoading, setStatsLoading] = useState(false);
+  const [statsOpen, setStatsOpen] = useState(false);
+  const [stampTrigger, setStampTrigger] = useState(0);
+
+  // Blue while a tip is placed but undecided, then green if it scored and red
+  // if it didn't. points_earned is only filled in once the matchday is settled,
+  // so a finished-but-unsettled match stays blue rather than showing red early.
+  const tipState: 'none' | 'placed' | 'correct' | 'wrong' = !match.tip
+    ? 'none'
+    : match.tip.points_earned == null
+      ? 'placed'
+      : match.tip.points_earned > 0
+        ? 'correct'
+        : 'wrong';
+
+  const tipColor =
+    tipState === 'correct'
+      ? colors.success
+      : tipState === 'wrong'
+        ? colors.red
+        : tipState === 'placed'
+          ? colors.blue
+          : null;
+
+  const cardScale = useRef(new Animated.Value(1)).current;
+  const homeBump = useRef(new Animated.Value(1)).current;
+  const awayBump = useRef(new Animated.Value(1)).current;
+  const statsHeight = useRef(new Animated.Value(0)).current;
+
+  const bump = (value: Animated.Value) => {
+    value.setValue(1);
+    Animated.sequence([
+      Animated.spring(value, { toValue: 1.18, useNativeDriver: true, speed: 50, bounciness: 12 }),
+      Animated.spring(value, { toValue: 1, useNativeDriver: true, speed: 50, bounciness: 8 }),
+    ]).start();
+  };
+
+  useEffect(() => {
+    Animated.timing(statsHeight, {
+      toValue: statsOpen ? 1 : 0,
+      duration: 240,
+      useNativeDriver: true,
+    }).start();
+  }, [statsOpen, statsHeight]);
+
+  const handleToggleStats = async () => {
+    if (statsOpen) {
+      setStatsOpen(false);
+      return;
+    }
+    setStatsOpen(true);
+    if (stats || statsLoading) return;
+    setStatsLoading(true);
+    const [homeRes, awayRes] = await Promise.all([
+      supabase.functions.invoke('team-stats', { body: { team: match.home_team } }),
+      supabase.functions.invoke('team-stats', { body: { team: match.away_team } }),
+    ]);
+    setStats({
+      home: await statsMessage(homeRes),
+      away: await statsMessage(awayRes),
+    });
+    setStatsLoading(false);
+  };
+
+  const canOpenJoker = !isLocked && (jokersRemaining > 0 || jokerType !== null);
+  const canSubmit = !isLocked && homeScore !== '' && awayScore !== '' && !submitting;
+
+  const handleSubmit = async () => {
+    setSubmitting(true);
+    setError(null);
+    const { error: submitError } = await onSubmit(Number(homeScore), Number(awayScore), jokerType);
+    setSubmitting(false);
+    if (submitError) {
+      setError(submitError);
+      return;
+    }
+    setJustSubmitted(true);
+    setStampTrigger((t) => t + 1);
+    Animated.sequence([
+      Animated.spring(cardScale, { toValue: 1.03, useNativeDriver: true, speed: 50, bounciness: 14 }),
+      Animated.spring(cardScale, { toValue: 1, useNativeDriver: true, speed: 40, bounciness: 8 }),
+    ]).start();
+    onSuccess?.();
+    setTimeout(() => setJustSubmitted(false), 2500);
+  };
+
+  const jokerLabel = jokerType ? JOKER_LABELS[jokerType] : null;
+  const savedJokerLabel = match.tip?.joker_type ? JOKER_LABELS[match.tip.joker_type] : null;
+
+  // Typing a different score doesn't save it - say so, otherwise the numbers in
+  // the boxes and the saved tip above them silently disagree.
+  const hasUnsavedChanges =
+    !isLocked &&
+    !!match.tip &&
+    !justSubmitted &&
+    (homeScore === '' ||
+      awayScore === '' ||
+      Number(homeScore) !== match.tip.home_score ||
+      Number(awayScore) !== match.tip.away_score ||
+      jokerType !== (match.tip.joker_type ?? null));
+
+  return (
+    <Animated.View
+      style={[styles.card, justSubmitted && styles.cardSuccess, { transform: [{ scale: cardScale }] }]}
+    >
+      <SuccessStamp trigger={stampTrigger} label="Tipp gespeichert" />
+      <View style={styles.metaRow}>
+        <View style={styles.timeBadge}>
+          <Text style={styles.timeText}>{formatMatchTime(match.kickoff)}</Text>
+        </View>
+        {match.status === 'live' ? (
+          <Text style={styles.liveText}>LIVE</Text>
+        ) : match.status === 'finished' ? (
+          <Text style={styles.ftText}>ENDSTAND</Text>
+        ) : null}
+
+        <Pressable
+          disabled={!canOpenJoker}
+          onPress={() => setJokerModalOpen(true)}
+          style={[styles.jokerButton, jokerType && styles.jokerButtonActive, !canOpenJoker && styles.jokerButtonDisabled]}
+        >
+          <Text style={[styles.jokerButtonText, jokerType && styles.jokerButtonTextActive]}>
+            {jokerLabel ? `${jokerLabel.emoji} ${jokerLabel.label}` : '⚡ JOKER'}
+          </Text>
+        </Pressable>
+      </View>
+
+      <View style={styles.teamsRow}>
+        <Text style={styles.teamName}>{match.home_team}</Text>
+        <Text style={styles.vs}>vs</Text>
+        <Text style={[styles.teamName, styles.teamNameRight]}>{match.away_team}</Text>
+      </View>
+
+      {isPro ? (
+        <Pressable style={styles.statsToggle} onPress={handleToggleStats}>
+          <Ionicons name="sparkles" size={14} color={colors.gold} />
+          <Text style={styles.statsToggleText}>KI-Statistik</Text>
+        </Pressable>
+      ) : null}
+
+      {statsOpen ? (
+        <Animated.View
+          style={[
+            styles.statsBox,
+            {
+              opacity: statsHeight,
+              transform: [{ translateY: statsHeight.interpolate({ inputRange: [0, 1], outputRange: [-8, 0] }) }],
+            },
+          ]}
+        >
+          {statsLoading ? (
+            <Text style={styles.statsText}>Lädt...</Text>
+          ) : (
+            <>
+              <Text style={styles.statsText}>
+                <Text style={styles.statsTeam}>{match.home_team}: </Text>
+                {stats?.home}
+              </Text>
+              <Text style={[styles.statsText, { marginTop: spacing.xs }]}>
+                <Text style={styles.statsTeam}>{match.away_team}: </Text>
+                {stats?.away}
+              </Text>
+            </>
+          )}
+        </Animated.View>
+      ) : null}
+
+      {/* The saved tip, right above the boxes it was typed into. The inputs
+          themselves are editable, so once you start typing they no longer tell
+          you what is actually stored - this line always does, because it reads
+          from match.tip and not from the input state. */}
+      {match.tip ? (
+        <View style={styles.savedTipRow}>
+          <Text style={styles.savedTipLabel}>DEIN TIPP</Text>
+          <View
+            style={[
+              styles.savedTipBadge,
+              tipColor ? { borderColor: tipColor, backgroundColor: tipColor + '1A' } : null,
+            ]}
+          >
+            <Text style={[styles.savedTipScore, tipColor ? { color: tipColor } : null]}>
+              {match.tip.home_score}:{match.tip.away_score}
+            </Text>
+            {savedJokerLabel ? (
+              <Text style={styles.savedTipJoker}>
+                {savedJokerLabel.emoji} {savedJokerLabel.label}
+              </Text>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
+      <View style={styles.scoreRow}>
+        <Animated.View style={{ transform: [{ scale: homeBump }] }}>
+          <TextInput
+            style={[
+              styles.scoreInput,
+              // Only dim an empty locked box: dimming a placed tip would hide
+              // the very thing the card is meant to show after kickoff.
+              isLocked && !match.tip && styles.scoreInputLocked,
+              tipColor ? { borderColor: tipColor, backgroundColor: tipColor + '1A', color: tipColor } : null,
+              justSubmitted && styles.scoreInputSuccess,
+            ]}
+            value={homeScore}
+            onChangeText={(t) => {
+              const next = t.replace(/[^0-9]/g, '').slice(0, 2);
+              if (next !== homeScore) bump(homeBump);
+              setHomeScore(next);
+            }}
+            keyboardType="number-pad"
+            maxLength={2}
+            placeholder="–"
+            placeholderTextColor={colors.textFaint}
+            editable={!isLocked}
+          />
+        </Animated.View>
+        <Text style={styles.colon}>:</Text>
+        <Animated.View style={{ transform: [{ scale: awayBump }] }}>
+          <TextInput
+            style={[
+              styles.scoreInput,
+              // Only dim an empty locked box: dimming a placed tip would hide
+              // the very thing the card is meant to show after kickoff.
+              isLocked && !match.tip && styles.scoreInputLocked,
+              tipColor ? { borderColor: tipColor, backgroundColor: tipColor + '1A', color: tipColor } : null,
+              justSubmitted && styles.scoreInputSuccess,
+            ]}
+            value={awayScore}
+            onChangeText={(t) => {
+              const next = t.replace(/[^0-9]/g, '').slice(0, 2);
+              if (next !== awayScore) bump(awayBump);
+              setAwayScore(next);
+            }}
+            keyboardType="number-pad"
+            maxLength={2}
+            placeholder="–"
+            placeholderTextColor={colors.textFaint}
+            editable={!isLocked}
+          />
+        </Animated.View>
+      </View>
+
+      {hasUnsavedChanges ? (
+        <View style={styles.tipStatusRow}>
+          <Ionicons name="alert-circle" size={13} color={colors.gold} />
+          <Text style={[styles.tipStatusText, { color: colors.gold }]}>Änderung noch nicht gespeichert</Text>
+        </View>
+      ) : null}
+
+      {tipState !== 'none' ? (
+        <View style={styles.tipStatusRow}>
+          <Ionicons
+            name={
+              tipState === 'correct' ? 'checkmark-circle' : tipState === 'wrong' ? 'close-circle' : 'ellipse'
+            }
+            size={13}
+            color={tipColor ?? colors.textMuted}
+          />
+          <Text style={[styles.tipStatusText, { color: tipColor ?? colors.textMuted }]}>
+            {tipState === 'correct'
+              ? `Richtig getippt · +${match.tip?.points_earned} Punkte`
+              : tipState === 'wrong'
+                ? 'Daneben – keine Punkte'
+                : 'Dein Tipp ist abgegeben'}
+          </Text>
+        </View>
+      ) : null}
+
+      {match.status === 'finished' && match.home_score !== null && match.away_score !== null ? (
+        <Text style={styles.finalScore}>
+          Endstand {match.home_score}:{match.away_score}
+        </Text>
+      ) : null}
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      {isLocked ? (
+        <>
+          <View style={styles.lockedNotice}>
+            <Text style={styles.lockedText}>
+              {match.tip ? 'Tipp abgegeben' : 'Tippabgabe geschlossen'}
+            </Text>
+          </View>
+          <OtherTipsSection matchId={match.id} currentUserId={currentUserId} onOpenProfile={onOpenProfile} />
+        </>
+      ) : (
+        <Pressable
+          disabled={!canSubmit}
+          onPress={handleSubmit}
+          style={[styles.submitButton, !canSubmit && styles.submitButtonDisabled, justSubmitted && styles.submitButtonSuccess]}
+        >
+          <Text style={styles.submitText}>
+            {justSubmitted ? 'Gespeichert!' : match.tip ? 'Tipp ändern' : 'Tipp abgeben'} ✓
+          </Text>
+        </Pressable>
+      )}
+
+      <JokerTypeModal
+        visible={jokerModalOpen}
+        jokersRemaining={jokersRemaining}
+        currentType={jokerType}
+        onClose={() => setJokerModalOpen(false)}
+        onConfirm={(type) => {
+          setJokerType(type);
+          setJokerModalOpen(false);
+        }}
+        onRemove={() => {
+          setJokerType(null);
+          setJokerModalOpen(false);
+        }}
+      />
+    </Animated.View>
+  );
+}
+
+const styles = StyleSheet.create({
+  card: {
+    backgroundColor: colors.card,
+    borderRadius: radii.xl,
+    borderWidth: 1,
+    borderColor: colors.border,
+    padding: spacing.lg,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.lg,
+  },
+  cardSuccess: { borderColor: colors.success },
+  metaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.lg },
+  timeBadge: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  timeText: { color: colors.textMuted, fontSize: fontSizes.sm },
+  liveText: { color: colors.red, fontWeight: '800', fontSize: fontSizes.sm },
+  ftText: { color: colors.textMuted, fontWeight: '700', fontSize: fontSizes.xs },
+  jokerButton: {
+    marginLeft: 'auto',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 6,
+  },
+  jokerButtonActive: { backgroundColor: colors.goldDark, borderColor: colors.gold },
+  jokerButtonDisabled: { opacity: 0.4 },
+  jokerButtonText: { color: colors.textMuted, fontWeight: '700', fontSize: fontSizes.xs },
+  jokerButtonTextActive: { color: colors.gold },
+  teamsRow: { flexDirection: 'row', alignItems: 'center', marginBottom: spacing.lg },
+  teamName: { flex: 1, color: colors.white, fontSize: fontSizes.xl, fontWeight: '800', letterSpacing: -0.4 },
+  teamNameRight: { textAlign: 'right' },
+  vs: { color: colors.textFaint, fontSize: fontSizes.sm, marginHorizontal: spacing.sm },
+  statsToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: spacing.xs,
+    marginBottom: spacing.md,
+  },
+  statsToggleText: { color: colors.gold, fontWeight: '700', fontSize: fontSizes.xs },
+  statsBox: {
+    backgroundColor: colors.goldDark,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+  },
+  statsText: { color: colors.text, fontSize: fontSizes.xs, lineHeight: 18 },
+  statsTeam: { fontWeight: '700', color: colors.gold },
+  savedTipRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  savedTipLabel: { color: colors.textFaint, fontSize: fontSizes.xs, fontWeight: '700', letterSpacing: 0.6 },
+  savedTipBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    borderRadius: radii.pill,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+  },
+  savedTipScore: { color: colors.white, fontSize: fontSizes.md, fontWeight: '800' },
+  savedTipJoker: { color: colors.gold, fontSize: 10, fontWeight: '800' },
+  scoreRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.md, marginBottom: spacing.lg },
+  scoreInput: {
+    width: 72,
+    height: 72,
+    borderRadius: radii.lg,
+    borderWidth: 1,
+    borderColor: colors.borderStrong,
+    backgroundColor: colors.surface,
+    color: colors.white,
+    fontSize: fontSizes.xxl,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+  scoreInputLocked: { opacity: 0.5 },
+  scoreInputSuccess: { borderColor: colors.success, backgroundColor: colors.success + '1A' },
+  colon: { color: colors.textMuted, fontSize: fontSizes.xl, fontWeight: '700' },
+  tipStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 5,
+    marginTop: -spacing.sm,
+    marginBottom: spacing.md,
+  },
+  tipStatusText: { fontSize: fontSizes.xs, fontWeight: '700' },
+  finalScore: { color: colors.textMuted, textAlign: 'center', marginBottom: spacing.md, fontSize: fontSizes.sm },
+  error: { color: colors.danger, textAlign: 'center', marginBottom: spacing.sm, fontSize: fontSizes.sm },
+  submitButton: {
+    backgroundColor: colors.blueDark,
+    borderWidth: 1,
+    borderColor: colors.blue,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  submitButtonDisabled: { opacity: 0.4 },
+  submitButtonSuccess: { backgroundColor: colors.success, borderColor: colors.success },
+  submitText: { color: colors.white, fontWeight: '700', fontSize: fontSizes.md },
+  lockedNotice: {
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.md,
+    alignItems: 'center',
+  },
+  lockedText: { color: colors.textMuted, fontWeight: '600', fontSize: fontSizes.sm },
+});

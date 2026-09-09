@@ -1,0 +1,12 @@
+export const XP_PER_LEVEL = 1000;
+export const LEVEL_UP_REWARD_JOKERS = 1;
+export const XP_PER_POST = 50;
+export const STARTING_JOKERS = 3;
+export const POINTS_EXACT_SCORE = 5;
+export const POINTS_CORRECT_TENDENCY = 3;
+export const STREAK_MILESTONE_DAYS = 7;
+export const STREAK_REWARD_XP = 100;
+export const STREAK_REWARD_JOKER = 1;
+export const DUEL_WIN_XP = 30;
+export const REFERRAL_REWARD_XP = 100;
+export const REFERRAL_REWARD_JOKER = 1;
