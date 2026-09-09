@@ -24,10 +24,16 @@ export interface Point {
   y: number;
 }
 
-/** Points per second squared, at the scale this table is drawn. */
-export const GRAVITY = 2000;
+/**
+ * Points per second squared, at the scale this table is drawn.
+ *
+ * Gravity and hang time are chosen together: the apex is `g * T^2 / 8`, so
+ * shortening the flight to keep the game moving needs stronger gravity to keep
+ * the arc as high as it was.
+ */
+export const GRAVITY = 2900;
 /** How long a lobbed throw stays in the air. */
-export const HANG_TIME = 0.75;
+export const HANG_TIME = 0.62;
 /** Upward launch speed, the one that gives that hang time. */
 export const LAUNCH_UP = (GRAVITY * HANG_TIME) / 2;
 /** Highest the ball gets, in points: about a third of the table's length. */
@@ -38,7 +44,7 @@ export const APEX = (LAUNCH_UP * LAUNCH_UP) / (2 * GRAVITY);
  * gentle flick reaches the near cup and a firm one reaches the back row, with
  * the whole rack inside a comfortable range of swipe speeds.
  */
-const FLICK_TO_LAUNCH = 0.276;
+const FLICK_TO_LAUNCH = 0.334;
 /** Slower than this is a nudge, not a throw. */
 export const MIN_FLICK_SPEED = 260;
 /** Past this the ball has left the table anyway. */
@@ -46,9 +52,11 @@ export const MAX_RANGE = 520;
 
 /**
  * Wobble at zero steadiness, in points. Scaled down by steadiness and up by
- * how hard the ball was thrown. Tuned by simulation rather than by feel.
+ * how hard the ball was thrown. Tuned by simulation rather than by feel: with
+ * this and the mouth below, a normal thrower aiming well lands about two
+ * thirds of their throws at the nearest cup and a third at the far row.
  */
-const SPREAD_AT_ZERO_SKILL = 88;
+const SPREAD_AT_ZERO_SKILL = 76;
 /** A bounce shot is thrown flatter and lands wilder. */
 const BOUNCE_SPREAD_FACTOR = 1.6;
 /** How much speed the ball keeps when it bounces off the table. */
@@ -60,9 +68,13 @@ export const RESTITUTION = 0.6;
  * still drops in, one landing a few points wide does not.
  */
 const MOUTH_HEIGHT_RATIO = 0.34;
-/** Inside this the ball drops in; out to the second it catches the rim. */
-const IN_THRESHOLD = 0.85;
-const RIM_THRESHOLD = 1.25;
+/**
+ * Inside the first the ball drops in; out to the second it catches the rim.
+ * The mouth is deliberately a little more forgiving than the drawn cup — a
+ * ball clipping the inside edge goes in at a real table too.
+ */
+const IN_THRESHOLD = 0.92;
+const RIM_THRESHOLD = 1.35;
 
 /** How fast the hand was moving, in points per second. */
 export function flickSpeed(velocityX: number, velocityY: number): number {
@@ -114,19 +126,24 @@ export function spreadFor(skill: number, power: number, bounce: boolean): number
  * So this is measured rather than derived: each pair is a spread in points and
  * the share of throws that landed in *some* cup over 40,000 simulated throws at
  * a random cup of a full rack (`tools/test_throw_physics.mjs` checks the
- * opponents still hit at the rate their profile claims). Note the floor near
- * 26%: past a certain wildness the rack is simply a big enough target.
+ * opponents still hit at the rate their profile claims). Note the floor around
+ * a quarter: past a certain wildness the rack is simply a big enough target,
+ * so the weakest opponents need a very wide spread for a small change in rate.
+ * Re-measure this whenever the cup mouth changes — widening it once made every
+ * opponent quietly better than its profile said, and the test caught it.
  */
 const ACCURACY_TO_SPREAD: [spread: number, rate: number][] = [
-  [15, 0.997],
-  [20, 0.953],
-  [25, 0.853],
-  [30, 0.73],
-  [35, 0.616],
-  [40, 0.517],
-  [50, 0.383],
-  [60, 0.306],
-  [75, 0.261],
+  [15, 0.999],
+  [20, 0.975],
+  [25, 0.896],
+  [30, 0.788],
+  [35, 0.676],
+  [40, 0.576],
+  [50, 0.436],
+  [60, 0.354],
+  [75, 0.304],
+  [95, 0.276],
+  [120, 0.242],
 ];
 
 export function spreadForAccuracy(accuracy: number): number {
