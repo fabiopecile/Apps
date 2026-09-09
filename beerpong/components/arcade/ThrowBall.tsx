@@ -7,6 +7,7 @@ import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
 import {
   RESTITUTION,
+  cupMouth,
   previewFlight,
   resolveThrow,
   sampleFlight,
@@ -149,7 +150,7 @@ export function ThrowBall({
     setAim(null);
     onResult({ ...result, bounce });
     if (resetTimer.current) clearTimeout(resetTimer.current);
-    resetTimer.current = setTimeout(() => flight.settle(startX, startY), 140);
+    resetTimer.current = setTimeout(() => flight.settle(startX, startY), 90);
   };
 
   /**
@@ -192,7 +193,10 @@ export function ThrowBall({
         return;
       }
       if (hit) {
-        dropIntoCup(landing, result);
+        // Into the hole, not wherever the parabola happened to end: the ball
+        // slides the last few points to the rim it caught and drops there.
+        const cup = cupIndex != null ? cups.find((c) => c.index === cupIndex) : null;
+        dropIntoCup(cup ? cupMouth(cup) : landing, result);
         return;
       }
       finishThrow(result);
@@ -204,10 +208,11 @@ export function ThrowBall({
    * behind the rim, rather than simply stopping on top of it.
    */
   const dropIntoCup = (at: Point, result: Omit<ThrowResult, 'bounce'>) => {
-    flight.scale.value = withTiming(0.12, { duration: 190, easing: Easing.in(Easing.quad) });
-    flight.playLeg(at, { x: at.x, y: at.y + 14 }, 0.19, 0, () => {});
+    flight.scale.value = withTiming(0.1, { duration: 170, easing: Easing.in(Easing.quad) });
+    // A touch further down than the rim, so it reads as disappearing inside.
+    flight.playLeg(at, { x: at.x, y: at.y + 16 }, 0.17, 0, () => {});
     if (resultTimer.current) clearTimeout(resultTimer.current);
-    resultTimer.current = setTimeout(() => finishThrow(result), 200);
+    resultTimer.current = setTimeout(() => finishThrow(result), 180);
   };
 
   /**

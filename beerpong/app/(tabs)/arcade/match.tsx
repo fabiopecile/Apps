@@ -33,6 +33,7 @@ import {
   TABLE_HEIGHT,
   VIEWPORT_HEIGHT,
 } from '@/lib/arcadeLayout';
+import { cupMouth } from '@/lib/throwPhysics';
 import {
   AI_PRESETS,
   WEEKEND_MATCHES,
@@ -259,13 +260,13 @@ export default function MatchScreen() {
   const scheduleOpponentTurn = () => {
     clearTimers();
     if (isPassPlay) {
-      turnTimer.current = setTimeout(() => setHandOver(true), 450);
+      turnTimer.current = setTimeout(() => setHandOver(true), 380);
       return;
     }
     turnTimer.current = setTimeout(() => {
       setTurn('opponent');
       setOpponentTurnToken((t) => t + 1);
-    }, 380);
+    }, 260);
   };
 
   const returnTurnToPlayer = (delay: number) => {
@@ -312,7 +313,7 @@ export default function MatchScreen() {
           team: won ? trackerTeams[0].name : trackerTeams[1].name,
         })
       );
-      endTimer.current = setTimeout(() => setRoundResult(outcome), 340);
+      endTimer.current = setTimeout(() => setRoundResult(outcome), 280);
       return;
     }
 
@@ -373,17 +374,38 @@ export default function MatchScreen() {
     }
 
     // Let the last cup finish falling before the overlay covers the table.
-    endTimer.current = setTimeout(() => setRoundResult(outcome), 340);
+    endTimer.current = setTimeout(() => setRoundResult(outcome), 280);
   };
 
   /** Sinking a bounce shot takes a second cup along with the target. */
-  const removeCups = (alive: boolean[], primaryIndex: number, extra: boolean): boolean[] => {
+  /**
+   * Takes the cup that was hit, plus — on a bounce shot — the cup next to it.
+   *
+   * A bounce counts two at a real table, and this used to pick the second one
+   * at random: a cup on the far side of the rack would simply vanish with the
+   * ball nowhere near it, which reads as a glitch rather than a rule. The
+   * nearest one still standing at least looks like the ball carried on into it.
+   */
+  const removeCups = (
+    alive: boolean[],
+    primaryIndex: number,
+    extra: boolean,
+    rack: typeof opponentCups
+  ): boolean[] => {
     const next = alive.map((value, i) => (i === primaryIndex ? false : value));
     if (!extra) return next;
-    const standing = next.map((value, i) => (value ? i : -1)).filter((i) => i >= 0);
-    if (standing.length > 0) {
-      next[standing[Math.floor(Math.random() * standing.length)]] = false;
-    }
+    const from = rack[primaryIndex];
+    let nearest = -1;
+    let nearestDistance = Infinity;
+    rack.forEach((cup) => {
+      if (!next[cup.index] || !from) return;
+      const distance = Math.hypot(cup.x - from.x, cup.y - from.y);
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearest = cup.index;
+      }
+    });
+    if (nearest >= 0) next[nearest] = false;
     return next;
   };
 
@@ -409,12 +431,12 @@ export default function MatchScreen() {
       return;
     }
     setMissNote(null);
-    const cup = opponentCups[result.cupIndex];
+    const cup = cupMouth(opponentCups[result.cupIndex]);
     feedback.cupHit();
     if (result.bounce) feedback.streak();
     flashRef.current?.flash(ballSkin.accent, 0.18);
     particleRef.current?.burst(cup.x, cup.y);
-    const next = removeCups(opponentAlive, result.cupIndex, result.bounce);
+    const next = removeCups(opponentAlive, result.cupIndex, result.bounce, opponentCups);
     setOpponentAlive(next);
     setBounceArmed(false);
     if (next.every((alive) => !alive)) {
@@ -434,27 +456,27 @@ export default function MatchScreen() {
     arcadeRecordThrow(result.hit);
     if (result.cupIndex == null || !result.hit) {
       if (!result.rimOut) feedback.miss();
-      returnTurnToPlayer(450);
+      returnTurnToPlayer(320);
       return;
     }
-    const cup = playerCups[result.cupIndex];
+    const cup = cupMouth(playerCups[result.cupIndex]);
     feedback.cupHit();
     flashRef.current?.flash(colors.gold, 0.18);
     particleRef.current?.burst(cup.x, cup.y);
-    const next = removeCups(playerAlive, result.cupIndex, result.bounce);
+    const next = removeCups(playerAlive, result.cupIndex, result.bounce, playerCups);
     setPlayerAlive(next);
     setBounceArmed(false);
     if (next.every((alive) => !alive)) {
       endRound('lose');
     } else {
-      returnTurnToPlayer(620);
+      returnTurnToPlayer(460);
     }
   };
 
   const handleOpponentResult = (result: { cupIndex: number; hit: boolean }) => {
     if (!result.hit) {
       feedback.miss();
-      returnTurnToPlayer(480);
+      returnTurnToPlayer(360);
       return;
     }
     const cup = playerCups[result.cupIndex];
@@ -467,7 +489,7 @@ export default function MatchScreen() {
     if (next.every((alive) => !alive)) {
       endRound('lose');
     } else {
-      returnTurnToPlayer(700);
+      returnTurnToPlayer(520);
     }
   };
 

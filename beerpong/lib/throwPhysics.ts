@@ -31,9 +31,9 @@ export interface Point {
  * shortening the flight to keep the game moving needs stronger gravity to keep
  * the arc as high as it was.
  */
-export const GRAVITY = 2900;
+export const GRAVITY = 4100;
 /** How long a lobbed throw stays in the air. */
-export const HANG_TIME = 0.62;
+export const HANG_TIME = 0.52;
 /** Upward launch speed, the one that gives that hang time. */
 export const LAUNCH_UP = (GRAVITY * HANG_TIME) / 2;
 /** Highest the ball gets, in points: about a third of the table's length. */
@@ -44,7 +44,7 @@ export const APEX = (LAUNCH_UP * LAUNCH_UP) / (2 * GRAVITY);
  * gentle flick reaches the near cup and a firm one reaches the back row, with
  * the whole rack inside a comfortable range of swipe speeds.
  */
-const FLICK_TO_LAUNCH = 0.334;
+const FLICK_TO_LAUNCH = 0.398;
 /** Slower than this is a nudge, not a throw. */
 export const MIN_FLICK_SPEED = 260;
 /** Past this the ball has left the table anyway. */
@@ -56,25 +56,44 @@ export const MAX_RANGE = 520;
  * this and the mouth below, a normal thrower aiming well lands about two
  * thirds of their throws at the nearest cup and a third at the far row.
  */
-const SPREAD_AT_ZERO_SKILL = 76;
+const SPREAD_AT_ZERO_SKILL = 56;
 /** A bounce shot is thrown flatter and lands wilder. */
 const BOUNCE_SPREAD_FACTOR = 1.6;
 /** How much speed the ball keeps when it bounces off the table. */
 export const RESTITUTION = 0.6;
 
 /**
- * A cup's mouth as an ellipse. The table is drawn from a low angle, so the
- * opening is much shallower than it is wide; a ball landing a few points long
- * still drops in, one landing a few points wide does not.
+ * Where a cup's opening actually is.
+ *
+ * A cup is drawn on a 100x125 board with its mouth at y=21, and the sprite is
+ * centred on `cup.y` — so the hole is a third of the cup's height *above* the
+ * point the layout stores. Aiming at `cup.y` put the ball into the middle of
+ * the plastic: it registered as a hit and looked like one bouncing off the
+ * side. Twenty-five points on the near cup, and the whole reason a hit never
+ * looked like it went in.
  */
-const MOUTH_HEIGHT_RATIO = 0.34;
+const MOUTH_ABOVE_CENTRE = 0.332;
 /**
- * Inside the first the ball drops in; out to the second it catches the rim.
- * The mouth is deliberately a little more forgiving than the drawn cup — a
- * ball clipping the inside edge goes in at a real table too.
+ * The catching ellipse, as fractions of a cup's width. The drawn hole is 0.37
+ * wide and 0.104 tall; this is deliberately bigger, because a ball has to be
+ * allowed to clip the rim and drop rather than needing to thread the exact
+ * pixels of the opening.
  */
-const IN_THRESHOLD = 0.92;
-const RIM_THRESHOLD = 1.35;
+const MOUTH_RX = 0.52;
+const MOUTH_RY = 0.26;
+/** Inside the first the ball drops in; out to the second it catches the rim. */
+const IN_THRESHOLD = 1;
+const RIM_THRESHOLD = 1.45;
+
+/** The opening of a cup, in table points — what a throw is actually aimed at. */
+export function cupMouth(cup: CupSpec): Point & { rx: number; ry: number } {
+  return {
+    x: cup.x,
+    y: cup.y - cup.height * MOUTH_ABOVE_CENTRE,
+    rx: cup.width * MOUTH_RX,
+    ry: cup.width * MOUTH_RY,
+  };
+}
 
 /** How fast the hand was moving, in points per second. */
 export function flickSpeed(velocityX: number, velocityY: number): number {
@@ -133,17 +152,18 @@ export function spreadFor(skill: number, power: number, bounce: boolean): number
  * opponent quietly better than its profile said, and the test caught it.
  */
 const ACCURACY_TO_SPREAD: [spread: number, rate: number][] = [
-  [15, 0.999],
-  [20, 0.975],
-  [25, 0.896],
-  [30, 0.788],
-  [35, 0.676],
-  [40, 0.576],
-  [50, 0.436],
-  [60, 0.354],
-  [75, 0.304],
-  [95, 0.276],
-  [120, 0.242],
+  [15, 0.993],
+  [20, 0.932],
+  [25, 0.83],
+  [30, 0.721],
+  [35, 0.622],
+  [40, 0.535],
+  [50, 0.412],
+  [60, 0.339],
+  [75, 0.295],
+  [95, 0.269],
+  [120, 0.234],
+  [150, 0.2],
 ];
 
 export function spreadForAccuracy(accuracy: number): number {
@@ -287,10 +307,9 @@ export function resolveLanding(
 
   for (const cup of cups) {
     if (!aliveFlags[cup.index]) continue;
-    const rx = cup.width / 2;
-    const ry = Math.max(6, cup.width * MOUTH_HEIGHT_RATIO);
-    const dx = (landing.x - cup.x) / rx;
-    const dy = (landing.y - cup.y) / ry;
+    const mouth = cupMouth(cup);
+    const dx = (landing.x - mouth.x) / mouth.rx;
+    const dy = (landing.y - mouth.y) / Math.max(6, mouth.ry);
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance < closestDistance) {
       closestDistance = distance;

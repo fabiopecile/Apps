@@ -49,6 +49,7 @@ const {
   previewFlight,
   resolveLanding,
   resolveThrow,
+  cupMouth,
   spreadFor,
   spreadForAccuracy,
   wobble,
@@ -77,8 +78,9 @@ function seeded(seed) {
 
 /** The swipe that throws at a cup: straight at it, fast enough to reach. */
 function swipeAt(cup, { extraSpeed = 1, offsetX = 0 } = {}) {
-  const dx = cup.x + offsetX - START.x;
-  const dy = cup.y - START.y;
+  const mouth = cupMouth(cup);
+  const dx = mouth.x + offsetX - START.x;
+  const dy = mouth.y - START.y;
   const distance = Math.hypot(dx, dy);
   const speed = speedForRange(distance) * extraSpeed;
   return { velocityX: (dx / distance) * speed, velocityY: (dy / distance) * speed };
@@ -133,8 +135,10 @@ check('a faster swipe carries further', () => {
 });
 
 check('the whole rack sits inside a swipe speed a thumb can make', () => {
-  const nearest = speedForRange(START.y - apex.y);
-  const furthest = speedForRange(Math.hypot(backRow.x - START.x, START.y - backRow.y));
+  const nearest = speedForRange(START.y - cupMouth(apex).y);
+  const furthest = speedForRange(
+    Math.hypot(cupMouth(backRow).x - START.x, START.y - cupMouth(backRow).y)
+  );
   // Both ends have to be reachable, and not two flicks of the wrist apart.
   assert.ok(nearest > MIN_FLICK_SPEED, `near cup needs ${nearest.toFixed(0)}pt/s`);
   assert.ok(furthest < 2200, `far row needs ${furthest.toFixed(0)}pt/s, too fast to aim`);
@@ -173,17 +177,18 @@ check('swiping backwards throws nothing', () => {
 });
 
 check('the flight starts and ends where it should', () => {
-  const flight = buildFlight(START, { x: apex.x, y: apex.y }, false);
+  const flight = buildFlight(START, cupMouth(apex), false);
+  const target = cupMouth(apex);
   const first = sampleFlight(flight, 0);
   const last = sampleFlight(flight, flight.hang);
   assert.ok(Math.abs(first.x - START.x) < 0.01 && Math.abs(first.y - START.y) < 0.01);
-  assert.ok(Math.abs(last.x - apex.x) < 0.01 && Math.abs(last.y - apex.y) < 0.01);
+  assert.ok(Math.abs(last.x - target.x) < 0.01 && Math.abs(last.y - target.y) < 0.01);
   assert.ok(first.height < 0.01 && last.height < 0.01);
   assert.ok(sampleFlight(flight, flight.hang / 2).height > 100);
 });
 
 check('a bounce shot touches the table on the way, and only once', () => {
-  const target = { x: apex.x, y: apex.y };
+  const target = cupMouth(apex);
   const flight = buildFlight(START, target, true);
   assert.ok(flight.bounceAt, 'a bounce shot has to bounce');
   // On the table, short of the cup, and past halfway.
@@ -201,7 +206,7 @@ check('a bounce shot touches the table on the way, and only once', () => {
 });
 
 check('a bounce shot arcs lower than a straight throw', () => {
-  const target = { x: apex.x, y: apex.y };
+  const target = cupMouth(apex);
   const straight = buildFlight(START, target, false);
   const bounced = buildFlight(START, target, true);
   const topOf = (f) => {
@@ -214,13 +219,29 @@ check('a bounce shot arcs lower than a straight throw', () => {
 
 // ------------------------------------------------------------- the target
 
-check('a dead-centre landing is in, an edge landing rims out', () => {
-  const inside = resolveLanding({ x: apex.x, y: apex.y }, cups, allAlive);
+check('the target is the hole, which sits above the middle of the cup', () => {
+  // A cup is drawn with its mouth a third of its height above the point the
+  // layout stores. Aiming at that stored point put the ball into the side of
+  // the plastic, which is why a hit never looked like one.
+  const mouth = cupMouth(apex);
+  assert.equal(mouth.x, apex.x);
+  assert.ok(
+    mouth.y < apex.y - apex.height * 0.25,
+    `mouth at ${mouth.y.toFixed(1)} should sit well above the centre at ${apex.y.toFixed(1)}`
+  );
+  // ...and landing on the stored centre is no longer a clean hit.
+  assert.equal(resolveLanding({ x: apex.x, y: apex.y }, cups, allAlive).hit, false);
+});
+
+check('a landing in the hole is in, one on the rim bounces out', () => {
+  const mouth = cupMouth(apex);
+  const inside = resolveLanding(mouth, cups, allAlive);
   assert.equal(inside.hit, true);
   assert.equal(inside.cupIndex, apex.index);
-  const rim = resolveLanding({ x: apex.x + apex.width * 0.5, y: apex.y }, cups, allAlive);
+  const rim = resolveLanding({ x: mouth.x + mouth.rx * 1.15, y: mouth.y }, cups, allAlive);
   assert.equal(rim.hit, false);
   assert.equal(rim.rimOut, true);
+  assert.equal(rim.cupIndex, apex.index);
 });
 
 check('landing on bare table hits nothing at all', () => {
@@ -232,7 +253,7 @@ check('landing on bare table hits nothing at all', () => {
 check('a cup already sunk cannot be hit again', () => {
   const flags = [...allAlive];
   flags[apex.index] = false;
-  const result = resolveLanding({ x: apex.x, y: apex.y }, cups, flags);
+  const result = resolveLanding(cupMouth(apex), cups, flags);
   assert.notEqual(result.cupIndex, apex.index);
   assert.equal(result.hit, false);
 });
@@ -267,7 +288,7 @@ check('throwing too hard sails past the rack', () => {
     aliveFlags: allAlive,
     random: () => 0.5,
   });
-  assert.ok(over && over.landing.y < backRow.y - 40, 'it should fly past the back row');
+  assert.ok(over && over.landing.y < cupMouth(backRow).y - 40, 'it should fly past the back row');
   assert.equal(over.hit, false);
 });
 
@@ -298,9 +319,9 @@ function opponentRate(accuracy, runs = 30000) {
   const spread = spreadForAccuracy(accuracy);
   let hits = 0;
   for (let i = 0; i < runs; i++) {
-    const cup = yours[Math.floor(random() * yours.length)];
+    const mouth = cupMouth(yours[Math.floor(random() * yours.length)]);
     const offset = wobble(spread, random);
-    if (resolveLanding({ x: cup.x + offset.x, y: cup.y + offset.y }, yours, alive).hit) hits += 1;
+    if (resolveLanding({ x: mouth.x + offset.x, y: mouth.y + offset.y }, yours, alive).hit) hits += 1;
   }
   return hits / runs;
 }
@@ -331,7 +352,8 @@ check('an accuracy off the end of the table still gives a usable spread', () => 
 
 console.log('\nswipe speed needed, in points per second:');
 for (const [label, cup] of [['nearest cup', apex], ['far row', backRow]]) {
-  const distance = Math.hypot(cup.x - START.x, cup.y - START.y);
+  const m = cupMouth(cup);
+  const distance = Math.hypot(m.x - START.x, m.y - START.y);
   console.log(`  ${label.padEnd(12)} ${speedForRange(distance).toFixed(0)} pt/s  (${distance.toFixed(0)}pt away)`);
 }
 console.log(`  arc peaks at ${APEX.toFixed(0)}pt after ${(HANG_TIME / 2).toFixed(2)}s\n`);
