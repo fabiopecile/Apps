@@ -1,0 +1,57 @@
+{
+  "expo": {
+    "name": "Beerpong",
+    "slug": "beerpong",
+    "version": "1.0.0",
+    "orientation": "default",
+    "icon": "./assets/images/icon.png",
+    "scheme": "beerpong",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#0A0A0A",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.beerpong.app",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Beerpong nutzt die Kamera, um im Tracker-Modus getroffene Cups zu erfassen.",
+        "UIBackgroundColor": "#0A0A0A"
+      }
+    },
+    "android": {
+      "package": "com.beerpong.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#0A0A0A",
+        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "backgroundImage": "./assets/images/android-icon-background.png",
+        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "permissions": ["CAMERA"]
+    },
+    "web": {
+      "bundler": "metro",
+      "output": "static",
+      "favicon": "./assets/images/favicon.png",
+      "backgroundColor": "#0A0A0A"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Beerpong nutzt die Kamera, um im Tracker-Modus getroffene Cups zu erfassen."
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash-icon.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0A0A0A"
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true
+    }
+  }
+}
