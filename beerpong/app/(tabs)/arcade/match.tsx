@@ -90,17 +90,24 @@ export default function MatchScreen() {
   const isPassPlay = mode === 'passplay';
 
   const { width, height } = useWindowDimensions();
-  const tableWidth = width - spacing.lg * 2;
   // Arcade is a portrait game: the table's landmarks — net, ball, both racks —
   // sit at fixed distances down a tall board, and swiping up at a rack only
   // reads right that way round. Sideways the game asks to be turned back
   // (see `landscape` below) rather than rearranging itself.
-  //
-  // The clamp is for short phones, not for landscape: on a 667pt screen the
-  // full viewport would push the action buttons under the tab bar. The table
-  // just shows a little less of itself; the camera pan already scrolls it.
   const landscape = width > height;
-  const viewportHeight = Math.min(VIEWPORT_HEIGHT, Math.max(220, height - 280));
+
+  // Short screens get a smaller table, never a cropped one.
+  //
+  // Cropping was tried and it broke the game outright: the ball sits at 391pt
+  // down the board, so a window shorter than that leaves it outside — invisible
+  // and, because the window clips touches too, unthrowable. That is every
+  // iPhone in Safari, where the address bar takes the usable height to about
+  // 664pt and the window came out at 384. It only looked fine at 844pt.
+  const stageHeight = Math.min(VIEWPORT_HEIGHT, Math.max(260, height - 280));
+  const stageScale = stageHeight / VIEWPORT_HEIGHT;
+  const viewportHeight = VIEWPORT_HEIGHT;
+  // Divided by the scale so the felt still runs edge to edge once shrunk.
+  const tableWidth = (width - spacing.lg * 2) / stageScale;
   const opponentCups = useMemo(() => generateOpponentRack(tableWidth), [tableWidth]);
   const playerCups = useMemo(() => generatePlayerRack(tableWidth), [tableWidth]);
 
@@ -532,7 +539,24 @@ export default function MatchScreen() {
           />
         </View>
 
-        <View style={[styles.viewport, { width: tableWidth, height: viewportHeight }]}>
+        {/* Outer box is the space the table gets; the inner one is the table at
+            its true size, shrunk to fit. Scaling about the centre would push it
+            off its box, so it is pinned to the top left corner. */}
+        <View
+          style={{
+            width: tableWidth * stageScale,
+            height: viewportHeight * stageScale,
+            alignSelf: 'center',
+            marginTop: spacing.md,
+          }}
+        >
+        <View
+          style={[
+            styles.viewport,
+            styles.viewportScaled,
+            { width: tableWidth, height: viewportHeight, transform: [{ scale: stageScale }] },
+          ]}
+        >
           <Animated.View
             style={[styles.table, { width: tableWidth, height: TABLE_HEIGHT }, cameraStyle]}
           >
@@ -558,6 +582,7 @@ export default function MatchScreen() {
               onResult={handlePlayerResult}
               onRim={feedback.rimOut}
               onLaunch={feedback.whoosh}
+              inputScale={stageScale}
               disabled={!playerTurn || handOver}
               hidden={!playerTurn}
             />
@@ -574,6 +599,7 @@ export default function MatchScreen() {
                 onResult={handleSecondPlayerResult}
                 onRim={feedback.rimOut}
                 onLaunch={feedback.whoosh}
+                inputScale={stageScale}
                 disabled={playerTurn || handOver || roundResult != null}
                 hidden={playerTurn || roundResult != null}
               />
@@ -593,6 +619,7 @@ export default function MatchScreen() {
             <ParticleBurst ref={particleRef} />
             <FlashOverlay ref={flashRef} />
           </Animated.View>
+        </View>
         </View>
 
         <View style={styles.actionRow}>
@@ -910,13 +937,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   viewport: {
-    alignSelf: 'center',
-    marginTop: spacing.md,
     borderRadius: radius.lg,
     borderWidth: 1,
     borderColor: colors.borderFaint,
     backgroundColor: colors.backgroundCard,
     overflow: 'hidden',
+  },
+  /**
+   * Shrunk from its top left corner rather than its centre, so the table stays
+   * inside the box the layout gave it instead of spilling out on both sides.
+   */
+  viewportScaled: {
+    alignSelf: 'flex-start',
+    transformOrigin: 'top left',
   },
   table: {
     position: 'absolute',
