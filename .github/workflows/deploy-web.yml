@@ -43,6 +43,12 @@ jobs:
       - name: Pages konfigurieren
         id: pages
         uses: actions/configure-pages@v5
+        with:
+          # Schaltet GitHub Pages selbst ein, statt es unter Settings -> Pages
+          # von Hand auf "GitHub Actions" stellen zu müssen. Ohne das bricht
+          # der Lauf mit "Get Pages site failed" ab, bevor überhaupt gebaut
+          # wird. Braucht ein öffentliches Repo (oder GitHub Pro).
+          enablement: true
 
       - name: Basis-Pfad bestimmen
         id: base

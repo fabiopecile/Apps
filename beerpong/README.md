@@ -89,15 +89,22 @@ Die Web-App umgeht das komplett.
 
 **Einrichten (nur einmal nötig):**
 
-1. Auf GitHub in dieses Repository gehen → **Settings** → links **Pages**
-2. Bei „Source" **GitHub Actions** auswählen → speichern
-3. Die Änderungen müssen auf `main` liegen: Der Workflow läuft nur von dort,
+1. Die Änderungen müssen auf `main` liegen: Der Workflow läuft nur von dort,
    und GitHub Pages lässt Veröffentlichungen standardmäßig nur vom
    Hauptzweig zu. Also erst den Entwicklungszweig nach `main` zusammenführen
    (**Pull requests** → *New pull request* → base `main`, compare
    `claude/beerpong-mobile-app-845mv3` → *Create* → *Merge*)
-4. Der Merge startet den Workflow von selbst. Unter **Actions** lässt er sich
+2. Der Merge startet den Workflow von selbst. Unter **Actions** lässt er sich
    auch jederzeit von Hand starten (**Run workflow**)
+
+Pages selbst muss nicht eingeschaltet werden — der Workflow erledigt das
+(`enablement: true`). Bricht ein Lauf trotzdem mit **„Get Pages site failed"**
+ab, ist Pages weder eingeschaltet noch einschaltbar: einmal unter **Settings**
+→ **Pages** → Source auf **GitHub Actions** stellen und den Lauf unter
+**Actions** → *Re-run jobs* wiederholen.
+
+> Die Warnung „Node.js 20 is deprecated" im Protokoll ist harmlos — sie betrifft
+> GitHubs eigene Actions, nicht diese App, und lässt den Lauf durchgehen.
 
 Nach ein paar Minuten steht die Adresse oben im Workflow-Ergebnis, normalerweise:
 
