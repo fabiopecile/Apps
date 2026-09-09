@@ -259,13 +259,13 @@ export default function MatchScreen() {
   const scheduleOpponentTurn = () => {
     clearTimers();
     if (isPassPlay) {
-      turnTimer.current = setTimeout(() => setHandOver(true), 650);
+      turnTimer.current = setTimeout(() => setHandOver(true), 450);
       return;
     }
     turnTimer.current = setTimeout(() => {
       setTurn('opponent');
       setOpponentTurnToken((t) => t + 1);
-    }, 550);
+    }, 380);
   };
 
   const returnTurnToPlayer = (delay: number) => {
@@ -312,7 +312,7 @@ export default function MatchScreen() {
           team: won ? trackerTeams[0].name : trackerTeams[1].name,
         })
       );
-      endTimer.current = setTimeout(() => setRoundResult(outcome), 420);
+      endTimer.current = setTimeout(() => setRoundResult(outcome), 340);
       return;
     }
 
@@ -373,7 +373,7 @@ export default function MatchScreen() {
     }
 
     // Let the last cup finish falling before the overlay covers the table.
-    endTimer.current = setTimeout(() => setRoundResult(outcome), 420);
+    endTimer.current = setTimeout(() => setRoundResult(outcome), 340);
   };
 
   /** Sinking a bounce shot takes a second cup along with the target. */
@@ -434,7 +434,7 @@ export default function MatchScreen() {
     arcadeRecordThrow(result.hit);
     if (result.cupIndex == null || !result.hit) {
       if (!result.rimOut) feedback.miss();
-      returnTurnToPlayer(650);
+      returnTurnToPlayer(450);
       return;
     }
     const cup = playerCups[result.cupIndex];
@@ -447,14 +447,14 @@ export default function MatchScreen() {
     if (next.every((alive) => !alive)) {
       endRound('lose');
     } else {
-      returnTurnToPlayer(900);
+      returnTurnToPlayer(620);
     }
   };
 
   const handleOpponentResult = (result: { cupIndex: number; hit: boolean }) => {
     if (!result.hit) {
       feedback.miss();
-      returnTurnToPlayer(700);
+      returnTurnToPlayer(480);
       return;
     }
     const cup = playerCups[result.cupIndex];
@@ -467,7 +467,7 @@ export default function MatchScreen() {
     if (next.every((alive) => !alive)) {
       endRound('lose');
     } else {
-      returnTurnToPlayer(1000);
+      returnTurnToPlayer(700);
     }
   };
 
