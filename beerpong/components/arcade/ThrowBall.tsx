@@ -13,6 +13,21 @@ import { BALL_SIZE, HEIGHT_LIFT, useBallFlight } from './useBallFlight';
 const AIM_MARKER = 26;
 /** Let go later than this after the hand stopped and it is not a throw. */
 const STALE_HAND_MS = 120;
+/**
+ * How far the ball can be carried from its mark while lining a throw up.
+ *
+ * The ball follows the finger, so without a limit it could simply be walked up
+ * to the rack and dropped in. Wide enough to aim across the whole rack and to
+ * pull back for a run-up, short enough that it is still a throw.
+ */
+const DRAG_SIDEWAYS = 120;
+const DRAG_FORWARD = 90;
+const DRAG_BACK = 60;
+
+function clampWorklet(value: number, min: number, max: number) {
+  'worklet';
+  return Math.max(min, Math.min(max, value));
+}
 
 export interface ThrowResult {
   cupIndex: number | null;
@@ -119,12 +134,12 @@ export function ThrowBall({
   };
 
   /**
-   * A real throw: the speed of your hand becomes the speed of the ball, and
-   * where it comes down is wherever the parabola puts it.
+   * A real throw: the ball leaves from wherever your finger let go of it, at
+   * the speed your hand was moving.
    */
-  const throwBall = (velocityX: number, velocityY: number) => {
+  const throwBall = (velocityX: number, velocityY: number, fromX: number, fromY: number) => {
     const outcome = resolveThrow({
-      start: { x: startX, y: startY },
+      start: { x: fromX, y: fromY },
       velocityX,
       velocityY,
       direction,
@@ -133,8 +148,12 @@ export function ThrowBall({
       cups,
       aliveFlags,
     });
-    // Too slow to leave the hand — not a throw, so not a turn.
-    if (!outcome) return;
+    // Too slow to leave the hand — not a throw, so not a turn. The ball rolls
+    // back to its mark instead of staying wherever it was dropped.
+    if (!outcome) {
+      flight.settle(startX, startY);
+      return;
+    }
 
     const { hit, rimOut, cupIndex, power, landing } = outcome;
     const miss = missDistance(landing, cups, aliveFlags, direction);
@@ -182,25 +201,43 @@ export function ThrowBall({
   const lastAt = useSharedValue(0);
   const velX = useSharedValue(0);
   const velY = useSharedValue(0);
+  /** Where the finger first went down, so the ball can follow it exactly. */
+  const grabX = useSharedValue(0);
+  const grabY = useSharedValue(0);
   /** Screen points per table point; see `inputScale`. */
   const scale = useSharedValue(inputScale);
   scale.value = inputScale;
 
   const pan = Gesture.Pan()
     .enabled(!disabled && !flying)
+    // The ball has to move the instant the finger does. A pan normally waits
+    // for a few points of travel before it activates, and that showed up as
+    // the ball staying put for the first 40pt of the drag.
+    .minDistance(0)
     .onBegin((e) => {
       lastX.value = e.absoluteX;
       lastY.value = e.absoluteY;
+      grabX.value = e.absoluteX;
+      grabY.value = e.absoluteY;
       lastAt.value = Date.now();
       velX.value = 0;
       velY.value = 0;
     })
     .onUpdate((e) => {
+      const factor = 1 / Math.max(0.05, scale.value);
+
+      // The ball goes where the finger goes. Held inside a patch around its
+      // mark, so it can be lined up and pulled back without being walked all
+      // the way up to the cups.
+      const dragX = (e.absoluteX - grabX.value) * factor;
+      const dragY = (e.absoluteY - grabY.value) * factor;
+      flight.groundX.value = startX + clampWorklet(dragX, -DRAG_SIDEWAYS, DRAG_SIDEWAYS);
+      flight.groundY.value = startY + clampWorklet(dragY, -DRAG_FORWARD, DRAG_BACK);
+
       const now = Date.now();
       const dt = (now - lastAt.value) / 1000;
       // Below a couple of milliseconds the division blows up on noise.
       if (dt < 0.004) return;
-      const factor = 1 / Math.max(0.05, scale.value);
       const vx = ((e.absoluteX - lastX.value) / dt) * factor;
       const vy = ((e.absoluteY - lastY.value) / dt) * factor;
       lastX.value = e.absoluteX;
@@ -210,26 +247,37 @@ export function ThrowBall({
       // swipe, not its average.
       velX.value = velX.value * 0.4 + vx * 0.6;
       velY.value = velY.value * 0.4 + vy * 0.6;
-      runOnJS(showAim)(velX.value, velY.value);
+      runOnJS(showAim)(velX.value, velY.value, flight.groundX.value, flight.groundY.value);
     })
     .onEnd(() => {
       runOnJS(setAim)(null);
-      // A hand that has stopped is not throwing. Without this, aiming slowly,
-      // pausing and letting go would launch the ball with whatever speed the
-      // last movement happened to have — no movement means no new samples, so
-      // the average never decays on its own.
-      if (Date.now() - lastAt.value > STALE_HAND_MS) return;
-      runOnJS(throwBall)(velX.value, velY.value);
+      // A hand that has stopped is not throwing. Without this, lining the ball
+      // up slowly, pausing and letting go would launch it with whatever speed
+      // the last movement happened to have — no movement means no new samples,
+      // so the average never decays on its own.
+      if (Date.now() - lastAt.value > STALE_HAND_MS) {
+        runOnJS(settleBack)();
+        return;
+      }
+      runOnJS(throwBall)(velX.value, velY.value, flight.groundX.value, flight.groundY.value);
     })
-    .onFinalize(() => {
+    .onFinalize((_e, success) => {
       runOnJS(setAim)(null);
+      // Cancelled part-way through: put the ball back rather than leaving it
+      // stranded under where the finger was.
+      if (!success) runOnJS(settleBack)();
     });
 
+  function settleBack() {
+    if (flyingRef.current) return;
+    flight.settle(startX, startY);
+  }
+
   /** The arc the current swipe speed would fly, drawn while you swing. */
-  function showAim(velocityX: number, velocityY: number) {
+  function showAim(velocityX: number, velocityY: number, fromX: number, fromY: number) {
     setAim(
       previewFlight({
-        start: { x: startX, y: startY },
+        start: { x: fromX, y: fromY },
         velocityX,
         velocityY,
         direction,
