@@ -80,8 +80,8 @@ const STRINGS = {
   },
   'onboarding.arcade.title': { de: 'Oder wirf selbst', en: 'Or throw yourself' },
   'onboarding.arcade.body': {
-    de: 'Im Arcade-Modus wischst du den Ball übers Display. Ein Ring zeigt, wo er landen wird: weiter wischen heißt weiter werfen. Getroffen wird der Becher, in dem er aufkommt — Zielen entscheidet, nicht der Zufall.',
-    en: 'In arcade mode you swipe the ball across the screen. A ring shows where it will land: swipe further, throw further. You sink whatever cup it comes down in — aim decides it, not chance.',
+    de: 'Im Arcade-Modus wirfst du mit einer Wischbewegung: Die Geschwindigkeit deiner Hand wird zur Geschwindigkeit des Balls, dann fliegt er im Bogen und fällt wieder herunter. Getroffen wird der Becher, in dem er aufkommt — Schwung und Richtung entscheiden, nicht der Zufall.',
+    en: 'In arcade mode you throw with a swipe: the speed of your hand becomes the speed of the ball, which arcs up and drops back down. You sink whatever cup it lands in — your throw decides it, not chance.'
   },
   'onboarding.progress.title': { de: 'Alles zählt mit', en: 'Everything counts' },
   'onboarding.progress.body': {
@@ -167,8 +167,8 @@ const STRINGS = {
   'passplay.throwsUp': { de: 'wirft nach oben', en: 'throws upwards' },
   'passplay.throwsDown': { de: 'wirft nach unten', en: 'throws downwards' },
   'passplay.rule.swipe': {
-    de: 'Wischen wie sonst — der Ring zeigt, wo der Ball landet.',
-    en: 'Swipe as usual — the ring shows where the ball will land.',
+    de: 'Wischen wie sonst — je schneller die Hand, desto weiter der Wurf.',
+    en: 'Swipe as usual — the faster your hand, the further the throw.',
   },
   'passplay.rule.bounce': {
     de: 'Bounce-Wurf: schwerer zu treffen, nimmt dafür zwei Cups.',
@@ -347,8 +347,8 @@ const STRINGS = {
   // ----------------------------------------------------------- match screen
   'match.badge.ai': { de: 'KI · {difficulty}', en: 'AI · {difficulty}' },
   'match.yourTurn': {
-    de: 'Dein Wurf — Ring aufs Ziel wischen',
-    en: 'Your throw — swipe the ring onto a cup',
+    de: 'Dein Wurf — schwungvoll nach oben wischen',
+    en: 'Your throw — swipe up, and mean it',
   },
   'match.opponentAiming': { de: '{name} zielt …', en: '{name} is aiming …' },
   'match.weekendHeader': {

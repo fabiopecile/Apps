@@ -229,31 +229,55 @@ dem **richtigen Team** gemeldet werden). Chromium kann sie per
 
 ## Der Wurf im Arcade-Modus
 
-Früher war der Wurf ein Würfelwurf: `Trefferchance = Können + Kraft`, dann
-`Math.random()`. Das Zielen bestimmte nur, *welcher* Becher gemeint war — ob er
-fiel, entschied der Zufall. Man konnte nicht besser werden.
+Ursprünglich war der Wurf ein Würfelwurf: `Trefferchance = Können + Kraft`,
+dann `Math.random()`. Man konnte nicht besser werden. Danach kam ein Zielkreuz
+— besser, aber es fühlte sich an wie Zielen, nicht wie Werfen.
 
-Jetzt entscheidet, wo der Ball aufkommt:
+Jetzt wirfst du wirklich:
 
-1. Beim Wischen zeigt ein Ring, wohin der Ball fliegt — **eins zu eins**, der
-   Ring liegt unter dem Finger. Weiter wischen heißt weiter werfen.
-2. Auf den Zielpunkt kommt ein kleiner Streuungsfehler. Der wird kleiner mit
-   Ruhe (der Wert, der früher die Trefferchance war) und größer mit Kraft —
-   deshalb ist die hintere Reihe schwerer als der Becher direkt vor dir.
-3. Getroffen ist der Becher, in dessen Öffnung der Ball landet. Am Rand kippt
-   er aus, daneben ist es ein Fehlwurf. Ein schon versenkter Becher zählt nicht
-   mehr — nach jedem Treffer musst du neu zielen.
+1. **Die Geschwindigkeit deiner Hand wird zur Geschwindigkeit des Balls.**
+   Nicht die Länge der Wischbewegung — der Schwung. Langsam ziehen und
+   loslassen wirft gar nicht.
+2. **Der Ball fliegt eine echte Parabel.** Er steigt, erreicht nach 0,38 s
+   seinen Scheitel bei rund 140 Punkten Höhe und fällt wieder herunter. Am
+   Schatten unter ihm siehst du, wo er auf dem Tisch gerade ist — Höhe und
+   Entfernung teilen sich sonst dieselbe Bildschirmachse.
+3. **Getroffen ist der Becher, in dem er aufkommt.** Zu fest geworfen segelt er
+   über das Rack hinweg, zu sanft fällt er davor auf den Tisch.
 
-Die Zahlen sind simuliert austariert, nicht nach Gefühl gesetzt
-(`npm run test:throw`, je 10 000 Würfe pro Fall):
+Dazu kommt ein kleiner Streuungsfehler für die ruhige Hand
+(`88 × (1 − Ruhe) × (0,8 + Kraft × 0,35)`, dreieckig verteilt). Er wird größer,
+je härter du wirfst — deshalb ist die hintere Reihe schwerer.
+
+**Der Bounce-Wurf ist jetzt wirklich ein Aufsetzer.** Der Ball kommt vor dem
+Rack auf, behält 60 % seiner Aufwärtsgeschwindigkeit und springt flach in den
+Becher. Wo er aufsetzen muss, ergibt sich aus dieser Zahl: der zweite Hüpfer
+ist genau 60 % so lang wie der erste.
+
+Welche Wischgeschwindigkeit du brauchst (`npm run test:throw`):
+
+| Ziel | Entfernung | nötige Handgeschwindigkeit |
+|---|---|---|
+| nächster Becher | 187 pt | ~900 pt/s |
+| hintere Reihe | 343 pt | ~1650 pt/s |
+
+Trefferquoten bei perfektem Schwung, je 8 000 simulierte Würfe:
 
 | gezielt auf | wacklig | normal | ruhig |
 |---|---|---|---|
-| nächster Becher | 40 % | 50 % | 63 % |
+| nächster Becher | 43 % | 52 % | 66 % |
 | hintere Reihe | 26 % | 27 % | 29 % |
 
-Der erste Versuch traf den nächsten Becher zu 99 % — das war keine Aufgabe
-mehr, also wurde die Streuung erhöht.
+Im Browser mit echt getimten Wischbewegungen gemessen: 7 von 10 Bechern in
+20 Würfen, also 35 % — die Lücke zum Simulationswert ist genau das, was ein
+um 6 % zu langsamer Schwung kostet.
+
+Eine Modellierungsentscheidung, ehrlich benannt: Der Wurf ist ein **Lob** mit
+fester Flugzeit — die Wischbewegung bestimmt nur, wie kräftig der Ball nach
+vorne geschoben wird, nicht den Abwurfwinkel. So macht man es auch am echten
+Tisch. Lässt man den Winkel frei, wächst die Weite mit dem *Quadrat* der
+Geschwindigkeit, und der ganze Tisch liegt dann in einem 35-%-Band von
+Wischgeschwindigkeiten — auf einem Handy nicht mehr zielbar.
 
 ## Wenn etwas nicht läuft
 
@@ -277,9 +301,10 @@ mehr, also wurde die Streuung erhöht.
   (Re-Racks, Island, Redemption)
 - **Turnier** — K.-o.-Baum für 3 bis 8 Teams; jede Partie lässt sich direkt im
   Tracker spielen, Sieger rücken automatisch weiter
-- **Arcade** — Zielen entscheidet, nicht der Zufall: ein Ring zeigt beim Wischen,
-  wo der Ball landet, und getroffen wird der Becher, in dem er aufkommt. Zwei
-  Racks, abwechselnde Züge, Kamera schwenkt pro Zug ans jeweilige Tischende
+- **Arcade** — geworfen wird mit einer Wischbewegung: der Schwung deiner Hand
+  wird zur Geschwindigkeit des Balls, der im Bogen fliegt und in dem Becher
+  landet, in dem er aufkommt. Zwei Racks, abwechselnde Züge, Kamera schwenkt
+  pro Zug ans jeweilige Tischende
   - Offline gegen die KI (Einfach / Mittel / Schwer)
   - Pass & Play — zwei Spieler an einem Handy, mit Übergabe-Bildschirm
   - Division Rivals (Division 10 bis 1, Auf- und Abstieg)

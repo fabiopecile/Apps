@@ -1,13 +1,19 @@
 /**
- * Where a thrown ball actually lands, and what it hits.
+ * A thrown ball: a real projectile, launched by the speed of your swipe.
  *
- * The old throw rolled a die: `skill + power * 0.28` against `Math.random()`.
- * Aiming picked which cup you were nominally throwing at, but not whether you
- * hit it, so practice changed nothing. This replaces that with a real throw —
- * the flick sets a landing point on the table, a small wobble is added, and
- * whatever cup that point falls into is the cup you sank.
+ * The ball leaves your hand with a velocity, gravity pulls it back down, and
+ * it lands where the parabola says it lands. Nothing here decides in advance
+ * whether a throw goes in — the flight decides, and the cup it comes down in
+ * is the cup that goes.
  *
- * Nothing here touches React, animation or the DOM, so the whole thing can be
+ * What is a modelling choice rather than raw physics: the throw is a *lob*,
+ * thrown up at a fixed vertical speed, with the swipe setting only how hard it
+ * is pushed down the table. That is how a person tosses a ping-pong ball into
+ * a cup — you do not vary the arc much, you vary the push. Modelling the angle
+ * as free instead makes range grow with the square of the speed, which put the
+ * whole table inside a 35% band of swipe speeds: unthrowable on a phone.
+ *
+ * Nothing here touches React, animation or the DOM, so the whole flight can be
  * simulated a hundred thousand times in a test.
  */
 
@@ -18,26 +24,35 @@ export interface Point {
   y: number;
 }
 
+/** Points per second squared, at the scale this table is drawn. */
+export const GRAVITY = 2000;
+/** How long a lobbed throw stays in the air. */
+export const HANG_TIME = 0.75;
+/** Upward launch speed, the one that gives that hang time. */
+export const LAUNCH_UP = (GRAVITY * HANG_TIME) / 2;
+/** Highest the ball gets, in points: about a third of the table's length. */
+export const APEX = (LAUNCH_UP * LAUNCH_UP) / (2 * GRAVITY);
+
 /**
- * The drag maps one-to-one onto the table: wherever you pull the ring, that is
- * where the ball is thrown. Anything else — a drag that flies further than
- * your finger, a minimum reach — makes the ring stop meaning what it shows,
- * and then the aim cannot be learned. An amplified drag was tried first and
- * threw a third of the table too far.
+ * Swipe speed (points per second) to launch speed down the table. Tuned so a
+ * gentle flick reaches the near cup and a firm one reaches the back row, with
+ * the whole rack inside a comfortable range of swipe speeds.
  */
-const AIM_SCALE = 1;
-/** A drag this long is a full-strength throw; past it, nothing more happens. */
-export const MAX_REACH = 420;
+const FLICK_TO_LAUNCH = 0.276;
+/** Slower than this is a nudge, not a throw. */
+export const MIN_FLICK_SPEED = 260;
+/** Past this the ball has left the table anyway. */
+export const MAX_RANGE = 520;
+
 /**
- * Wobble at zero steadiness, in points. Scaled down by skill and up by power.
- * Tuned by simulation, not by feel: at these numbers a normal thrower aiming
- * perfectly lands about half of their throws at the nearest cup and about a
- * quarter at the far row, which is roughly where real beer pong sits. Turning
- * it down made the near cup a formality (99% at the first attempt).
+ * Wobble at zero steadiness, in points. Scaled down by steadiness and up by
+ * how hard the ball was thrown. Tuned by simulation rather than by feel.
  */
 const SPREAD_AT_ZERO_SKILL = 88;
-/** A bounce shot is thrown harder and lands wilder. */
+/** A bounce shot is thrown flatter and lands wilder. */
 const BOUNCE_SPREAD_FACTOR = 1.6;
+/** How much speed the ball keeps when it bounces off the table. */
+export const RESTITUTION = 0.6;
 
 /**
  * A cup's mouth as an ellipse. The table is drawn from a low angle, so the
@@ -49,31 +64,38 @@ const MOUTH_HEIGHT_RATIO = 0.34;
 const IN_THRESHOLD = 0.85;
 const RIM_THRESHOLD = 1.25;
 
-/** 0-1: how hard the flick was, as a share of the longest throw possible. */
-export function throwPower(dragY: number): number {
-  return clamp(Math.abs(dragY) / MAX_REACH, 0, 1);
+/** How fast the hand was moving, in points per second. */
+export function flickSpeed(velocityX: number, velocityY: number): number {
+  return Math.hypot(velocityX, velocityY);
 }
 
 /**
- * Where the player pointed, before any wobble. This is what the aim marker
- * shows while dragging — the honest target, not the outcome.
+ * How far a swipe of this speed carries. Horizontal speed times hang time —
+ * the plain range of a projectile that goes up and comes back down.
  */
-export function aimPoint(
-  start: Point,
-  dragX: number,
-  dragY: number,
-  direction: 'up' | 'down'
-): Point {
-  const reach = throwPower(dragY) * MAX_REACH;
-  const away = direction === 'up' ? -1 : 1;
-  return { x: start.x + dragX * AIM_SCALE, y: start.y + away * reach };
+export function rangeFor(speed: number): number {
+  return Math.min(MAX_RANGE, speed * FLICK_TO_LAUNCH * HANG_TIME);
+}
+
+/** The swipe speed that would land the ball a given distance away. */
+export function speedForRange(range: number): number {
+  return range / (FLICK_TO_LAUNCH * HANG_TIME);
+}
+
+/** Height above the table at time t, for a lob launched at `up` points/second. */
+export function heightAt(t: number, up: number = LAUNCH_UP): number {
+  return Math.max(0, up * t - 0.5 * GRAVITY * t * t);
+}
+
+/** 0-1: how hard this throw was, as a share of the longest one possible. */
+export function powerOfRange(range: number): number {
+  return clamp(range / MAX_RANGE, 0, 1);
 }
 
 /**
- * How far off the aim a throw can land. Steadiness (the old `skill` number)
- * now sets the size of the miss rather than the odds of one, and throwing
- * hard costs accuracy — which is what makes the back row genuinely harder
- * than the cup in front of you.
+ * How far off a throw can land. Steadiness sets the size of the miss rather
+ * than the odds of one, and throwing hard costs accuracy — which is what makes
+ * the back row genuinely harder than the cup in front of you.
  */
 export function spreadFor(skill: number, power: number, bounce: boolean): number {
   const base = SPREAD_AT_ZERO_SKILL * (1 - clamp(skill, 0, 1));
@@ -88,6 +110,101 @@ export function spreadFor(skill: number, power: number, bounce: boolean): number
 export function wobble(spread: number, random: () => number = Math.random): Point {
   const bell = () => random() + random() - 1;
   return { x: bell() * spread, y: bell() * spread };
+}
+
+/**
+ * A flight the renderer can play back frame by frame. A bounce shot touches
+ * the table once on the way, which is why it can carry two cups: the ball
+ * comes in low and rolling rather than dropping from above.
+ */
+export interface Flight {
+  start: Point;
+  /** Where the ball finally comes down. */
+  landing: Point;
+  /** Seconds in the air, start to landing. */
+  hang: number;
+  /** Where it first touches the table on a bounce shot, else null. */
+  bounceAt: Point | null;
+  /** Seconds until that first touch. */
+  bounceTime: number;
+  /** Upward launch speed of the first hop. */
+  launchUp: number;
+}
+
+/**
+ * Where the ball is, and how high, part-way through a flight.
+ *
+ * `height` is real height above the table, not a screen offset — the renderer
+ * decides how much to lift and enlarge the ball for it, and keeps the shadow
+ * on the ground so the two together read as an arc.
+ */
+export function sampleFlight(flight: Flight, t: number): { x: number; y: number; height: number } {
+  const { start, landing, bounceAt, bounceTime, hang, launchUp } = flight;
+  const clamped = clamp(t, 0, hang);
+
+  if (bounceAt && clamped > bounceTime) {
+    const since = clamped - bounceTime;
+    const share = (clamped - bounceTime) / Math.max(0.0001, hang - bounceTime);
+    return {
+      x: bounceAt.x + (landing.x - bounceAt.x) * share,
+      y: bounceAt.y + (landing.y - bounceAt.y) * share,
+      height: heightAt(since, launchUp * RESTITUTION),
+    };
+  }
+
+  const to = bounceAt ?? landing;
+  const legTime = bounceAt ? bounceTime : hang;
+  const share = clamped / Math.max(0.0001, legTime);
+  return {
+    x: start.x + (to.x - start.x) * share,
+    y: start.y + (to.y - start.y) * share,
+    height: heightAt(clamped, launchUp),
+  };
+}
+
+/** The parabola a swipe would fly right now, for the aiming arc. */
+export function previewFlight(params: {
+  start: Point;
+  velocityX: number;
+  velocityY: number;
+  direction: 'up' | 'down';
+  bounce: boolean;
+}): Flight | null {
+  const { start, velocityX, velocityY, direction, bounce } = params;
+  const speed = flickSpeed(velocityX, velocityY);
+  if (speed < MIN_FLICK_SPEED) return null;
+  // Throwing backwards is not a throw at the rack.
+  if (direction === 'up' ? velocityY >= 0 : velocityY <= 0) return null;
+
+  const range = rangeFor(speed);
+  const landing = {
+    x: start.x + (velocityX / speed) * range,
+    y: start.y + (velocityY / speed) * range,
+  };
+  return buildFlight(start, landing, bounce);
+}
+
+/**
+ * Splits a flight into its hops. A bounce keeps `RESTITUTION` of its upward
+ * speed, so the second hop lasts that much less and covers that much less
+ * ground — which fixes where on the table it has to touch down.
+ */
+export function buildFlight(start: Point, landing: Point, bounce: boolean): Flight {
+  if (!bounce) {
+    return { start, landing, hang: HANG_TIME, bounceAt: null, bounceTime: 0, launchUp: LAUNCH_UP };
+  }
+  const firstShare = 1 / (1 + RESTITUTION);
+  return {
+    start,
+    landing,
+    hang: HANG_TIME,
+    bounceAt: {
+      x: start.x + (landing.x - start.x) * firstShare,
+      y: start.y + (landing.y - start.y) * firstShare,
+    },
+    bounceTime: HANG_TIME * firstShare,
+    launchUp: (GRAVITY * (HANG_TIME * firstShare)) / 2,
+  };
 }
 
 export interface LandingResult {
@@ -133,30 +250,47 @@ export function resolveLanding(
 }
 
 export interface ThrowOutcome extends LandingResult {
+  /** 0-1, how hard it was thrown. */
   power: number;
+  /** Where the swipe alone would have put it. */
   aim: Point;
+  /** Where it came down once the hand's wobble is counted. */
   landing: Point;
+  /** The parabola to draw. */
+  flight: Flight;
 }
 
-/** The whole throw, from flick to result. */
+/** The whole throw, from swipe to result. Null when the swipe was too slow. */
 export function resolveThrow(params: {
   start: Point;
-  dragX: number;
-  dragY: number;
+  velocityX: number;
+  velocityY: number;
   direction: 'up' | 'down';
   skill: number;
   bounce: boolean;
   cups: CupSpec[];
   aliveFlags: boolean[];
   random?: () => number;
-}): ThrowOutcome {
-  const { start, dragX, dragY, direction, skill, bounce, cups, aliveFlags } = params;
+}): ThrowOutcome | null {
+  const { start, velocityX, velocityY, direction, skill, bounce, cups, aliveFlags } = params;
   const random = params.random ?? Math.random;
-  const power = throwPower(dragY);
-  const aim = aimPoint(start, dragX, dragY, direction);
+
+  const aimed = previewFlight({ start, velocityX, velocityY, direction, bounce });
+  if (!aimed) return null;
+
+  const aim = aimed.landing;
+  const range = Math.hypot(aim.x - start.x, aim.y - start.y);
+  const power = powerOfRange(range);
   const offset = wobble(spreadFor(skill, power, bounce), random);
   const landing = { x: aim.x + offset.x, y: aim.y + offset.y };
-  return { ...resolveLanding(landing, cups, aliveFlags), power, aim, landing };
+
+  return {
+    ...resolveLanding(landing, cups, aliveFlags),
+    power,
+    aim,
+    landing,
+    flight: buildFlight(start, landing, bounce),
+  };
 }
 
 function clamp(value: number, min: number, max: number): number {
