@@ -50,6 +50,8 @@ const {
   resolveLanding,
   resolveThrow,
   spreadFor,
+  spreadForAccuracy,
+  wobble,
 } = physics;
 
 const TABLE_WIDTH = 342; // a 390pt phone, minus the usual margins
@@ -284,6 +286,47 @@ check('a perfect swipe is not a certainty, and a bad one is not hopeless', () =>
 
 check('flick speed is the length of the hand’s velocity', () => {
   assert.ok(Math.abs(flickSpeed(300, 400) - 500) < 0.001);
+});
+
+// ----------------------------------------------------------- the opponent
+
+/** The opponent picks a cup at random and throws at it with its own spread. */
+function opponentRate(accuracy, runs = 30000) {
+  const random = seeded(21);
+  const yours = layout.generatePlayerRack(TABLE_WIDTH);
+  const alive = Array(layout.CUP_COUNT).fill(true);
+  const spread = spreadForAccuracy(accuracy);
+  let hits = 0;
+  for (let i = 0; i < runs; i++) {
+    const cup = yours[Math.floor(random() * yours.length)];
+    const offset = wobble(spread, random);
+    if (resolveLanding({ x: cup.x + offset.x, y: cup.y + offset.y }, yours, alive).hit) hits += 1;
+  }
+  return hits / runs;
+}
+
+check('every opponent hits about as often as its profile claims', () => {
+  // The whole league, so a bad interpolation anywhere shows up.
+  for (const accuracy of [0.32, 0.4, 0.44, 0.5, 0.54, 0.6, 0.68]) {
+    const actual = opponentRate(accuracy);
+    assert.ok(
+      Math.abs(actual - accuracy) < 0.04,
+      `accuracy ${accuracy} throws at ${actual.toFixed(3)}`
+    );
+  }
+});
+
+check('a better opponent throws tighter', () => {
+  assert.ok(spreadForAccuracy(0.68) < spreadForAccuracy(0.32));
+});
+
+check('an accuracy off the end of the table still gives a usable spread', () => {
+  for (const accuracy of [0, 0.05, 0.99, 1]) {
+    const spread = spreadForAccuracy(accuracy);
+    assert.ok(Number.isFinite(spread) && spread > 0, `accuracy ${accuracy} gave ${spread}`);
+  }
+  assert.ok(spreadForAccuracy(0) >= spreadForAccuracy(0.5));
+  assert.ok(spreadForAccuracy(1) <= spreadForAccuracy(0.5));
 });
 
 console.log('\nswipe speed needed, in points per second:');
