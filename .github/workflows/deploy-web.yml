@@ -40,15 +40,18 @@ jobs:
       - name: Pakete installieren
         run: npm ci
 
+      # Bricht dieser Schritt mit "Get Pages site failed" ab, ist Pages im
+      # Repository noch nicht eingeschaltet: einmalig unter
+      # Settings -> Pages -> Source auf "GitHub Actions" stellen.
+      #
+      # Das lässt sich NICHT automatisieren. Die Option `enablement: true`
+      # sieht danach aus, verlangt laut eigener Beschreibung aber ein Token
+      # mit `administration:write` — eine Berechtigung, die das Token eines
+      # Workflows grundsätzlich nicht bekommen kann. Sie wurde hier bereits
+      # ausprobiert und wieder entfernt; bitte nicht erneut hinzufügen.
       - name: Pages konfigurieren
         id: pages
         uses: actions/configure-pages@v5
-        with:
-          # Schaltet GitHub Pages selbst ein, statt es unter Settings -> Pages
-          # von Hand auf "GitHub Actions" stellen zu müssen. Ohne das bricht
-          # der Lauf mit "Get Pages site failed" ab, bevor überhaupt gebaut
-          # wird. Braucht ein öffentliches Repo (oder GitHub Pro).
-          enablement: true
 
       - name: Basis-Pfad bestimmen
         id: base
