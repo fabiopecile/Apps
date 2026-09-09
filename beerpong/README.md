@@ -281,12 +281,14 @@ Jetzt wirfst du wirklich — die Geste ist die von Pokémon GO:
    seine Stelle und der Zug ist nicht verbraucht.
 3. **Geworfen wird von dort, wo du losgelassen hast**, nicht von der
    Ausgangsstelle.
-4. **Der Ball fliegt eine echte Parabel.** Er steigt, erreicht nach 0,38 s
+4. **Der Ball fliegt eine echte Parabel.** Er steigt, erreicht nach 0,31 s
    seinen Scheitel bei rund 140 Punkten Höhe und fällt wieder herunter. Am
    Schatten unter ihm siehst du, wo er auf dem Tisch gerade ist — Höhe und
    Entfernung teilen sich sonst dieselbe Bildschirmachse.
-5. **Getroffen ist der Becher, in dem er aufkommt.** Zu fest geworfen segelt er
-   über das Rack hinweg, zu sanft fällt er davor auf den Tisch.
+5. **Getroffen ist der Becher, in dem er aufkommt** — und dann fällt er sichtbar
+   hinein, statt oben liegen zu bleiben. Am Rand prallt er ab: zwei Hüpfer, der
+   zweite mit 60 % vom ersten, dieselbe Zahl wie beim Aufsetzer. Zu fest
+   geworfen segelt er über das Rack, zu sanft fällt er davor auf den Tisch.
 
 Dazu kommt ein kleiner Streuungsfehler für die ruhige Hand
 (`88 × (1 − Ruhe) × (0,8 + Kraft × 0,35)`, dreieckig verteilt). Er wird größer,
@@ -308,12 +310,18 @@ Trefferquoten bei perfektem Schwung, je 8 000 simulierte Würfe:
 
 | gezielt auf | wacklig | normal | ruhig |
 |---|---|---|---|
-| nächster Becher | 43 % | 52 % | 66 % |
-| hintere Reihe | 26 % | 27 % | 29 % |
+| nächster Becher | 58 % | 70 % | 82 % |
+| hintere Reihe | 31 % | 34 % | 40 % |
 
-Im Browser mit echt getimten Wischbewegungen gemessen: 7 von 10 Bechern in
-20 Würfen, also 35 % — die Lücke zum Simulationswert ist genau das, was ein
-um 6 % zu langsamer Schwung kostet.
+Das ist die entschärfte Fassung: der Bechermund ist etwas großzügiger als der
+gezeichnete Becher (ein Ball, der die Innenkante streift, fällt am echten Tisch
+auch hinein), und die Streuung ist kleiner. Vorher lagen die Werte bei 52 % und
+27 %.
+
+**Wichtig beim Ändern dieser Zahlen:** Der Bechermund gilt auch für den Gegner.
+Ihn zu vergrößern hat jeden Gegner still besser gemacht, als sein Profil
+behauptet — der Test hat es gefangen, und die Tabelle in `throwPhysics.ts`
+musste neu gemessen werden.
 
 **Der Gegner wirft genauso.** Früher entschied bei ihm `Math.random() < accuracy`,
 und der Ball rutschte flach zur Antwort — neben deinem Bogen sahen das aus wie
