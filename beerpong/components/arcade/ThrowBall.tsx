@@ -12,11 +12,12 @@ import Animated, {
 import Svg, { Line } from 'react-native-svg';
 import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
+import { aimPoint, resolveThrow, throwPower } from '@/lib/throwPhysics';
 import { BallArt } from './BallArt';
 
 const BALL_SIZE = 30;
-const DRAG_POWER_DIVISOR = 150;
-const DRAG_AIM_DIVISOR = 120;
+/** Radius of the ring that shows where you are pointing. */
+const AIM_MARKER = 26;
 
 export interface ThrowResult {
   cupIndex: number | null;
@@ -106,27 +107,7 @@ export function ThrowBall({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startX, startY]);
 
-  // Maps the swipe direction onto the cup closest to where you aimed, so the
-  // rack's left/right edges line up with a left/right flick.
-  const pickTarget = (aimRatio: number): CupSpec | null => {
-    const alive = cups.filter((c) => aliveFlags[c.index]);
-    if (alive.length === 0) return null;
-    const xs = alive.map((c) => c.x);
-    const minX = Math.min(...xs);
-    const maxX = Math.max(...xs);
-    const center = (minX + maxX) / 2;
-    const wantedX = center + aimRatio * ((maxX - minX) / 2 + 30);
-    return alive.reduce((best, cup) => {
-      const bestDistance = Math.abs(best.x - wantedX);
-      const distance = Math.abs(cup.x - wantedX);
-      if (distance < bestDistance) return cup;
-      // Equally-aligned cups: take the one nearest the thrower.
-      if (distance === bestDistance && cup.y > best.y) return cup;
-      return best;
-    }, alive[0]);
-  };
-
-  const finishThrow = (cupIndex: number, hit: boolean, power: number, rimOut: boolean) => {
+  const finishThrow = (cupIndex: number | null, hit: boolean, power: number, rimOut: boolean) => {
     setFlyingState(false);
     setAimLine(null);
     onResult({ cupIndex, hit, power, rimOut, bounce });
@@ -138,51 +119,58 @@ export function ThrowBall({
     }, 220);
   };
 
-  const scheduleResult = (cupIndex: number, hit: boolean, power: number, delay: number) => {
+  const scheduleResult = (
+    cupIndex: number | null,
+    hit: boolean,
+    power: number,
+    delay: number
+  ) => {
     if (resultTimer.current) clearTimeout(resultTimer.current);
     resultTimer.current = setTimeout(() => finishThrow(cupIndex, hit, power, true), delay);
   };
 
+  /**
+   * The throw is decided by where you pointed, not by a hidden die. The ball
+   * flies to the point it actually landed on, so a miss you can see is a miss
+   * you can correct next time.
+   */
   const throwBall = (dx: number, dy: number) => {
-    const power = Math.max(0, Math.min(1, Math.abs(dy) / DRAG_POWER_DIVISOR));
-    const aimRatio = Math.max(-1, Math.min(1, dx / DRAG_AIM_DIVISOR));
-    const target = pickTarget(aimRatio);
-
-    if (!target || power < 0.12) {
+    const power = throwPower(dy);
+    if (power < 0.05) {
       onResult({ cupIndex: null, hit: false, power, rimOut: false, bounce });
       return;
     }
 
-    const hitChance = Math.max(
-      0.08,
-      Math.min(0.94, skill + power * 0.28 - (bounce ? 0.18 : 0))
-    );
-    const roll = Math.random();
-    const hit = roll < hitChance;
-    const isCritical = Math.abs(hitChance - roll) < 0.08;
-    // A miss either rims out — the ball catches the lip and kicks away — or
-    // sails wide of the rack entirely.
-    const rimOut = !hit && Math.random() < 0.55;
+    const outcome = resolveThrow({
+      start: { x: startX, y: startY },
+      dragX: dx,
+      dragY: dy,
+      direction,
+      skill,
+      bounce,
+      cups,
+      aliveFlags,
+    });
+    const { hit, rimOut, cupIndex, landing } = outcome;
 
     setFlyingState(true);
     onLaunch?.();
     trailOpacity.value = withTiming(1, { duration: 60 });
 
     const easing = Easing.out(Easing.quad);
-    const mainDuration = isCritical ? 620 : 460;
-    const landX = hit || rimOut ? target.x : target.x + (Math.random() - 0.5) * 90;
+    // A throw across the table takes longer than a dab at the nearest cup.
+    const travel = Math.hypot(landing.x - startX, landing.y - startY);
+    const mainDuration = Math.round(320 + travel * 0.62);
     const shortOf = direction === 'up' ? -1 : 1;
-    const landY =
-      hit ? target.y : rimOut ? target.y + shortOf * 8 : target.y + shortOf * (34 + Math.random() * 24);
 
     ballScale.value = withTiming(hit ? 0.5 : 0.62, { duration: mainDuration, easing });
-    ballX.value = withTiming(landX, { duration: mainDuration, easing });
-    ballY.value = withTiming(landY, { duration: mainDuration, easing }, (finished) => {
+    ballX.value = withTiming(landing.x, { duration: mainDuration, easing });
+    ballY.value = withTiming(landing.y, { duration: mainDuration, easing }, (finished) => {
       if (!finished) return;
       if (rimOut) {
         // Catch the lip, kick sideways, then drop away past the rack.
-        const kickX = landX + (Math.random() < 0.5 ? -1 : 1) * (34 + Math.random() * 30);
-        const kickY = landY + shortOf * 24;
+        const kickX = landing.x + (Math.random() < 0.5 ? -1 : 1) * (34 + Math.random() * 30);
+        const kickY = landing.y + shortOf * 24;
         ballScale.value = withSequence(
           withTiming(0.74, { duration: 90 }),
           withTiming(0.5, { duration: 320 })
@@ -194,25 +182,47 @@ export function ThrowBall({
         );
         trailOpacity.value = withTiming(0, { duration: 380 });
         runOnJS(rimContact)();
-        runOnJS(scheduleResult)(target.index, hit, power, 420);
+        runOnJS(scheduleResult)(cupIndex, hit, power, 420);
         return;
       }
       trailOpacity.value = withTiming(0, { duration: 200 });
-      runOnJS(finishThrow)(target.index, hit, power, false);
+      runOnJS(finishThrow)(cupIndex, hit, power, false);
     });
   };
 
+  /**
+   * Where the finger first went down. A pan reports its translation from the
+   * point where it *activated*, which is 30-60pt into the drag — enough that
+   * the aim ring visibly trailed the finger and every throw fell short of
+   * where it was pointed. Measured from `onBegin` instead, which fires on
+   * touch down, the ring sits under the finger.
+   */
+  const origin = useSharedValue<{ x: number; y: number } | null>(null);
+
   const pan = Gesture.Pan()
     .enabled(!disabled && !flying)
+    .onBegin((e) => {
+      origin.value = { x: e.absoluteX, y: e.absoluteY };
+    })
     .onChange((e) => {
-      runOnJS(setAimLine)({ dx: e.translationX, dy: e.translationY });
+      const from = origin.value;
+      if (!from) return;
+      runOnJS(setAimLine)({ dx: e.absoluteX - from.x, dy: e.absoluteY - from.y });
     })
     .onEnd((e) => {
       runOnJS(setAimLine)(null);
-      const flicked = direction === 'up' ? e.translationY < -20 : e.translationY > 20;
+      const from = origin.value;
+      origin.value = null;
+      if (!from) return;
+      const dx = e.absoluteX - from.x;
+      const dy = e.absoluteY - from.y;
+      const flicked = direction === 'up' ? dy < -20 : dy > 20;
       if (flicked) {
-        runOnJS(throwBall)(e.translationX, e.translationY);
+        runOnJS(throwBall)(dx, dy);
       }
+    })
+    .onFinalize(() => {
+      origin.value = null;
     });
 
   const ballStyle = useAnimatedStyle(() => ({
@@ -244,26 +254,42 @@ export function ThrowBall({
     ],
   }));
 
+  // Where this drag is pointing right now. Shown as a ring on the table so the
+  // player can see that a longer flick reaches further — without it the throw
+  // would be skill-based but unlearnable.
+  const preview =
+    aimLine && !flying ? aimPoint({ x: startX, y: startY }, aimLine.dx, aimLine.dy, direction) : null;
+  const previewLive = preview != null && throwPower(aimLine?.dy ?? 0) >= 0.05;
+
   return (
     <>
-      {aimLine && !flying ? (
-        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Line
-            x1={startX}
-            y1={startY}
-            x2={startX + Math.max(-110, Math.min(110, aimLine.dx))}
-            y2={
-              startY +
-              (direction === 'up'
-                ? Math.max(-260, Math.min(20, aimLine.dy))
-                : Math.max(-20, Math.min(260, aimLine.dy)))
-            }
-            stroke={accent}
-            strokeWidth={3}
-            strokeDasharray="8,8"
-            opacity={0.85}
+      {preview ? (
+        <>
+          <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
+            <Line
+              x1={startX}
+              y1={startY}
+              x2={preview.x}
+              y2={preview.y}
+              stroke={accent}
+              strokeWidth={3}
+              strokeDasharray="8,8"
+              opacity={previewLive ? 0.8 : 0.3}
+            />
+          </Svg>
+          <Animated.View
+            pointerEvents="none"
+            style={[
+              styles.aimMarker,
+              {
+                left: preview.x - AIM_MARKER / 2,
+                top: preview.y - (AIM_MARKER * 0.42) / 2,
+                borderColor: accent,
+                opacity: previewLive ? 0.95 : 0.35,
+              },
+            ]}
           />
-        </Svg>
+        </>
       ) : null}
 
       <Animated.View pointerEvents="none" style={[styles.ballShadow, shadowStyle]} />
@@ -293,5 +319,16 @@ const styles = StyleSheet.create({
     height: BALL_SIZE,
     borderRadius: BALL_SIZE / 2,
     backgroundColor: '#000000',
+  },
+  /**
+   * Flattened, because it lies on the table rather than facing the camera —
+   * the same squash the cup mouths have.
+   */
+  aimMarker: {
+    position: 'absolute',
+    width: AIM_MARKER,
+    height: AIM_MARKER * 0.42,
+    borderRadius: AIM_MARKER / 2,
+    borderWidth: 2,
   },
 });

@@ -215,7 +215,8 @@ gemeinsamen Prüfung als fünf einzelne Treffer durchrutschen.
 **Getestet mit:**
 
 ```bash
-npm run test:vision                                    # 17 Prüfungen der Logik, ohne Kamera
+npm test                                               # alles auf einmal
+npm run test:vision                                    # 17 Prüfungen der Erkennung, ohne Kamera
 python3 tools/gen_test_table_video.py t.y4m one        # Testvideo: ein Rack
 python3 tools/gen_test_table_video.py t.y4m both       # Testvideo: beide Racks, hochkant
 python3 tools/gen_test_table_video.py t.y4m side       # Testvideo: beide Racks, quer
@@ -225,6 +226,34 @@ Die Testvideos zeigen Racks, über die erst eine Hand streicht (darf **nicht**
 zählen) und aus denen danach Becher verschwinden (müssen **genau einmal** und
 dem **richtigen Team** gemeldet werden). Chromium kann sie per
 `--use-file-for-fake-video-capture=t.y4m` als Kamera ausgeben.
+
+## Der Wurf im Arcade-Modus
+
+Früher war der Wurf ein Würfelwurf: `Trefferchance = Können + Kraft`, dann
+`Math.random()`. Das Zielen bestimmte nur, *welcher* Becher gemeint war — ob er
+fiel, entschied der Zufall. Man konnte nicht besser werden.
+
+Jetzt entscheidet, wo der Ball aufkommt:
+
+1. Beim Wischen zeigt ein Ring, wohin der Ball fliegt — **eins zu eins**, der
+   Ring liegt unter dem Finger. Weiter wischen heißt weiter werfen.
+2. Auf den Zielpunkt kommt ein kleiner Streuungsfehler. Der wird kleiner mit
+   Ruhe (der Wert, der früher die Trefferchance war) und größer mit Kraft —
+   deshalb ist die hintere Reihe schwerer als der Becher direkt vor dir.
+3. Getroffen ist der Becher, in dessen Öffnung der Ball landet. Am Rand kippt
+   er aus, daneben ist es ein Fehlwurf. Ein schon versenkter Becher zählt nicht
+   mehr — nach jedem Treffer musst du neu zielen.
+
+Die Zahlen sind simuliert austariert, nicht nach Gefühl gesetzt
+(`npm run test:throw`, je 10 000 Würfe pro Fall):
+
+| gezielt auf | wacklig | normal | ruhig |
+|---|---|---|---|
+| nächster Becher | 40 % | 50 % | 63 % |
+| hintere Reihe | 26 % | 27 % | 29 % |
+
+Der erste Versuch traf den nächsten Becher zu 99 % — das war keine Aufgabe
+mehr, also wurde die Streuung erhöht.
 
 ## Wenn etwas nicht läuft
 
@@ -248,8 +277,9 @@ dem **richtigen Team** gemeldet werden). Chromium kann sie per
   (Re-Racks, Island, Redemption)
 - **Turnier** — K.-o.-Baum für 3 bis 8 Teams; jede Partie lässt sich direkt im
   Tracker spielen, Sieger rücken automatisch weiter
-- **Arcade** — Wischen zum Werfen, zwei Racks, abwechselnde Züge, Kamera schwenkt
-  pro Zug ans jeweilige Tischende
+- **Arcade** — Zielen entscheidet, nicht der Zufall: ein Ring zeigt beim Wischen,
+  wo der Ball landet, und getroffen wird der Becher, in dem er aufkommt. Zwei
+  Racks, abwechselnde Züge, Kamera schwenkt pro Zug ans jeweilige Tischende
   - Offline gegen die KI (Einfach / Mittel / Schwer)
   - Pass & Play — zwei Spieler an einem Handy, mit Übergabe-Bildschirm
   - Division Rivals (Division 10 bis 1, Auf- und Abstieg)

@@ -44,7 +44,9 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
-    "test:vision": "node tools/test_cup_vision.mjs"
+    "test:vision": "node tools/test_cup_vision.mjs",
+    "test:throw": "node tools/test_throw_physics.mjs",
+    "test": "npm run test:vision && npm run test:throw"
   },
   "private": true
 }

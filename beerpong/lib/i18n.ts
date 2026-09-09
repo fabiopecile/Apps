@@ -80,8 +80,8 @@ const STRINGS = {
   },
   'onboarding.arcade.title': { de: 'Oder wirf selbst', en: 'Or throw yourself' },
   'onboarding.arcade.body': {
-    de: 'Im Arcade-Modus wischst du den Ball übers Display: Richtung zielt, Weite gibt Kraft. Gegen die KI, gegen Freunde am selben Handy oder online in den Divisions.',
-    en: 'In arcade mode you swipe the ball across the screen: direction aims, distance sets the power. Against the AI, against a friend on the same phone, or online in the divisions.',
+    de: 'Im Arcade-Modus wischst du den Ball übers Display. Ein Ring zeigt, wo er landen wird: weiter wischen heißt weiter werfen. Getroffen wird der Becher, in dem er aufkommt — Zielen entscheidet, nicht der Zufall.',
+    en: 'In arcade mode you swipe the ball across the screen. A ring shows where it will land: swipe further, throw further. You sink whatever cup it comes down in — aim decides it, not chance.',
   },
   'onboarding.progress.title': { de: 'Alles zählt mit', en: 'Everything counts' },
   'onboarding.progress.body': {
@@ -167,8 +167,8 @@ const STRINGS = {
   'passplay.throwsUp': { de: 'wirft nach oben', en: 'throws upwards' },
   'passplay.throwsDown': { de: 'wirft nach unten', en: 'throws downwards' },
   'passplay.rule.swipe': {
-    de: 'Wischen wie sonst — Richtung zielt, Weite gibt Kraft.',
-    en: 'Swipe as usual — direction aims, distance sets the power.',
+    de: 'Wischen wie sonst — der Ring zeigt, wo der Ball landet.',
+    en: 'Swipe as usual — the ring shows where the ball will land.',
   },
   'passplay.rule.bounce': {
     de: 'Bounce-Wurf: schwerer zu treffen, nimmt dafür zwei Cups.',
@@ -346,7 +346,10 @@ const STRINGS = {
 
   // ----------------------------------------------------------- match screen
   'match.badge.ai': { de: 'KI · {difficulty}', en: 'AI · {difficulty}' },
-  'match.yourTurn': { de: 'Dein Wurf — nach oben wischen', en: 'Your throw — swipe up' },
+  'match.yourTurn': {
+    de: 'Dein Wurf — Ring aufs Ziel wischen',
+    en: 'Your throw — swipe the ring onto a cup',
+  },
   'match.opponentAiming': { de: '{name} zielt …', en: '{name} is aiming …' },
   'match.weekendHeader': {
     de: 'Spiel {played}/{matches} · {wins} Siege',
