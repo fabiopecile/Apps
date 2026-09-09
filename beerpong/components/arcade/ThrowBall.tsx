@@ -48,6 +48,13 @@ interface ThrowBallProps {
   onRim?: () => void;
   /** Fires as the ball leaves your hand. */
   onLaunch?: () => void;
+  /**
+   * How much the table is shrunk on screen. The hand's speed is measured in
+   * screen points but the throw is computed in table points, so on a small
+   * screen a swipe that looks like it reaches a cup has to be scaled up to
+   * actually reach it.
+   */
+  inputScale?: number;
 }
 
 export function ThrowBall({
@@ -64,6 +71,7 @@ export function ThrowBall({
   bounce = false,
   onRim,
   onLaunch,
+  inputScale = 1,
 }: ThrowBallProps) {
   const flight = useBallFlight(startX, startY);
 
@@ -174,6 +182,9 @@ export function ThrowBall({
   const lastAt = useSharedValue(0);
   const velX = useSharedValue(0);
   const velY = useSharedValue(0);
+  /** Screen points per table point; see `inputScale`. */
+  const scale = useSharedValue(inputScale);
+  scale.value = inputScale;
 
   const pan = Gesture.Pan()
     .enabled(!disabled && !flying)
@@ -189,8 +200,9 @@ export function ThrowBall({
       const dt = (now - lastAt.value) / 1000;
       // Below a couple of milliseconds the division blows up on noise.
       if (dt < 0.004) return;
-      const vx = (e.absoluteX - lastX.value) / dt;
-      const vy = (e.absoluteY - lastY.value) / dt;
+      const factor = 1 / Math.max(0.05, scale.value);
+      const vx = ((e.absoluteX - lastX.value) / dt) * factor;
+      const vy = ((e.absoluteY - lastY.value) / dt) * factor;
       lastX.value = e.absoluteX;
       lastY.value = e.absoluteY;
       lastAt.value = now;
