@@ -89,19 +89,32 @@ Die Web-App umgeht das komplett.
 
 **Einrichten (nur einmal nötig):**
 
-1. Die Änderungen müssen auf `main` liegen: Der Workflow läuft nur von dort,
-   und GitHub Pages lässt Veröffentlichungen standardmäßig nur vom
-   Hauptzweig zu. Also erst den Entwicklungszweig nach `main` zusammenführen
-   (**Pull requests** → *New pull request* → base `main`, compare
-   `claude/beerpong-mobile-app-845mv3` → *Create* → *Merge*)
-2. Der Merge startet den Workflow von selbst. Unter **Actions** lässt er sich
-   auch jederzeit von Hand starten (**Run workflow**)
+1. **Pages einschalten.** Direkt zu dieser Adresse gehen — am Handy ist der
+   Weg über die Menüs mühsam, weil „Settings" hinter dem **⋯**-Menü liegt:
 
-Pages selbst muss nicht eingeschaltet werden — der Workflow erledigt das
-(`enablement: true`). Bricht ein Lauf trotzdem mit **„Get Pages site failed"**
-ab, ist Pages weder eingeschaltet noch einschaltbar: einmal unter **Settings**
-→ **Pages** → Source auf **GitHub Actions** stellen und den Lauf unter
-**Actions** → *Re-run jobs* wiederholen.
+   ```
+   https://github.com/fabiopecile/Apps/settings/pages
+   ```
+
+   Unter *Build and deployment* bei **Source** von „Deploy from a branch" auf
+   **GitHub Actions** umstellen. Mehr ist dort nicht zu tun — es gibt keinen
+   Speichern-Knopf, die Auswahl greift sofort.
+
+2. **Änderungen nach `main` bringen.** Der Workflow läuft nur von dort, und
+   Pages veröffentlicht standardmäßig nur vom Hauptzweig: **Pull requests** →
+   *New pull request* → base `main`, compare `claude/beerpong-mobile-app-845mv3`
+   → *Create* → *Merge*. Der Merge startet den Workflow von selbst.
+
+> **Schritt 1 lässt sich nicht automatisieren.** Die Option `enablement: true`
+> von `actions/configure-pages` sieht danach aus, verlangt laut eigener
+> Beschreibung aber ein Token mit `administration:write` — das kann ein
+> Workflow-Token nicht bekommen. Ohne Schritt 1 bricht jeder Lauf mit
+> **„Get Pages site failed"** ab, bevor überhaupt gebaut wird.
+
+> **Ein „Re-run" wiederholt den alten Stand.** Er nimmt die Workflow-Datei aus
+> dem Commit, zu dem der Lauf gehört — eine seitdem gepushte Korrektur ist
+> darin nicht enthalten. Nach einer Änderung am Workflow also einen *neuen*
+> Lauf starten, nicht den alten wiederholen.
 
 > Die Warnung „Node.js 20 is deprecated" im Protokoll ist harmlos — sie betrifft
 > GitHubs eigene Actions, nicht diese App, und lässt den Lauf durchgehen.
