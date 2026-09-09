@@ -80,8 +80,8 @@ const STRINGS = {
   },
   'onboarding.arcade.title': { de: 'Oder wirf selbst', en: 'Or throw yourself' },
   'onboarding.arcade.body': {
-    de: 'Im Arcade-Modus wirfst du mit einer Wischbewegung: Die Geschwindigkeit deiner Hand wird zur Geschwindigkeit des Balls, dann fliegt er im Bogen und fällt wieder herunter. Getroffen wird der Becher, in dem er aufkommt — Schwung und Richtung entscheiden, nicht der Zufall.',
-    en: 'In arcade mode you throw with a swipe: the speed of your hand becomes the speed of the ball, which arcs up and drops back down. You sink whatever cup it lands in — your throw decides it, not chance.'
+    de: 'Im Arcade-Modus liegt der Ball unter deinem Finger und geht mit, solange du hältst. Beim Loslassen zählt der Schwung: Die Geschwindigkeit deiner Hand wird zur Geschwindigkeit des Balls, dann fliegt er im Bogen und fällt wieder herunter. Getroffen wird der Becher, in dem er aufkommt — Schwung und Richtung entscheiden, nicht der Zufall.',
+    en: 'In arcade mode the ball sits under your finger and moves with it while you hold. Letting go is what counts: the speed of your hand becomes the speed of the ball, which arcs up and drops back down. You sink whatever cup it lands in — your throw decides it, not chance.'
   },
   'onboarding.progress.title': { de: 'Alles zählt mit', en: 'Everything counts' },
   'onboarding.progress.body': {
@@ -167,8 +167,8 @@ const STRINGS = {
   'passplay.throwsUp': { de: 'wirft nach oben', en: 'throws upwards' },
   'passplay.throwsDown': { de: 'wirft nach unten', en: 'throws downwards' },
   'passplay.rule.swipe': {
-    de: 'Wischen wie sonst — je schneller die Hand, desto weiter der Wurf.',
-    en: 'Swipe as usual — the faster your hand, the further the throw.',
+    de: 'Ball wie sonst mit dem Finger führen — je schneller die Hand beim Loslassen, desto weiter der Wurf.',
+    en: 'Guide the ball with your finger as usual — the faster your hand as you let go, the further it flies.',
   },
   'passplay.rule.bounce': {
     de: 'Bounce-Wurf: schwerer zu treffen, nimmt dafür zwei Cups.',
@@ -347,8 +347,8 @@ const STRINGS = {
   // ----------------------------------------------------------- match screen
   'match.badge.ai': { de: 'KI · {difficulty}', en: 'AI · {difficulty}' },
   'match.yourTurn': {
-    de: 'Dein Wurf — schwungvoll nach oben wischen',
-    en: 'Your throw — swipe up, and mean it',
+    de: 'Dein Wurf — Ball halten, zielen, schwungvoll loslassen',
+    en: 'Your throw — hold the ball, aim, let go with speed',
   },
   'match.opponentAiming': { de: '{name} zielt …', en: '{name} is aiming …' },
   'match.weekendHeader': {

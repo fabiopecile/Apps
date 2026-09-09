@@ -268,16 +268,24 @@ Ursprünglich war der Wurf ein Würfelwurf: `Trefferchance = Können + Kraft`,
 dann `Math.random()`. Man konnte nicht besser werden. Danach kam ein Zielkreuz
 — besser, aber es fühlte sich an wie Zielen, nicht wie Werfen.
 
-Jetzt wirfst du wirklich:
+Jetzt wirfst du wirklich — die Geste ist die von Pokémon GO:
 
-1. **Die Geschwindigkeit deiner Hand wird zur Geschwindigkeit des Balls.**
-   Nicht die Länge der Wischbewegung — der Schwung. Langsam ziehen und
-   loslassen wirft gar nicht.
-2. **Der Ball fliegt eine echte Parabel.** Er steigt, erreicht nach 0,38 s
+1. **Der Ball hängt am Finger.** Solange du hältst, geht er mit: nach links,
+   nach rechts, zurück für einen Anlauf. Du kannst in Ruhe zielen, bevor
+   irgendetwas passiert. Nur nicht beliebig weit — er bleibt in einem Feld um
+   seine Ausgangsstelle, sonst könnte man ihn einfach bis zum Becher tragen und
+   fallen lassen.
+2. **Beim Loslassen zählt der Schwung.** Die Geschwindigkeit deiner Hand in dem
+   Moment wird zur Geschwindigkeit des Balls — nicht die Länge der Bewegung.
+   Langsam ziehen und loslassen wirft gar nicht, der Ball rollt zurück auf
+   seine Stelle und der Zug ist nicht verbraucht.
+3. **Geworfen wird von dort, wo du losgelassen hast**, nicht von der
+   Ausgangsstelle.
+4. **Der Ball fliegt eine echte Parabel.** Er steigt, erreicht nach 0,38 s
    seinen Scheitel bei rund 140 Punkten Höhe und fällt wieder herunter. Am
    Schatten unter ihm siehst du, wo er auf dem Tisch gerade ist — Höhe und
    Entfernung teilen sich sonst dieselbe Bildschirmachse.
-3. **Getroffen ist der Becher, in dem er aufkommt.** Zu fest geworfen segelt er
+5. **Getroffen ist der Becher, in dem er aufkommt.** Zu fest geworfen segelt er
    über das Rack hinweg, zu sanft fällt er davor auf den Tisch.
 
 Dazu kommt ein kleiner Streuungsfehler für die ruhige Hand
