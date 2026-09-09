@@ -80,12 +80,24 @@ Das ist der wichtigere Weg, weil er auch auf dem iPhone funktioniert. Es gibt
 verlangt dafür 99 €/Jahr, auch für TestFlight und auch für die EU-Alternativstores.
 Die Web-App umgeht das komplett.
 
+> **Voraussetzung: das Repository muss öffentlich sein.** Bei privaten Repos
+> gibt es GitHub Pages nur mit einem Bezahlplan (GitHub Pro, ca. 4 $/Monat).
+> Umstellen unter **Settings** → ganz unten **Danger Zone** → *Change
+> repository visibility* → **Public**. In diesem Repo liegen nur die App, die
+> beiden Workflows und diese README — keine Schlüssel, Passwörter oder
+> Zugangsdaten, öffentlich ist also unbedenklich.
+
 **Einrichten (nur einmal nötig):**
 
 1. Auf GitHub in dieses Repository gehen → **Settings** → links **Pages**
 2. Bei „Source" **GitHub Actions** auswählen → speichern
-3. Unter **Actions** den Workflow **„Web-App veröffentlichen"** auswählen →
-   rechts **Run workflow** klicken
+3. Die Änderungen müssen auf `main` liegen: Der Workflow läuft nur von dort,
+   und GitHub Pages lässt Veröffentlichungen standardmäßig nur vom
+   Hauptzweig zu. Also erst den Entwicklungszweig nach `main` zusammenführen
+   (**Pull requests** → *New pull request* → base `main`, compare
+   `claude/beerpong-mobile-app-845mv3` → *Create* → *Merge*)
+4. Der Merge startet den Workflow von selbst. Unter **Actions** lässt er sich
+   auch jederzeit von Hand starten (**Run workflow**)
 
 Nach ein paar Minuten steht die Adresse oben im Workflow-Ergebnis, normalerweise:
 
@@ -94,6 +106,9 @@ https://fabiopecile.github.io/Apps/
 ```
 
 Ab jetzt aktualisiert sich die Seite bei jedem Push auf `main` von allein.
+
+Das alles geht **komplett vom Handy** — github.com in Safari öffnen, kein
+Rechner nötig.
 
 **Installieren auf dem Handy:**
 
