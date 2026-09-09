@@ -6,6 +6,7 @@ import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
 import {
   buildFlight,
+  cupMouth,
   resolveLanding,
   sampleFlight,
   spreadForAccuracy,
@@ -16,7 +17,7 @@ import { BallArt } from './BallArt';
 import { BALL_SIZE, HEIGHT_LIFT, useBallFlight } from './useBallFlight';
 
 /** How long they line the throw up before letting go. */
-const AIM_DURATION = 420;
+const AIM_DURATION = 300;
 
 interface OpponentResult {
   cupIndex: number;
@@ -97,8 +98,10 @@ export function OpponentThrow({
         flight.trail.value = withTiming(0, { duration: 180 });
         // Their ball drops into the cup the same way yours does.
         if (outcome.hit) {
-          flight.scale.value = withTiming(0.12, { duration: 190 });
-          flight.playLeg(landing, { x: landing.x, y: landing.y + 14 }, 0.19, 0, () => {});
+          const sunk = cups.find((c) => c.index === outcome.cupIndex);
+          const at = sunk ? cupMouth(sunk) : landing;
+          flight.scale.value = withTiming(0.1, { duration: 170 });
+          flight.playLeg(at, { x: at.x, y: at.y + 16 }, 0.17, 0, () => {});
         }
         flight.opacity.value = withTiming(0, { duration: 240 });
         // A cup they landed in is the cup that goes; anything else is a miss,
