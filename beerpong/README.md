@@ -272,6 +272,21 @@ Im Browser mit echt getimten Wischbewegungen gemessen: 7 von 10 Bechern in
 20 Würfen, also 35 % — die Lücke zum Simulationswert ist genau das, was ein
 um 6 % zu langsamer Schwung kostet.
 
+**Der Gegner wirft genauso.** Früher entschied bei ihm `Math.random() < accuracy`,
+und der Ball rutschte flach zur Antwort — neben deinem Bogen sahen das aus wie
+zwei verschiedene Spiele. Jetzt fliegt er dieselbe Parabel, und sein Können ist
+eine Streuung um den Becher, den er sich ausgesucht hat. Welche Streuung zu
+welcher Trefferquote gehört, ist gemessen und nicht hergeleitet (Tabelle in
+`lib/throwPhysics.ts`), weil ein weit danebengegangener Ball bei vollem Rack
+trotzdem im Nachbarbecher landet — unter etwa 26 % kommt keiner. Ein Test prüft
+für jeden Gegner der Liga, dass er ungefähr so oft trifft, wie sein Profil
+behauptet.
+
+**Nach einem Fehlwurf sagt die App, was schiefging** — „Zu kurz — mehr
+Schwung", „Zu weit — sanfter wischen", „Daneben — Richtung stimmt nicht".
+Bei einer Schwung-Geste ist „daneben" allein nutzlos: zu kurz und zu weit
+brauchen entgegengesetzte Korrekturen.
+
 Eine Modellierungsentscheidung, ehrlich benannt: Der Wurf ist ein **Lob** mit
 fester Flugzeit — die Wischbewegung bestimmt nur, wie kräftig der Ball nach
 vorne geschoben wird, nicht den Abwurfwinkel. So macht man es auch am echten

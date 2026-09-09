@@ -1,38 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, {
-  runOnJS,
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
-  Easing,
-} from 'react-native-reanimated';
+import Animated, { runOnJS, useSharedValue, withTiming } from 'react-native-reanimated';
 import Svg, { Path } from 'react-native-svg';
 import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
-import {
-  APEX,
-  GRAVITY,
-  RESTITUTION,
-  previewFlight,
-  resolveThrow,
-  sampleFlight,
-  type Flight,
-} from '@/lib/throwPhysics';
+import { previewFlight, resolveThrow, sampleFlight, type Flight } from '@/lib/throwPhysics';
 import { BallArt } from './BallArt';
+import { BALL_SIZE, HEIGHT_LIFT, useBallFlight } from './useBallFlight';
 
-const BALL_SIZE = 30;
 /** Radius of the ring that marks where the arc comes down. */
 const AIM_MARKER = 26;
-/**
- * How much of the ball's real height turns into travel up the screen. The
- * table is drawn from a low angle, so height and distance share an axis; the
- * shadow stays on the ground and tells the two apart.
- */
-const HEIGHT_LIFT = 0.55;
-/** How much bigger the ball looks at the top of its arc. */
-const HEIGHT_ZOOM = 0.42;
 /** Let go later than this after the hand stopped and it is not a throw. */
 const STALE_HAND_MS = 120;
 
@@ -44,6 +22,10 @@ export interface ThrowResult {
   rimOut: boolean;
   /** True when this was a bounce shot, which is worth two cups. */
   bounce: boolean;
+  /** How far short (negative) or long (positive) of the nearest cup it landed. */
+  overshoot: number;
+  /** How far wide of the nearest cup it landed. */
+  sideways: number;
 }
 
 interface ThrowBallProps {
@@ -83,24 +65,7 @@ export function ThrowBall({
   onRim,
   onLaunch,
 }: ThrowBallProps) {
-  // Ground position — where the ball is on the table, ignoring how high it is.
-  const groundX = useSharedValue(startX);
-  const groundY = useSharedValue(startY);
-  /** Height above the table, in points. Lifts and enlarges the ball. */
-  const height = useSharedValue(0);
-  const ballScale = useSharedValue(1);
-  const ballOpacity = useSharedValue(1);
-  const trailOpacity = useSharedValue(0);
-  /** Seconds into the current flight; the animation plays this forward. */
-  const flightT = useSharedValue(0);
-  /** The parabola being flown, as plain numbers a worklet can read. */
-  const legStartX = useSharedValue(startX);
-  const legStartY = useSharedValue(startY);
-  const legEndX = useSharedValue(startX);
-  const legEndY = useSharedValue(startY);
-  const legDuration = useSharedValue(1);
-  const legUp = useSharedValue(0);
-  const following = useSharedValue(0);
+  const flight = useBallFlight(startX, startY);
 
   const [aim, setAim] = useState<Flight | null>(null);
   const [flying, setFlying] = useState(false);
@@ -117,8 +82,8 @@ export function ThrowBall({
   };
 
   useEffect(() => {
-    ballOpacity.value = withTiming(hidden ? 0 : 1, { duration: 260 });
-  }, [hidden, ballOpacity]);
+    flight.opacity.value = withTiming(hidden ? 0 : 1, { duration: 260 });
+  }, [hidden, flight.opacity]);
 
   useEffect(
     () => () => {
@@ -133,61 +98,16 @@ export function ThrowBall({
   // keyed on the start position only, so it never cuts a throw short.
   useEffect(() => {
     if (flyingRef.current) return;
-    groundX.value = withTiming(startX, { duration: 160 });
-    groundY.value = withTiming(startY, { duration: 160 });
+    flight.settle(startX, startY);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [startX, startY]);
 
-  const finishThrow = (cupIndex: number | null, hit: boolean, power: number, rimOut: boolean) => {
+  const finishThrow = (result: Omit<ThrowResult, 'bounce'>) => {
     setFlyingState(false);
     setAim(null);
-    onResult({ cupIndex, hit, power, rimOut, bounce });
+    onResult({ ...result, bounce });
     if (resetTimer.current) clearTimeout(resetTimer.current);
-    resetTimer.current = setTimeout(() => {
-      following.value = 0;
-      height.value = withTiming(0, { duration: 200 });
-      groundX.value = withTiming(startX, { duration: 260 });
-      groundY.value = withTiming(startY, { duration: 260 });
-      ballScale.value = withTiming(1, { duration: 260 });
-    }, 220);
-  };
-
-  const scheduleResult = (
-    cupIndex: number | null,
-    hit: boolean,
-    power: number,
-    delay: number
-  ) => {
-    if (resultTimer.current) clearTimeout(resultTimer.current);
-    resultTimer.current = setTimeout(() => finishThrow(cupIndex, hit, power, true), delay);
-  };
-
-  /**
-   * Plays one hop of the flight: the ball crosses the ground from one point to
-   * the next while gravity takes it up and back down.
-   */
-  const flyLeg = (
-    from: { x: number; y: number },
-    to: { x: number; y: number },
-    seconds: number,
-    up: number,
-    onDone: () => void
-  ) => {
-    legStartX.value = from.x;
-    legStartY.value = from.y;
-    legEndX.value = to.x;
-    legEndY.value = to.y;
-    legDuration.value = seconds;
-    legUp.value = up;
-    following.value = 1;
-    flightT.value = 0;
-    flightT.value = withTiming(
-      seconds,
-      { duration: seconds * 1000, easing: Easing.linear },
-      (finished) => {
-        if (finished) runOnJS(onDone)();
-      }
-    );
+    resetTimer.current = setTimeout(() => flight.settle(startX, startY), 220);
   };
 
   /**
@@ -208,56 +128,39 @@ export function ThrowBall({
     // Too slow to leave the hand — not a throw, so not a turn.
     if (!outcome) return;
 
-    const { hit, rimOut, cupIndex, power, flight } = outcome;
+    const { hit, rimOut, cupIndex, power, landing } = outcome;
+    const miss = missDistance(landing, cups, aliveFlags, direction);
+    const result = { cupIndex, hit, power, rimOut, ...miss };
 
     setFlyingState(true);
     onLaunch?.();
-    trailOpacity.value = withTiming(1, { duration: 60 });
-    ballScale.value = withTiming(hit ? 0.62 : 0.8, { duration: flight.hang * 1000 });
+    flight.trail.value = withTiming(1, { duration: 60 });
+    flight.scale.value = withTiming(hit ? 0.62 : 0.8, {
+      duration: outcome.flight.hang * 1000,
+    });
 
-    const land = () => {
-      trailOpacity.value = withTiming(0, { duration: 200 });
+    flight.play(outcome.flight, () => {
+      flight.trail.value = withTiming(0, { duration: 200 });
       if (rimOut) {
-        kickOut(flight.landing, cupIndex, hit, power);
+        // Caught the lip: a short, low hop away from the rack.
+        const away = direction === 'up' ? 1 : -1;
+        rimContact();
+        flight.playLeg(
+          landing,
+          {
+            x: landing.x + (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 28),
+            y: landing.y + away * (26 + Math.random() * 20),
+          },
+          0.34,
+          190,
+          () => {}
+        );
+        if (resultTimer.current) clearTimeout(resultTimer.current);
+        resultTimer.current = setTimeout(() => finishThrow(result), 400);
         return;
       }
-      height.value = 0;
-      finishThrow(cupIndex, hit, power, false);
-    };
-
-    if (flight.bounceAt) {
-      // Down onto the table first, then up again with whatever it kept.
-      flyLeg(flight.start, flight.bounceAt, flight.bounceTime, flight.launchUp, () => {
-        flyLeg(
-          flight.bounceAt!,
-          flight.landing,
-          flight.hang - flight.bounceTime,
-          flight.launchUp * RESTITUTION,
-          land
-        );
-      });
-      return;
-    }
-    flyLeg(flight.start, flight.landing, flight.hang, flight.launchUp, land);
-  };
-
-  /** Caught the lip: a short, low hop away from the rack. */
-  const kickOut = (
-    landing: { x: number; y: number },
-    cupIndex: number | null,
-    hit: boolean,
-    power: number
-  ) => {
-    const away = direction === 'up' ? 1 : -1;
-    const kick = {
-      x: landing.x + (Math.random() < 0.5 ? -1 : 1) * (30 + Math.random() * 28),
-      y: landing.y + away * (26 + Math.random() * 20),
-    };
-    rimContact();
-    flyLeg(landing, kick, 0.34, 190, () => {
-      height.value = 0;
+      finishThrow(result);
     });
-    scheduleResult(cupIndex, hit, power, 400);
   };
 
   /**
@@ -323,92 +226,6 @@ export function ThrowBall({
     );
   }
 
-  /**
-   * Ball position, height and all. `height` lifts it up the screen and makes
-   * it bigger, as if it were coming towards you off the table.
-   */
-  const ballStyle = useAnimatedStyle(() => {
-    'worklet';
-    const point = flightPoint(
-      following.value,
-      flightT.value,
-      legStartX.value,
-      legStartY.value,
-      legEndX.value,
-      legEndY.value,
-      legDuration.value,
-      legUp.value,
-      groundX.value,
-      groundY.value
-    );
-    const lift = point.height * HEIGHT_LIFT;
-    const zoom = 1 + (point.height / Math.max(1, APEX)) * HEIGHT_ZOOM;
-    return {
-      opacity: ballOpacity.value,
-      transform: [
-        { translateX: point.x - BALL_SIZE / 2 },
-        { translateY: point.y - lift - BALL_SIZE / 2 },
-        { scale: ballScale.value * zoom },
-      ],
-    };
-  });
-
-  const trailStyle = useAnimatedStyle(() => {
-    'worklet';
-    const point = flightPoint(
-      following.value,
-      flightT.value,
-      legStartX.value,
-      legStartY.value,
-      legEndX.value,
-      legEndY.value,
-      legDuration.value,
-      legUp.value,
-      groundX.value,
-      groundY.value
-    );
-    const lift = point.height * HEIGHT_LIFT;
-    return {
-      opacity: trailOpacity.value * ballOpacity.value * 0.35,
-      transform: [
-        { translateX: point.x - BALL_SIZE / 2 },
-        { translateY: point.y - lift - BALL_SIZE / 2 + 12 },
-        { scale: ballScale.value * 1.15 },
-      ],
-    };
-  });
-
-  /**
-   * The shadow stays flat on the table under the ball. It is what makes the
-   * arc readable: the ball rising up the screen and the shadow running along
-   * the table are the same throw seen two ways.
-   */
-  const shadowStyle = useAnimatedStyle(() => {
-    'worklet';
-    const point = flightPoint(
-      following.value,
-      flightT.value,
-      legStartX.value,
-      legStartY.value,
-      legEndX.value,
-      legEndY.value,
-      legDuration.value,
-      legUp.value,
-      groundX.value,
-      groundY.value
-    );
-    const climb = Math.min(1, point.height / Math.max(1, APEX));
-    return {
-      opacity: ballOpacity.value * 0.45 * (1 - climb * 0.75),
-      transform: [
-        { translateX: point.x - BALL_SIZE / 2 },
-        { translateY: point.y + BALL_SIZE * 0.34 },
-        { scaleX: 1 - climb * 0.4 },
-        { scaleY: (1 - climb * 0.4) * 0.3 },
-      ],
-    };
-  });
-
   const arc = aim && !flying ? arcPath(aim) : null;
 
   return (
@@ -439,12 +256,12 @@ export function ThrowBall({
         </>
       ) : null}
 
-      <Animated.View pointerEvents="none" style={[styles.ballShadow, shadowStyle]} />
-      <Animated.View pointerEvents="none" style={[styles.ball, trailStyle]}>
+      <Animated.View pointerEvents="none" style={[styles.ballShadow, flight.shadowStyle]} />
+      <Animated.View pointerEvents="none" style={[styles.ball, flight.trailStyle]}>
         <BallArt accent={accent} />
       </Animated.View>
       <GestureDetector gesture={pan}>
-        <Animated.View style={[styles.ball, glow('medium', accent), ballStyle]}>
+        <Animated.View style={[styles.ball, glow('medium', accent), flight.ballStyle]}>
           <BallArt accent={accent} />
         </Animated.View>
       </GestureDetector>
@@ -453,31 +270,32 @@ export function ThrowBall({
 }
 
 /**
- * One point of the flight, as a worklet. Deliberately takes plain numbers
- * rather than the `Flight` object: shared values cannot hold a nested object
- * that the UI thread reads every frame without copying it each time.
+ * How badly a throw missed, relative to the nearest cup still standing.
+ *
+ * With the swipe deciding everything, "you missed" is not useful on its own —
+ * the two ways to miss have opposite fixes. This is what lets the game say
+ * whether the ball was short or long.
  */
-function flightPoint(
-  active: number,
-  t: number,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-  seconds: number,
-  up: number,
-  restX: number,
-  restY: number
-) {
-  'worklet';
-  if (active < 0.5) return { x: restX, y: restY, height: 0 };
-  const clamped = Math.max(0, Math.min(t, seconds));
-  const share = clamped / Math.max(0.0001, seconds);
-  return {
-    x: fromX + (toX - fromX) * share,
-    y: fromY + (toY - fromY) * share,
-    height: Math.max(0, up * clamped - 0.5 * GRAVITY * clamped * clamped),
-  };
+function missDistance(
+  landing: { x: number; y: number },
+  cups: CupSpec[],
+  aliveFlags: boolean[],
+  direction: 'up' | 'down'
+): { overshoot: number; sideways: number } {
+  let best: CupSpec | null = null;
+  let bestDistance = Infinity;
+  for (const cup of cups) {
+    if (!aliveFlags[cup.index]) continue;
+    const distance = Math.hypot(landing.x - cup.x, landing.y - cup.y);
+    if (distance < bestDistance) {
+      bestDistance = distance;
+      best = cup;
+    }
+  }
+  if (!best) return { overshoot: 0, sideways: 0 };
+  // Positive means past the cup, whichever way down the table that is.
+  const along = direction === 'up' ? best.y - landing.y : landing.y - best.y;
+  return { overshoot: along, sideways: landing.x - best.x };
 }
 
 /** The aiming arc, drawn the way the ball will actually fly it. */

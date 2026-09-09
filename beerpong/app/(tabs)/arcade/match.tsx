@@ -45,8 +45,30 @@ import { LEAGUE_OPPONENTS } from '@/lib/opponents';
 import { SKINS } from '@/lib/skins';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
-import { divisionName, translate, useLanguage, useT } from '@/lib/i18n';
+import { divisionName, translate, useLanguage, useT, type TranslationKey as MatchKey } from '@/lib/i18n';
 import { colors, fonts, spacing, radius } from '@/theme';
+
+/**
+ * Turns a miss into something the player can act on.
+ *
+ * The swipe now decides everything, and the two ways to miss want opposite
+ * corrections: short means swipe faster, long means ease off. "Daneben" alone
+ * would leave that to guesswork.
+ */
+function missAdvice(
+  result: { rimOut?: boolean; overshoot?: number; sideways?: number },
+  t: (key: MatchKey, vars?: Record<string, string | number>) => string
+): string {
+  const overshoot = result.overshoot ?? 0;
+  const sideways = Math.abs(result.sideways ?? 0);
+  if (result.rimOut) return t('match.missRim');
+  // Sideways error dominating means the swipe pointed wrong, not that it was
+  // mistimed — saying "too short" there would send them the wrong way.
+  if (sideways > Math.abs(overshoot) + 12) return t('match.missWide');
+  if (overshoot > 14) return t('match.missLong');
+  if (overshoot < -14) return t('match.missShort');
+  return t('match.missClose');
+}
 
 type Turn = 'player' | 'opponent';
 type RoundResult = 'win' | 'lose' | null;
@@ -94,6 +116,11 @@ export default function MatchScreen() {
   // Pass & Play: the phone changes hands, so a prompt gates each turn.
   const [handOver, setHandOver] = useState(false);
   const [bounceArmed, setBounceArmed] = useState(false);
+  /**
+   * What went wrong with the last throw. With the swipe deciding everything,
+   * "missed" on its own is no help — short and long need opposite corrections.
+   */
+  const [missNote, setMissNote] = useState<string | null>(null);
   const [reRacksLeft, setReRacksLeft] = useState<[number, number]>([1, 1]);
 
   const arcade = useBeerpongStore((s) => s.arcade);
@@ -358,6 +385,8 @@ export default function MatchScreen() {
     hit: boolean;
     bounce: boolean;
     rimOut?: boolean;
+    overshoot?: number;
+    sideways?: number;
   }) => {
     arcadeRecordThrow(result.hit);
     trackDaily('throws');
@@ -368,9 +397,11 @@ export default function MatchScreen() {
     if (result.cupIndex == null || !result.hit) {
       // A rim-out already clacked when the ball caught the lip.
       if (!result.rimOut) feedback.miss();
+      setMissNote(missAdvice(result, t));
       scheduleOpponentTurn();
       return;
     }
+    setMissNote(null);
     const cup = opponentCups[result.cupIndex];
     feedback.cupHit();
     if (result.bounce) feedback.streak();
@@ -620,7 +651,7 @@ export default function MatchScreen() {
           style={[styles.hint, { color: playerTurn ? colors.neon : colors.danger }, hintStyle]}
           selectable={false}
         >
-          {bounceArmed ? t('match.bounceArmed') : turnStatus}
+          {bounceArmed ? t('match.bounceArmed') : (missNote ?? turnStatus)}
         </Animated.Text>
       </SafeAreaView>
 

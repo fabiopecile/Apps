@@ -103,6 +103,47 @@ export function spreadFor(skill: number, power: number, bounce: boolean): number
 }
 
 /**
+ * How wide the opponent throws, for a given nominal accuracy.
+ *
+ * The opponent used to settle its throws with `Math.random() < accuracy` and
+ * then slide the ball to the answer. Now it throws the same parabola you do,
+ * so its skill has to be a spread as well — and the two are not related by any
+ * formula worth deriving, because a badly missed ball still drops into a
+ * neighbouring cup on a full rack.
+ *
+ * So this is measured rather than derived: each pair is a spread in points and
+ * the share of throws that landed in *some* cup over 40,000 simulated throws at
+ * a random cup of a full rack (`tools/test_throw_physics.mjs` checks the
+ * opponents still hit at the rate their profile claims). Note the floor near
+ * 26%: past a certain wildness the rack is simply a big enough target.
+ */
+const ACCURACY_TO_SPREAD: [spread: number, rate: number][] = [
+  [15, 0.997],
+  [20, 0.953],
+  [25, 0.853],
+  [30, 0.73],
+  [35, 0.616],
+  [40, 0.517],
+  [50, 0.383],
+  [60, 0.306],
+  [75, 0.261],
+];
+
+export function spreadForAccuracy(accuracy: number): number {
+  const table = ACCURACY_TO_SPREAD;
+  if (accuracy >= table[0][1]) return table[0][0];
+  for (let i = 1; i < table.length; i++) {
+    const [wideSpread, wideRate] = table[i];
+    const [tightSpread, tightRate] = table[i - 1];
+    if (accuracy >= wideRate) {
+      const share = (accuracy - wideRate) / (tightRate - wideRate);
+      return wideSpread + (tightSpread - wideSpread) * share;
+    }
+  }
+  return table[table.length - 1][0];
+}
+
+/**
  * Triangular noise rather than flat: small errors are common, big ones rare,
  * which is how a throw actually scatters. Takes its randomness as an argument
  * so a test can drive it.

@@ -361,6 +361,11 @@ const STRINGS = {
     en: 'Bounce shot armed — harder, but takes two cups',
   },
   'match.reRack': { de: 'Re-Rack {left}', en: 'Re-rack {left}' },
+  'match.missShort': { de: 'Zu kurz — mehr Schwung', en: 'Short — swing harder' },
+  'match.missLong': { de: 'Zu weit — sanfter wischen', en: 'Long — ease off' },
+  'match.missWide': { de: 'Daneben — Richtung stimmt nicht', en: 'Wide — check your line' },
+  'match.missRim': { de: 'Rand erwischt — ganz knapp', en: 'Caught the rim — so close' },
+  'match.missClose': { de: 'Knapp vorbei', en: 'Just past it' },
   'match.rotateTitle': { de: 'Handy hochkant halten', en: 'Hold the phone upright' },
   'match.rotateBody': {
     de: 'Arcade wird im Hochformat gespielt — der Tisch ist lang, und nach oben gewischt wird auch. Das Spiel läuft weiter, sobald du drehst.',
