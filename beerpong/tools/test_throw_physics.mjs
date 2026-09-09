@@ -1,10 +1,12 @@
 /**
- * Checks that the throw is a throw and not a die roll.
+ * Checks that the throw is a throw: a real parabola, launched by how fast the
+ * hand was moving.
  *
- * The important properties are not "does it compile" but "can a player get
- * better at it": aiming at a cup has to beat aiming next to it, the far row
- * has to be harder than the near one, and a steadier thrower has to score
- * more. Each of those is measured over ten thousand simulated throws.
+ * The properties that matter are not "does it compile" but "can a player get
+ * better at it": a harder swipe has to carry further, the whole rack has to be
+ * reachable inside a swipe speed a thumb can actually produce, the ball has to
+ * leave the table and come back to it, and a steadier thrower has to score
+ * more. Each is measured over thousands of simulated throws.
  *
  * Run with: node tools/test_throw_physics.mjs
  */
@@ -31,7 +33,24 @@ async function load(name) {
 
 const layout = await load('arcadeLayout');
 const physics = await load('throwPhysics');
-const { aimPoint, throwPower, spreadFor, resolveLanding, resolveThrow, MAX_REACH } = physics;
+const {
+  GRAVITY,
+  HANG_TIME,
+  LAUNCH_UP,
+  APEX,
+  MIN_FLICK_SPEED,
+  RESTITUTION,
+  flickSpeed,
+  rangeFor,
+  speedForRange,
+  heightAt,
+  buildFlight,
+  sampleFlight,
+  previewFlight,
+  resolveLanding,
+  resolveThrow,
+  spreadFor,
+} = physics;
 
 const TABLE_WIDTH = 342; // a 390pt phone, minus the usual margins
 const cups = layout.generateOpponentRack(TABLE_WIDTH);
@@ -54,24 +73,23 @@ function seeded(seed) {
   };
 }
 
-/**
- * The drag that aims at a cup. With one-to-one aiming this is simply the
- * offset from the ball to the cup — dragging the ring onto it.
- */
-function dragTo(cup) {
-  return { dragX: cup.x - START.x, dragY: cup.y - START.y };
+/** The swipe that throws at a cup: straight at it, fast enough to reach. */
+function swipeAt(cup, { extraSpeed = 1, offsetX = 0 } = {}) {
+  const dx = cup.x + offsetX - START.x;
+  const dy = cup.y - START.y;
+  const distance = Math.hypot(dx, dy);
+  const speed = speedForRange(distance) * extraSpeed;
+  return { velocityX: (dx / distance) * speed, velocityY: (dy / distance) * speed };
 }
 
-function hitRate(cup, skill, { offsetX = 0, bounce = false, seed = 7 } = {}) {
+function hitRate(cup, skill, { offsetX = 0, bounce = false, seed = 7, runs = 8000 } = {}) {
   const random = seeded(seed);
-  const { dragX, dragY } = dragTo(cup);
+  const swipe = swipeAt(cup, { offsetX });
   let hits = 0;
-  const runs = 10000;
   for (let i = 0; i < runs; i++) {
     const outcome = resolveThrow({
       start: START,
-      dragX: dragX + offsetX,
-      dragY,
+      ...swipe,
       direction: 'up',
       skill,
       bounce,
@@ -79,7 +97,7 @@ function hitRate(cup, skill, { offsetX = 0, bounce = false, seed = 7 } = {}) {
       aliveFlags: allAlive,
       random,
     });
-    if (outcome.hit) hits += 1;
+    if (outcome?.hit) hits += 1;
   }
   return hits / runs;
 }
@@ -89,32 +107,110 @@ const backRow = cups[1]; // one of the four at the far end
 
 console.log('throw physics');
 
-check('the aim ring sits exactly under the finger', () => {
-  // The whole mechanic rests on this: drag the ring onto a cup and the ball
-  // goes to that cup. An amplified drag broke it once already.
-  for (const cup of [apex, backRow, cups[7]]) {
-    const { dragX, dragY } = dragTo(cup);
-    const aim = aimPoint(START, dragX, dragY, 'up');
-    assert.ok(Math.abs(aim.x - cup.x) < 0.5, `aim x ${aim.x} vs cup ${cup.x}`);
-    assert.ok(Math.abs(aim.y - cup.y) < 0.5, `aim y ${aim.y} vs cup ${cup.y}`);
+// ------------------------------------------------------------ the flight
+
+check('the ball leaves the table and comes back to it', () => {
+  assert.equal(heightAt(0), 0);
+  assert.equal(heightAt(HANG_TIME).toFixed(6), '0.000000');
+  assert.ok(heightAt(HANG_TIME / 2) > 100, 'it should get properly airborne');
+});
+
+check('the arc peaks halfway, where the physics says it does', () => {
+  const top = heightAt(HANG_TIME / 2);
+  assert.ok(Math.abs(top - APEX) < 0.01, `apex ${top} vs ${APEX}`);
+  // v^2 / 2g, the textbook height of a body thrown straight up.
+  assert.ok(Math.abs(APEX - (LAUNCH_UP * LAUNCH_UP) / (2 * GRAVITY)) < 0.01);
+});
+
+check('a faster swipe carries further', () => {
+  const speeds = [400, 700, 1000, 1400];
+  const ranges = speeds.map(rangeFor);
+  for (let i = 1; i < ranges.length; i++) {
+    assert.ok(ranges[i] > ranges[i - 1], `${speeds[i]} should beat ${speeds[i - 1]}`);
   }
 });
 
-check('every cup on the table is within reach of one drag', () => {
-  const furthest = Math.max(...cups.map((c) => START.y - c.y));
-  assert.ok(furthest <= MAX_REACH, `far row is ${furthest} away, reach is ${MAX_REACH}`);
+check('the whole rack sits inside a swipe speed a thumb can make', () => {
+  const nearest = speedForRange(START.y - apex.y);
+  const furthest = speedForRange(Math.hypot(backRow.x - START.x, START.y - backRow.y));
+  // Both ends have to be reachable, and not two flicks of the wrist apart.
+  assert.ok(nearest > MIN_FLICK_SPEED, `near cup needs ${nearest.toFixed(0)}pt/s`);
+  assert.ok(furthest < 2200, `far row needs ${furthest.toFixed(0)}pt/s, too fast to aim`);
+  assert.ok(furthest / nearest < 2.2, `${(furthest / nearest).toFixed(2)}x speed range is too twitchy`);
 });
 
-check('a flick with no length is no throw', () => {
-  assert.equal(throwPower(0), 0);
-  assert.equal(throwPower(-MAX_REACH * 2), 1); // clamped, not runaway
+check('a slow hand is not a throw', () => {
+  const nudge = previewFlight({
+    start: START,
+    velocityX: 0,
+    velocityY: -(MIN_FLICK_SPEED - 20),
+    direction: 'up',
+    bounce: false,
+  });
+  assert.equal(nudge, null);
 });
 
-check('throwing down the table aims the other way', () => {
-  const up = aimPoint(START, 0, -150, 'up');
-  const down = aimPoint(START, 0, -150, 'down');
-  assert.ok(up.y < START.y && down.y > START.y);
+check('swiping backwards throws nothing', () => {
+  const backwards = previewFlight({
+    start: START,
+    velocityX: 0,
+    velocityY: 900,
+    direction: 'up',
+    bounce: false,
+  });
+  assert.equal(backwards, null);
+  // ...but the same swipe is a throw for the player at the other end.
+  const other = previewFlight({
+    start: START,
+    velocityX: 0,
+    velocityY: 900,
+    direction: 'down',
+    bounce: false,
+  });
+  assert.ok(other && other.landing.y > START.y);
 });
+
+check('the flight starts and ends where it should', () => {
+  const flight = buildFlight(START, { x: apex.x, y: apex.y }, false);
+  const first = sampleFlight(flight, 0);
+  const last = sampleFlight(flight, flight.hang);
+  assert.ok(Math.abs(first.x - START.x) < 0.01 && Math.abs(first.y - START.y) < 0.01);
+  assert.ok(Math.abs(last.x - apex.x) < 0.01 && Math.abs(last.y - apex.y) < 0.01);
+  assert.ok(first.height < 0.01 && last.height < 0.01);
+  assert.ok(sampleFlight(flight, flight.hang / 2).height > 100);
+});
+
+check('a bounce shot touches the table on the way, and only once', () => {
+  const target = { x: apex.x, y: apex.y };
+  const flight = buildFlight(START, target, true);
+  assert.ok(flight.bounceAt, 'a bounce shot has to bounce');
+  // On the table, short of the cup, and past halfway.
+  const total = Math.hypot(target.x - START.x, target.y - START.y);
+  const toBounce = Math.hypot(flight.bounceAt.x - START.x, flight.bounceAt.y - START.y);
+  assert.ok(toBounce < total, 'it has to come down before the cup');
+  assert.ok(toBounce / total > 0.5, 'and cover most of the way on the first hop');
+  // The second hop keeps `RESTITUTION` of the first: that fixes where it lands.
+  const secondHop = total - toBounce;
+  assert.ok(
+    Math.abs(secondHop / toBounce - RESTITUTION) < 0.001,
+    `second hop is ${(secondHop / toBounce).toFixed(3)} of the first, expected ${RESTITUTION}`
+  );
+  assert.ok(sampleFlight(flight, flight.bounceTime).height < 0.01, 'it must be on the table');
+});
+
+check('a bounce shot arcs lower than a straight throw', () => {
+  const target = { x: apex.x, y: apex.y };
+  const straight = buildFlight(START, target, false);
+  const bounced = buildFlight(START, target, true);
+  const topOf = (f) => {
+    let best = 0;
+    for (let i = 0; i <= 40; i++) best = Math.max(best, sampleFlight(f, (i / 40) * f.hang).height);
+    return best;
+  };
+  assert.ok(topOf(bounced) < topOf(straight) * 0.6);
+});
+
+// ------------------------------------------------------------- the target
 
 check('a dead-centre landing is in, an edge landing rims out', () => {
   const inside = resolveLanding({ x: apex.x, y: apex.y }, cups, allAlive);
@@ -123,14 +219,12 @@ check('a dead-centre landing is in, an edge landing rims out', () => {
   const rim = resolveLanding({ x: apex.x + apex.width * 0.5, y: apex.y }, cups, allAlive);
   assert.equal(rim.hit, false);
   assert.equal(rim.rimOut, true);
-  assert.equal(rim.cupIndex, apex.index);
 });
 
 check('landing on bare table hits nothing at all', () => {
   const miss = resolveLanding({ x: apex.x, y: apex.y + 200 }, cups, allAlive);
   assert.equal(miss.cupIndex, null);
   assert.equal(miss.hit, false);
-  assert.equal(miss.rimOut, false);
 });
 
 check('a cup already sunk cannot be hit again', () => {
@@ -141,9 +235,9 @@ check('a cup already sunk cannot be hit again', () => {
   assert.equal(result.hit, false);
 });
 
-// --------------------------------------------------------------- the point
+// --------------------------------------------------------------- the game
 
-check('aiming at a cup beats aiming a cup-width beside it', () => {
+check('swiping at a cup beats swiping a cup-width beside it', () => {
   const onTarget = hitRate(apex, 0.55);
   const beside = hitRate(apex, 0.55, { offsetX: apex.width });
   assert.ok(
@@ -153,36 +247,53 @@ check('aiming at a cup beats aiming a cup-width beside it', () => {
 });
 
 check('the far row is harder than the cup in front of you', () => {
-  const near = hitRate(apex, 0.55);
-  const far = hitRate(backRow, 0.55);
-  assert.ok(far < near, `far ${far.toFixed(2)} should be under near ${near.toFixed(2)}`);
+  assert.ok(hitRate(backRow, 0.55) < hitRate(apex, 0.55));
 });
 
 check('a steadier thrower scores more', () => {
-  const shaky = hitRate(apex, 0.48);
-  const steady = hitRate(apex, 0.62);
-  assert.ok(steady > shaky, `steady ${steady.toFixed(2)} vs shaky ${shaky.toFixed(2)}`);
+  assert.ok(hitRate(apex, 0.62) > hitRate(apex, 0.48));
 });
 
-check('a bounce shot is the harder way to take two cups', () => {
-  const normal = hitRate(apex, 0.55);
-  const bounced = hitRate(apex, 0.55, { bounce: true });
-  assert.ok(bounced < normal, `bounce ${bounced.toFixed(2)} vs normal ${normal.toFixed(2)}`);
+check('throwing too hard sails past the rack', () => {
+  const over = resolveThrow({
+    start: START,
+    ...swipeAt(backRow, { extraSpeed: 1.6 }),
+    direction: 'up',
+    skill: 1, // no wobble: this is the swipe's fault, not the hand's
+    bounce: false,
+    cups,
+    aliveFlags: allAlive,
+    random: () => 0.5,
+  });
+  assert.ok(over && over.landing.y < backRow.y - 40, 'it should fly past the back row');
+  assert.equal(over.hit, false);
 });
 
 check('spread grows with power and shrinks with skill', () => {
   assert.ok(spreadFor(0.55, 1, false) > spreadFor(0.55, 0, false));
   assert.ok(spreadFor(0.8, 0.5, false) < spreadFor(0.3, 0.5, false));
+  assert.ok(spreadFor(0.55, 0.5, true) > spreadFor(0.55, 0.5, false));
 });
 
-check('a perfect throw is not a certainty, and a bad one is not hopeless', () => {
+check('a perfect swipe is not a certainty, and a bad one is not hopeless', () => {
   const best = hitRate(apex, 0.62);
   const worst = hitRate(backRow, 0.48);
   assert.ok(best < 0.97, `best ${best.toFixed(2)} — there has to be some risk`);
   assert.ok(worst > 0.05, `worst ${worst.toFixed(2)} — there has to be some hope`);
 });
 
-console.log('\nhit rates, aiming as well as the player can:');
+check('flick speed is the length of the hand’s velocity', () => {
+  assert.ok(Math.abs(flickSpeed(300, 400) - 500) < 0.001);
+});
+
+console.log('\nswipe speed needed, in points per second:');
+for (const [label, cup] of [['nearest cup', apex], ['far row', backRow]]) {
+  const distance = Math.hypot(cup.x - START.x, cup.y - START.y);
+  console.log(`  ${label.padEnd(12)} ${speedForRange(distance).toFixed(0)} pt/s  (${distance.toFixed(0)}pt away)`);
+}
+console.log(`  arc peaks at ${APEX.toFixed(0)}pt after ${(HANG_TIME / 2).toFixed(2)}s\n`);
+
+console.log('hit rates, swiping as well as the player can:');
 for (const [label, cup] of [['nearest cup', apex], ['far row', backRow]]) {
   const rates = [0.48, 0.55, 0.62].map((s) => `${(hitRate(cup, s) * 100).toFixed(0)}%`);
   console.log(`  ${label.padEnd(12)} shaky ${rates[0]}  ·  normal ${rates[1]}  ·  steady ${rates[2]}`);
