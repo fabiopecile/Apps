@@ -17,7 +17,7 @@ import { BallArt } from './BallArt';
 import { BALL_SIZE, HEIGHT_LIFT, useBallFlight } from './useBallFlight';
 
 /** How long they line the throw up before letting go. */
-const AIM_DURATION = 300;
+const AIM_DURATION = 220;
 
 interface OpponentResult {
   cupIndex: number;
@@ -95,15 +95,15 @@ export function OpponentThrow({
       setAimArc(null);
       flight.trail.value = withTiming(1, { duration: 60 });
       flight.play(thrown, () => {
-        flight.trail.value = withTiming(0, { duration: 180 });
+        flight.trail.value = withTiming(0, { duration: 130 });
         // Their ball drops into the cup the same way yours does.
         if (outcome.hit) {
           const sunk = cups.find((c) => c.index === outcome.cupIndex);
           const at = sunk ? cupMouth(sunk) : landing;
-          flight.scale.value = withTiming(0.1, { duration: 170 });
-          flight.playLeg(at, { x: at.x, y: at.y + 16 }, 0.17, 0, () => {});
+          flight.scale.value = withTiming(0.1, { duration: 120 });
+          flight.playLeg(at, { x: at.x, y: at.y + 16 }, 0.12, 0, () => {});
         }
-        flight.opacity.value = withTiming(0, { duration: 240 });
+        flight.opacity.value = withTiming(0, { duration: 180 });
         // A cup they landed in is the cup that goes; anything else is a miss,
         // and the score only ever needs the cup they were aiming at.
         onResult({ cupIndex: outcome.cupIndex ?? target.index, hit: outcome.hit });
