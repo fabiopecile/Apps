@@ -31,9 +31,9 @@ export interface Point {
  * shortening the flight to keep the game moving needs stronger gravity to keep
  * the arc as high as it was.
  */
-export const GRAVITY = 4100;
+export const GRAVITY = 5800;
 /** How long a lobbed throw stays in the air. */
-export const HANG_TIME = 0.52;
+export const HANG_TIME = 0.4;
 /** Upward launch speed, the one that gives that hang time. */
 export const LAUNCH_UP = (GRAVITY * HANG_TIME) / 2;
 /** Highest the ball gets, in points: about a third of the table's length. */
@@ -44,7 +44,7 @@ export const APEX = (LAUNCH_UP * LAUNCH_UP) / (2 * GRAVITY);
  * gentle flick reaches the near cup and a firm one reaches the back row, with
  * the whole rack inside a comfortable range of swipe speeds.
  */
-const FLICK_TO_LAUNCH = 0.398;
+const FLICK_TO_LAUNCH = 0.595;
 /** Slower than this is a nudge, not a throw. */
 export const MIN_FLICK_SPEED = 260;
 /** Past this the ball has left the table anyway. */
@@ -240,13 +240,23 @@ export function sampleFlight(flight: Flight, t: number): { x: number; y: number;
   };
 }
 
-/** The parabola a swipe would fly right now, for the aiming arc. */
+/**
+ * The parabola a swipe would fly right now, for the aiming arc.
+ *
+ * `carry` is how far the ball was already walked towards the rack before being
+ * let go. It is taken *off* the range, so the ball lands where the swipe says
+ * regardless of where it left from. That is what lets the ball follow the
+ * finger the whole way — the alternative, holding it back on a leash, is what
+ * made the throw feel stuck, and letting it run free without this would turn
+ * every drag up the table into free distance.
+ */
 export function previewFlight(params: {
   start: Point;
   velocityX: number;
   velocityY: number;
   direction: 'up' | 'down';
   bounce: boolean;
+  carry?: number;
 }): Flight | null {
   const { start, velocityX, velocityY, direction, bounce } = params;
   const speed = flickSpeed(velocityX, velocityY);
@@ -254,7 +264,8 @@ export function previewFlight(params: {
   // Throwing backwards is not a throw at the rack.
   if (direction === 'up' ? velocityY >= 0 : velocityY <= 0) return null;
 
-  const range = rangeFor(speed);
+  // Pulling back does not lend distance, so only a forward carry counts.
+  const range = Math.max(0, rangeFor(speed) - Math.max(0, params.carry ?? 0));
   const landing = {
     x: start.x + (velocityX / speed) * range,
     y: start.y + (velocityY / speed) * range,
@@ -347,17 +358,21 @@ export function resolveThrow(params: {
   bounce: boolean;
   cups: CupSpec[];
   aliveFlags: boolean[];
+  carry?: number;
   random?: () => number;
 }): ThrowOutcome | null {
   const { start, velocityX, velocityY, direction, skill, bounce, cups, aliveFlags } = params;
   const random = params.random ?? Math.random;
+  const carry = params.carry ?? 0;
 
-  const aimed = previewFlight({ start, velocityX, velocityY, direction, bounce });
+  const aimed = previewFlight({ start, velocityX, velocityY, direction, bounce, carry });
   if (!aimed) return null;
 
   const aim = aimed.landing;
-  const range = Math.hypot(aim.x - start.x, aim.y - start.y);
-  const power = powerOfRange(range);
+  // How hard it was thrown, not how far it happened to travel — a ball let go
+  // half way up the table was still thrown that hard, and pays the same
+  // accuracy for it.
+  const power = powerOfRange(rangeFor(flickSpeed(velocityX, velocityY)));
   const offset = wobble(spreadFor(skill, power, bounce), random);
   const landing = { x: aim.x + offset.x, y: aim.y + offset.y };
 

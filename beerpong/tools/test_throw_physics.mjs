@@ -187,6 +187,44 @@ check('the flight starts and ends where it should', () => {
   assert.ok(sampleFlight(flight, flight.hang / 2).height > 100);
 });
 
+check('walking the ball up the table buys no distance', () => {
+  // The ball follows the finger all the way, so it can be let go half way up
+  // the table. If that simply added its head start to the range, a short drag
+  // and a soft flick would drop the ball straight into the back row.
+  const speed = 1200;
+  const fromMark = previewFlight({
+    start: START,
+    velocityX: 0,
+    velocityY: -speed,
+    direction: 'up',
+    bounce: false,
+  });
+  const carry = 90;
+  const carried = previewFlight({
+    start: { x: START.x, y: START.y - carry },
+    velocityX: 0,
+    velocityY: -speed,
+    direction: 'up',
+    bounce: false,
+    carry,
+  });
+  assert.ok(fromMark && carried);
+  assert.ok(
+    Math.abs(carried.landing.y - fromMark.landing.y) < 0.01,
+    `carrying the ball ${carry}pt forward moved the landing to ${carried.landing.y} from ${fromMark.landing.y}`
+  );
+  // Pulling back is not a run-up either: it must not lend range.
+  const pulled = previewFlight({
+    start: { x: START.x, y: START.y + 60 },
+    velocityX: 0,
+    velocityY: -speed,
+    direction: 'up',
+    bounce: false,
+    carry: -60,
+  });
+  assert.ok(pulled && pulled.landing.y > fromMark.landing.y - 0.01);
+});
+
 check('a bounce shot touches the table on the way, and only once', () => {
   const target = cupMouth(apex);
   const flight = buildFlight(START, target, true);

@@ -22,32 +22,22 @@ const AIM_MARKER = 26;
 /** Let go later than this after the hand stopped and it is not a throw. */
 const STALE_HAND_MS = 120;
 /**
- * How far the ball can be carried from its mark while lining a throw up.
+ * How much of a swinging hand's travel the ball still comes along for, and the
+ * hand speeds between which its grip fades from full to that.
  *
- * The ball follows the finger, so without a limit it could simply be walked up
- * to the rack and dropped in. Wide enough to aim across the whole rack and to
- * pull back for a run-up, short enough that it is still a throw.
+ * Below `AIM_SPEED` the ball is pinned to the finger — that is the gesture the
+ * game is built on, and it has to be exact. Above `SWING_SPEED` it slips, so
+ * the swing does not eat the throw: a hard flick runs most of the way up the
+ * table, and a ball glued to it would arrive at the cup already, with nothing
+ * left to fly. Measured before this: a 160pt flick carried 179 of a 187pt
+ * throw and left an 8pt hop. A hard switch between the two was tried first and
+ * showed up as the ball snagging mid-drag; fading it over a range does not.
  */
-const DRAG_SIDEWAYS = 120;
-const DRAG_FORWARD = 45;
-const DRAG_BACK = 60;
-
-/**
- * Past the limit the ball keeps following the finger, but only barely — the
- * way a list keeps moving when pulled past its end.
- *
- * A hard stop was tried first and measured wrong twice over: a flick covers a
- * couple of hundred points in a fraction of a second, so the ball ran to the
- * limit and then sat there while the finger carried on without it — and every
- * throw then left from exactly the same spot, which added the whole limit to
- * its range and sent throws sailing over the rack.
- */
-function rubberBand(value: number, min: number, max: number) {
-  'worklet';
-  if (value > max) return max + (value - max) * 0.2;
-  if (value < min) return min + (value - min) * 0.2;
-  return value;
-}
+const SWING_GRIP = 0.32;
+const AIM_SPEED = 300;
+const SWING_SPEED = 900;
+/** How often the aiming arc is redrawn while swiping, in milliseconds. */
+const AIM_REDRAW_MS = 55;
 
 export interface ThrowResult {
   cupIndex: number | null;
@@ -150,7 +140,7 @@ export function ThrowBall({
     setAim(null);
     onResult({ ...result, bounce });
     if (resetTimer.current) clearTimeout(resetTimer.current);
-    resetTimer.current = setTimeout(() => flight.settle(startX, startY), 90);
+    resetTimer.current = setTimeout(() => flight.settle(startX, startY), 60);
   };
 
   /**
@@ -167,6 +157,7 @@ export function ThrowBall({
       bounce,
       cups,
       aliveFlags,
+      carry: carriedFrom(fromY),
     });
     // Too slow to leave the hand — not a throw, so not a turn. The ball rolls
     // back to its mark instead of staying wherever it was dropped.
@@ -187,7 +178,7 @@ export function ThrowBall({
     });
 
     flight.play(outcome.flight, () => {
-      flight.trail.value = withTiming(0, { duration: 180 });
+      flight.trail.value = withTiming(0, { duration: 130 });
       if (rimOut) {
         bounceOffRim(landing, result);
         return;
@@ -208,11 +199,11 @@ export function ThrowBall({
    * behind the rim, rather than simply stopping on top of it.
    */
   const dropIntoCup = (at: Point, result: Omit<ThrowResult, 'bounce'>) => {
-    flight.scale.value = withTiming(0.1, { duration: 170, easing: Easing.in(Easing.quad) });
+    flight.scale.value = withTiming(0.1, { duration: 120, easing: Easing.in(Easing.quad) });
     // A touch further down than the rim, so it reads as disappearing inside.
-    flight.playLeg(at, { x: at.x, y: at.y + 16 }, 0.17, 0, () => {});
+    flight.playLeg(at, { x: at.x, y: at.y + 16 }, 0.12, 0, () => {});
     if (resultTimer.current) clearTimeout(resultTimer.current);
-    resultTimer.current = setTimeout(() => finishThrow(result), 180);
+    resultTimer.current = setTimeout(() => finishThrow(result), 130);
   };
 
   /**
@@ -232,11 +223,11 @@ export function ThrowBall({
       x: first.x + side * (12 + Math.random() * 10),
       y: first.y + away * (10 + Math.random() * 8),
     };
-    flight.playLeg(at, first, 0.2, 300, () => {
-      flight.playLeg(first, second, 0.13, 300 * RESTITUTION, () => {});
+    flight.playLeg(at, first, 0.15, 360, () => {
+      flight.playLeg(first, second, 0.1, 360 * RESTITUTION, () => {});
     });
     if (resultTimer.current) clearTimeout(resultTimer.current);
-    resultTimer.current = setTimeout(() => finishThrow(result), 360);
+    resultTimer.current = setTimeout(() => finishThrow(result), 260);
   };
 
   /**
@@ -250,7 +241,9 @@ export function ThrowBall({
   const lastAt = useSharedValue(0);
   const velX = useSharedValue(0);
   const velY = useSharedValue(0);
-  /** Where the finger first went down, so the ball can follow it exactly. */
+  /** When the aiming arc was last redrawn; see `AIM_REDRAW_MS`. */
+  const lastAimAt = useSharedValue(0);
+  /** The last finger position the ball was moved to follow. */
   const grabX = useSharedValue(0);
   const grabY = useSharedValue(0);
   /** Screen points per table point; see `inputScale`. */
@@ -271,32 +264,48 @@ export function ThrowBall({
       lastAt.value = Date.now();
       velX.value = 0;
       velY.value = 0;
+      lastAimAt.value = 0;
+      // Cancel any settling animation and take the ball at its mark.
+      flight.groundX.value = startX;
+      flight.groundY.value = startY;
     })
     .onUpdate((e) => {
       const factor = 1 / Math.max(0.05, scale.value);
 
-      // The ball goes where the finger goes. Held inside a patch around its
-      // mark, so it can be lined up and pulled back without being walked all
-      // the way up to the cups.
-      const dragX = (e.absoluteX - grabX.value) * factor;
-      const dragY = (e.absoluteY - grabY.value) * factor;
-      flight.groundX.value = startX + rubberBand(dragX, -DRAG_SIDEWAYS, DRAG_SIDEWAYS);
-      flight.groundY.value = startY + rubberBand(dragY, -DRAG_FORWARD, DRAG_BACK);
-
       const now = Date.now();
       const dt = (now - lastAt.value) / 1000;
       // Below a couple of milliseconds the division blows up on noise.
-      if (dt < 0.004) return;
-      const vx = ((e.absoluteX - lastX.value) / dt) * factor;
-      const vy = ((e.absoluteY - lastY.value) / dt) * factor;
-      lastX.value = e.absoluteX;
-      lastY.value = e.absoluteY;
-      lastAt.value = now;
-      // Weighted towards the newest sample: a throw is the last moment of the
-      // swipe, not its average.
-      velX.value = velX.value * 0.4 + vx * 0.6;
-      velY.value = velY.value * 0.4 + vy * 0.6;
-      runOnJS(showAim)(velX.value, velY.value, flight.groundX.value, flight.groundY.value);
+      if (dt >= 0.004) {
+        const vx = ((e.absoluteX - lastX.value) / dt) * factor;
+        const vy = ((e.absoluteY - lastY.value) / dt) * factor;
+        lastX.value = e.absoluteX;
+        lastY.value = e.absoluteY;
+        lastAt.value = now;
+        // Weighted towards the newest sample: a throw is the last moment of
+        // the swipe, not its average.
+        velX.value = velX.value * 0.4 + vx * 0.6;
+        velY.value = velY.value * 0.4 + vy * 0.6;
+      }
+
+      const swing = Math.min(
+        1,
+        Math.max(0, (Math.hypot(velX.value, velY.value) - AIM_SPEED) / (SWING_SPEED - AIM_SPEED))
+      );
+      const grip = 1 - swing * (1 - SWING_GRIP);
+      flight.groundX.value += (e.absoluteX - grabX.value) * factor * grip;
+      flight.groundY.value += (e.absoluteY - grabY.value) * factor * grip;
+      grabX.value = e.absoluteX;
+      grabY.value = e.absoluteY;
+
+      // The ball itself is animated on the UI thread and costs nothing to
+      // move. The arc is React: every redraw re-renders the component and
+      // rebuilds a 22-point SVG path. Doing that on every frame of the swipe
+      // is the one thing here heavy enough to make the gesture stutter, and
+      // the arc is a hint, not something read frame by frame.
+      if (now - lastAimAt.value >= AIM_REDRAW_MS) {
+        lastAimAt.value = now;
+        runOnJS(showAim)(velX.value, velY.value, flight.groundX.value, flight.groundY.value);
+      }
     })
     .onEnd(() => {
       runOnJS(setAim)(null);
@@ -322,6 +331,11 @@ export function ThrowBall({
     flight.settle(startX, startY);
   }
 
+  /** How far the ball has already travelled towards the rack in your hand. */
+  function carriedFrom(fromY: number) {
+    return direction === 'up' ? startY - fromY : fromY - startY;
+  }
+
   /** The arc the current swipe speed would fly, drawn while you swing. */
   function showAim(velocityX: number, velocityY: number, fromX: number, fromY: number) {
     setAim(
@@ -331,6 +345,7 @@ export function ThrowBall({
         velocityY,
         direction,
         bounce,
+        carry: carriedFrom(fromY),
       })
     );
   }

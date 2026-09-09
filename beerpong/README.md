@@ -270,22 +270,29 @@ dann `Math.random()`. Man konnte nicht besser werden. Danach kam ein Zielkreuz
 
 Jetzt wirfst du wirklich — die Geste ist die von Pokémon GO:
 
-1. **Der Ball hängt am Finger.** Solange du hältst, geht er mit: nach links,
-   nach rechts, zurück für einen Anlauf. Du kannst in Ruhe zielen, bevor
-   irgendetwas passiert. Nur nicht beliebig weit — er bleibt in einem Feld um
-   seine Ausgangsstelle, sonst könnte man ihn einfach bis zum Becher tragen und
-   fallen lassen.
-2. **Beim Loslassen zählt der Schwung.** Die Geschwindigkeit deiner Hand in dem
+1. **Der Ball hängt am Finger — überall hin, ohne Leine.** Solange du langsam
+   ziehst, sitzt er punktgenau unter deiner Fingerspitze: nach links, nach
+   rechts, zurück für einen Anlauf, quer über den halben Tisch. Gemessen über
+   einen 240-Punkte-Zug: 0 Punkte Abstand.
+2. **Beim Schwung rutscht er.** Ab etwa 300 pt/s Handgeschwindigkeit kommt er
+   nur noch anteilig mit, bei 900 pt/s nur noch zu einem Drittel. Das muss so
+   sein: ein harter Flick läuft zwei Drittel des Tisches hoch, und ein Ball,
+   der daran kleben bliebe, wäre schon am Becher, bevor er überhaupt fliegt.
+   Gemessen ohne diese Bremse: ein 160-Punkte-Flick trug 179 von 187 Punkten,
+   es blieben 8 Punkte Flug übrig. Mit ihr sind es 60.
+3. **Beim Loslassen zählt der Schwung.** Die Geschwindigkeit deiner Hand in dem
    Moment wird zur Geschwindigkeit des Balls — nicht die Länge der Bewegung.
    Langsam ziehen und loslassen wirft gar nicht, der Ball rollt zurück auf
    seine Stelle und der Zug ist nicht verbraucht.
-3. **Geworfen wird von dort, wo du losgelassen hast**, nicht von der
-   Ausgangsstelle.
-4. **Der Ball fliegt eine echte Parabel.** Er steigt, erreicht nach 0,31 s
-   seinen Scheitel bei rund 140 Punkten Höhe und fällt wieder herunter. Am
+4. **Wie weit du ihn schon getragen hast, wird abgezogen.** Die Gesamtstrecke ab
+   der Ausgangsstelle hängt nur an deiner Wischgeschwindigkeit — egal, von wo du
+   losgelassen hast. Sonst wäre jeder Zug nach vorne geschenkte Weite, und man
+   könnte den Ball bis zum Becher tragen und hineintippen.
+5. **Der Ball fliegt eine echte Parabel.** Er steigt, erreicht nach 0,20 s
+   seinen Scheitel bei rund 116 Punkten Höhe und ist nach 0,40 s unten. Am
    Schatten unter ihm siehst du, wo er auf dem Tisch gerade ist — Höhe und
    Entfernung teilen sich sonst dieselbe Bildschirmachse.
-5. **Getroffen ist der Becher, in dessen Öffnung er aufkommt** — und dann fällt
+6. **Getroffen ist der Becher, in dessen Öffnung er aufkommt** — und dann fällt
    er sichtbar hinein. Am Rand prallt er ab: zwei Hüpfer, der zweite mit 60 %
    vom ersten, dieselbe Zahl wie beim Aufsetzer. Zu fest geworfen segelt er über
    das Rack, zu sanft fällt er davor auf den Tisch.
@@ -310,8 +317,8 @@ Welche Wischgeschwindigkeit du brauchst (`npm run test:throw`):
 
 | Ziel | Entfernung | nötige Handgeschwindigkeit |
 |---|---|---|
-| nächster Becher | 187 pt | ~900 pt/s |
-| hintere Reihe | 343 pt | ~1650 pt/s |
+| nächster Becher | 187 pt | ~790 pt/s |
+| hintere Reihe | 343 pt | ~1440 pt/s |
 
 Trefferquoten bei perfektem Schwung, je 8 000 simulierte Würfe:
 
@@ -350,6 +357,13 @@ behauptet.
 Schwung", „Zu weit — sanfter wischen", „Daneben — Richtung stimmt nicht".
 Bei einer Schwung-Geste ist „daneben" allein nutzlos: zu kurz und zu weit
 brauchen entgegengesetzte Korrekturen.
+
+**Die Ziellinie wird nur alle 55 ms neu gezeichnet.** Der Ball selbst läuft auf
+dem UI-Thread und kostet nichts. Der gestrichelte Bogen ist React: jedes
+Neuzeichnen rendert die Komponente neu und baut einen SVG-Pfad aus 22 Punkten.
+Das bei jedem Frame der Wischbewegung zu tun war das einzige hier, was schwer
+genug ist, um die Geste stocken zu lassen — und der Bogen ist ein Hinweis, den
+niemand Bild für Bild liest.
 
 Eine Modellierungsentscheidung, ehrlich benannt: Der Wurf ist ein **Lob** mit
 fester Flugzeit — die Wischbewegung bestimmt nur, wie kräftig der Ball nach

@@ -100,9 +100,9 @@ export function useBallFlight(restX: number, restY: number) {
   const settle = useCallback(
     (x: number, y: number) => {
       airborne.value = 0;
-      groundX.value = withTiming(x, { duration: 170 });
-      groundY.value = withTiming(y, { duration: 170 });
-      scale.value = withTiming(1, { duration: 170 });
+      groundX.value = withTiming(x, { duration: 120 });
+      groundY.value = withTiming(y, { duration: 120 });
+      scale.value = withTiming(1, { duration: 120 });
     },
     [airborne, groundX, groundY, scale]
   );
