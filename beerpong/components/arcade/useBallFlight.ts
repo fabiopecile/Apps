@@ -9,8 +9,15 @@ import {
 
 import { GRAVITY, RESTITUTION, type Flight } from '@/lib/throwPhysics';
 
-/** Ball diameter, in table points. A real ping-pong ball against a 46pt cup. */
-export const BALL_SIZE = 18;
+/**
+ * Ball diameter, in table points.
+ *
+ * A real ping-pong ball is about 40mm against a 95mm cup, which would be 19
+ * here. Drawn a little larger than life on purpose: from this camera a
+ * true-to-scale ball is a speck at the far end of the table, and you need to be
+ * able to follow it.
+ */
+export const BALL_SIZE = 25;
 
 export interface BallPoint {
   /** Where the ball is on the table. */

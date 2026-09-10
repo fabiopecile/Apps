@@ -598,7 +598,10 @@ export default function MatchScreen() {
       : playerTurn
         ? playerTurnState.redemption
           ? t('match.redemptionHint')
-          : t('match.yourTurn')
+          : t('match.yourTurnBall', {
+              ball: BALLS_PER_TURN - playerTurnState.ballsLeft + 1,
+              of: BALLS_PER_TURN,
+            })
         : t('match.opponentAiming', { name: setup.name });
 
   /** Whichever side is holding the balls right now. */
