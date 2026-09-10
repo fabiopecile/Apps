@@ -114,6 +114,17 @@ export default function MatchScreen() {
 
   const [opponentAlive, setOpponentAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
   const [playerAlive, setPlayerAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
+  /**
+   * Held still so the memoised `TableSurface` only redraws when a cup actually
+   * goes, rather than on every score, hint or turn change.
+   */
+  const racks = useMemo(
+    () => [
+      { cups: opponentCups, aliveFlags: opponentAlive },
+      { cups: playerCups, aliveFlags: playerAlive },
+    ],
+    [opponentCups, opponentAlive, playerCups, playerAlive]
+  );
   const [turn, setTurn] = useState<Turn>('player');
   const [roundResult, setRoundResult] = useState<RoundResult>(null);
   const [opponentTurnToken, setOpponentTurnToken] = useState(0);
@@ -582,13 +593,7 @@ export default function MatchScreen() {
           <Animated.View
             style={[styles.table, { width: tableWidth, height: TABLE_HEIGHT }, cameraStyle]}
           >
-            <TableSurface
-              width={tableWidth}
-              racks={[
-                { cups: opponentCups, aliveFlags: opponentAlive },
-                { cups: playerCups, aliveFlags: playerAlive },
-              ]}
-            />
+            <TableSurface width={tableWidth} racks={racks} />
 
             <CupPyramid cups={opponentCups} aliveFlags={opponentAlive} accent={setup.color} />
             <CupPyramid cups={playerCups} aliveFlags={playerAlive} accent={colors.neon} />

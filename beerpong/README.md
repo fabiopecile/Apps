@@ -344,7 +344,7 @@ behauptet — der Test hat es gefangen, und die Tabelle in `throwPhysics.ts`
 musste neu gemessen werden.
 
 **Der Gegner wirft genauso.** Früher entschied bei ihm `Math.random() < accuracy`,
-und der Ball rutschte flach zur Antwort — neben deinem Bogen sahen das aus wie
+und der Ball rutschte flach zur Antwort — neben deiner Flugbahn sah das aus wie
 zwei verschiedene Spiele. Jetzt fliegt er dieselbe Parabel, und sein Können ist
 eine Streuung um den Becher, den er sich ausgesucht hat. Welche Streuung zu
 welcher Trefferquote gehört, ist gemessen und nicht hergeleitet (Tabelle in
@@ -358,12 +358,41 @@ Schwung", „Zu weit — sanfter wischen", „Daneben — Richtung stimmt nicht"
 Bei einer Schwung-Geste ist „daneben" allein nutzlos: zu kurz und zu weit
 brauchen entgegengesetzte Korrekturen.
 
-**Die Ziellinie wird nur alle 55 ms neu gezeichnet.** Der Ball selbst läuft auf
-dem UI-Thread und kostet nichts. Der gestrichelte Bogen ist React: jedes
-Neuzeichnen rendert die Komponente neu und baut einen SVG-Pfad aus 22 Punkten.
-Das bei jedem Frame der Wischbewegung zu tun war das einzige hier, was schwer
-genug ist, um die Geste stocken zu lassen — und der Bogen ist ein Hinweis, den
-niemand Bild für Bild liest.
+### Es gibt keine Zielanzeige mehr
+
+Der gestrichelte Bogen und der Ring am Landepunkt sind weg — deiner und der des
+Gegners. Sie waren der Grund, warum sich die Geste zäh anfühlte, und das ist
+gemessen, nicht vermutet: bei sechsfach gedrosselter CPU, iPhone-13-Größe,
+echte Touch-Ereignisse.
+
+| während des Wischens | mit Bogen | ohne |
+|---|---|---|
+| Bilder pro Sekunde | 41 | **60** |
+| 95. Perzentil pro Bild | 50,1 ms | **16,8 ms** |
+| längster Aussetzer | 133 ms | **16,8 ms** |
+
+Der Grund: der Ball wird auf dem UI-Thread bewegt und kostet nichts. Der Bogen
+war React — jedes Neuzeichnen rendert die Komponente neu und baut einen
+SVG-Pfad aus 22 Punkten, bei jedem Bild der Wischbewegung.
+
+**Zwei weitere Bremsen, die dabei auffielen** (Blockaden des Hauptthreads
+während eines ganzen Wurfs, gleiche Drosselung):
+
+- Die Geste wurde über `enabled={!flying}` aus dem React-State abgeschaltet.
+  Das hieß: neu rendern und die `Pan`-Geste neu aufbauen **genau in dem
+  Moment, in dem der Ball die Hand verlässt** — dort, wo man am genauesten
+  hinsieht. Jetzt prüfen die Handler einen Shared Value, und nichts rendert neu.
+- `Cup` und `TableSurface` waren nicht memoisiert. Jede Änderung an Punktestand,
+  Hinweistext oder Zug baute alle zwanzig Becher-SVGs (je rund vierzig Elemente)
+  und die komplette Tischfläche neu auf. Ein CPU-Profil eines einzelnen Wurfs
+  hatte `createElement`, `jsx` und `createDOMProps` mit Abstand an der Spitze.
+  `TableSurface` braucht dafür ein stabiles `racks`-Array — das liegt in
+  `match.tsx` in einem `useMemo`.
+
+Zusammen: **3011 ms blockiert → rund 1100 ms** (Median aus drei Läufen), der
+längste Einzelaussetzer von 1129 ms auf 335 ms. Und das ist der Entwicklungs-Build
+— in der veröffentlichten Fassung fallen Reacts Prüfungen im Entwicklungsmodus
+weg, die im Profil deutlich sichtbar sind.
 
 Eine Modellierungsentscheidung, ehrlich benannt: Der Wurf ist ein **Lob** mit
 fester Flugzeit — die Wischbewegung bestimmt nur, wie kräftig der Ball nach

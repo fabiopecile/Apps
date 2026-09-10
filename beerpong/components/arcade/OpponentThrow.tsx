@@ -1,22 +1,19 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, { withTiming } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
 import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
 import {
   buildFlight,
   cupMouth,
   resolveLanding,
-  sampleFlight,
   spreadForAccuracy,
   wobble,
-  type Flight,
 } from '@/lib/throwPhysics';
 import { BallArt } from './BallArt';
-import { BALL_SIZE, HEIGHT_LIFT, useBallFlight } from './useBallFlight';
+import { BALL_SIZE, useBallFlight } from './useBallFlight';
 
-/** How long they line the throw up before letting go. */
+/** How long they pause before letting go. */
 const AIM_DURATION = 220;
 
 interface OpponentResult {
@@ -57,7 +54,6 @@ export function OpponentThrow({
   onResult,
 }: OpponentThrowProps) {
   const flight = useBallFlight(startX, startY);
-  const [aimArc, setAimArc] = useState<Flight | null>(null);
   const aimTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -89,10 +85,8 @@ export function OpponentThrow({
     flight.settle(startX, startY);
     flight.scale.value = 1;
     flight.opacity.value = withTiming(1, { duration: 150 });
-    setAimArc(buildFlight({ x: startX, y: startY }, { x: target.x, y: target.y }, false));
 
     aimTimer.current = setTimeout(() => {
-      setAimArc(null);
       flight.trail.value = withTiming(1, { duration: 60 });
       flight.play(thrown, () => {
         flight.trail.value = withTiming(0, { duration: 130 });
@@ -118,19 +112,6 @@ export function OpponentThrow({
 
   return (
     <>
-      {aimArc ? (
-        <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
-          <Path
-            d={arcPath(aimArc)}
-            stroke={accent}
-            strokeWidth={2.5}
-            strokeDasharray="7,7"
-            fill="none"
-            opacity={0.8}
-          />
-        </Svg>
-      ) : null}
-
       <Animated.View pointerEvents="none" style={[styles.ballShadow, flight.shadowStyle]} />
       <Animated.View pointerEvents="none" style={[styles.ball, flight.trailStyle]}>
         <BallArt accent={accent} />
@@ -143,19 +124,6 @@ export function OpponentThrow({
       </Animated.View>
     </>
   );
-}
-
-/** The arc they are lining up, drawn the way the ball will fly it. */
-function arcPath(flight: Flight): string {
-  const steps = 22;
-  const points: string[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const point = sampleFlight(flight, (i / steps) * flight.hang);
-    points.push(
-      `${i === 0 ? 'M' : 'L'}${point.x.toFixed(1)},${(point.y - point.height * HEIGHT_LIFT).toFixed(1)}`
-    );
-  }
-  return points.join(' ');
 }
 
 const styles = StyleSheet.create({
