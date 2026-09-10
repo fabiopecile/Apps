@@ -177,6 +177,15 @@ export default function CameraTrackerScreen() {
               <Ionicons name="globe" size={17} color={colors.neon} />
             </Pressable>
             <Pressable
+              onPress={() => router.push('/(tabs)/camera/highlights')}
+              style={styles.iconButton}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('highlights.title')}
+            >
+              <Ionicons name="film-outline" size={17} color={colors.neon} />
+            </Pressable>
+            <Pressable
               onPress={() => router.push('/(tabs)/camera/tournament')}
               style={styles.iconButton}
               hitSlop={8}

@@ -484,6 +484,31 @@ const STRINGS = {
     de: 'Letzte Chance — triff, solange du kannst. Ein Fehlwurf und es ist vorbei.',
     en: 'Redemption — keep sinking them. One miss and it is over.',
   },
+  // ----------------------------------------------------------- highlights
+  'highlights.title': { de: 'Highlights', en: 'Highlights' },
+  'highlights.toggle': { de: 'Highlights aufnehmen', en: 'Record highlights' },
+  'highlights.toggleHint': {
+    de: 'Die Sekunden vor jedem bestätigten Becher werden als kurzer Clip gespeichert — nur auf diesem Gerät.',
+    en: 'The seconds before each confirmed cup are kept as a short clip — on this device only.',
+  },
+  'highlights.saved': { de: 'Highlight gespeichert', en: 'Highlight saved' },
+  'highlights.empty': {
+    de: 'Noch keine Clips. Schalte im Kamera-Modus „Highlights aufnehmen" ein — danach wird bei jedem bestätigten Becher der Anlauf gespeichert.',
+    en: 'No clips yet. Turn on “Record highlights” in camera mode, and the run-up to every confirmed cup is kept.',
+  },
+  'highlights.unsupported': {
+    de: 'Dieses Gerät kann im Hintergrund nicht mitschneiden. In der Web-App auf dem Handy funktioniert es.',
+    en: 'This device cannot record in the background. It works in the web app on a phone.',
+  },
+  'highlights.count': { de: '{count} von {max} Clips', en: '{count} of {max} clips' },
+  'highlights.delete': { de: 'Löschen', en: 'Delete' },
+  'highlights.clearAll': { de: 'Alle löschen', en: 'Delete all' },
+  'highlights.clip': { de: '{seconds} s · {size}', en: '{seconds}s · {size}' },
+  'highlights.note': {
+    de: 'Clips liegen nur auf diesem Gerät und werden nirgendwohin hochgeladen. Ist die Liste voll, fällt der älteste heraus.',
+    en: 'Clips stay on this device and are uploaded nowhere. When the list is full the oldest drops off.',
+  },
+
   // ---------------------------------------------------------------- stats
   'stats.title': { de: 'Deine Zahlen', en: 'Your numbers' },
   'stats.hubTitle': { de: 'Statistiken', en: 'Stats' },

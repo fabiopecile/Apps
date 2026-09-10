@@ -305,6 +305,45 @@ wer nicht geworfen hat, wirft jetzt. Das stimmt, bis eine Regel den Ball
 derselben Seite zurückgibt, und genau das tut die Verlängerung. Die
 Übergabe-Aufforderung nennt die Seite jetzt, statt sie zu erraten.
 
+## Highlights: die Sekunden vor dem Treffer
+
+Das Interessante an einem Treffer ist vorbei, bevor jemand zum Handy greift.
+Ein Highlight muss also **schon aufgenommen sein**, wenn man es haben will —
+und genau so läuft es: Bei eingeschaltetem Schalter nimmt die Kamera
+durchgehend in einen kurzen Ring auf, und sobald ein Becher bestätigt wird,
+werden die letzten acht Sekunden herausgehoben und behalten.
+
+Aufgenommen wird nur, solange ein Rack wirklich beobachtet wird — beim
+Ausrichten wäre es Akku für Aufnahmen von jemandem, der Kästchen verschiebt.
+Gespeichert wird erst bei der **Bestätigung**, nicht bei der Erkennung, sonst
+füllt sich die Liste mit Fehlalarmen.
+
+Die Clips liegen in der Speicherung des Browsers (IndexedDB), überstehen also
+das Schließen der App. Zwölf Stück, der älteste fällt heraus: Das ist die
+Zusammenfassung eines Abends, kein Archiv, und der Speicher des Handys gehört
+nicht uns. Hochgeladen wird nichts, nirgendwohin.
+
+Zu finden über das **Filmstreifen-Symbol** oben im Kamera-Modus.
+
+Zwei Dinge, die dabei nicht offensichtlich waren:
+
+* **Der erste Datenblock ist besonders.** `MediaRecorder` liefert im
+  Sekundentakt Häppchen — aber nur das erste enthält den Dateikopf, alle
+  weiteren sind bloße Cluster. Ein paar aktuelle Häppchen allein sind also
+  keine Datei, die irgendein Player öffnet. Der Kopf wird dauerhaft
+  aufgehoben und jedem Clip vorangestellt.
+* **`highlights.web.ts` darf nicht `./highlights` importieren.** Auf der
+  Web-Plattform löst Metro diesen Namen auf *dieselbe Datei* auf; ein
+  Re-Export darüber ist eine unendlich rekursive Funktion, und weil der Router
+  beim Start alle Routen lädt, nimmt sie die ganze App mit. Alles Gemeinsame
+  steht deshalb in `highlightsShared.ts`. Gefunden wurde das beim Ausprobieren,
+  nicht beim Lesen.
+
+Auf einem nativen Build ist die Funktion aus: `expo-camera` kann ein Video
+aufnehmen, aber nicht während dieselbe Vorschau für die Becher-Erkennung
+abgetastet wird — und ein Highlight aus einem Spiel, dem die App nicht zusieht,
+ist keins.
+
 ## Deine Zahlen: Trefferbild, Form, Tempo
 
 Die Zähler, die es vorher gab, beantworten „wie viel habe ich gespielt". Die
