@@ -99,8 +99,10 @@ export function OpponentThrow({
         if (outcome.hit) {
           const sunk = cups.find((c) => c.index === outcome.cupIndex);
           const at = sunk ? cupMouth(sunk) : landing;
-          flight.scale.value = withTiming(0.1, { duration: 120 });
-          flight.playLeg(at, { x: at.x, y: at.y + 16 }, 0.12, 0, () => {});
+          // Shrunk away inside the cup, not slid out of the front of it — see
+          // the note on the same animation in `ThrowBall`.
+          flight.scale.value = withTiming(0.12, { duration: 150 });
+          flight.playLeg(at, at, 0.15, 0, () => {});
         }
         flight.opacity.value = withTiming(0, { duration: 180 });
         // A cup they landed in is the cup that goes; anything else is a miss,

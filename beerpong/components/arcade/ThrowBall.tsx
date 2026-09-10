@@ -187,15 +187,21 @@ export function ThrowBall({
   };
 
   /**
-   * Into the cup. The ball drops the last little way and shrinks out of sight
-   * behind the rim, rather than simply stopping on top of it.
+   * Into the cup. The arc already ends on the table at the cup's own position,
+   * which puts the ball inside it and behind its near wall — so all that is
+   * left is to shrink it away out of sight.
+   *
+   * It used to slide `y + 16` first, which in the old flat drawing meant
+   * "sixteen points further down the screen" and read as dropping. In ground
+   * coordinates y runs *along the table*, so the same line slid the ball
+   * sixteen points towards the viewer and straight back out of the front of
+   * the cup. From the player's side of it: the ball stopped going in.
    */
   const dropIntoCup = (at: Point, result: Omit<ThrowResult, 'bounce'>) => {
-    flight.scale.value = withTiming(0.1, { duration: 120, easing: Easing.in(Easing.quad) });
-    // A touch further down than the rim, so it reads as disappearing inside.
-    flight.playLeg(at, { x: at.x, y: at.y + 16 }, 0.12, 0, () => {});
+    flight.scale.value = withTiming(0.12, { duration: 150, easing: Easing.in(Easing.quad) });
+    flight.playLeg(at, at, 0.15, 0, () => {});
     if (resultTimer.current) clearTimeout(resultTimer.current);
-    resultTimer.current = setTimeout(() => finishThrow(result), 130);
+    resultTimer.current = setTimeout(() => finishThrow(result), 160);
   };
 
   /**
