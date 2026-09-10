@@ -163,6 +163,15 @@ export default function ArcadeHubScreen() {
               badge={luckyReady ? 1 : undefined}
             />
             <ModeCard
+              icon="stats-chart"
+              title={t('stats.hubTitle')}
+              subtitle={t('stats.hubSubtitle')}
+              accent={colors.neonAlt}
+              href="/(tabs)/arcade/stats"
+              index={5}
+              compact
+            />
+            <ModeCard
               icon="checkmark-done"
               title={t('hub.challenges.title')}
               subtitle={

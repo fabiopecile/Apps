@@ -176,6 +176,16 @@ export default function MatchScreen() {
    */
   const [missNote, setMissNote] = useState<string | null>(null);
   const [reRacksLeft, setReRacksLeft] = useState<[number, number]>([1, 1]);
+  /**
+   * Your own throws in this match, and when it started.
+   *
+   * Refs rather than state: nothing on screen reads them, and a re-render per
+   * throw to update a counter nobody can see is a re-render in the middle of a
+   * throw.
+   */
+  const myThrows = useRef(0);
+  const myCups = useRef(0);
+  const startedAt = useRef(Date.now());
 
   const arcade = useBeerpongStore((s) => s.arcade);
   const coins = useBeerpongStore((s) => s.coins);
@@ -185,6 +195,8 @@ export default function MatchScreen() {
   const storedDifficulty = useBeerpongStore((s) => s.aiDifficulty);
   const arcadeRecordThrow = useBeerpongStore((s) => s.arcadeRecordThrow);
   const arcadeRecordMatch = useBeerpongStore((s) => s.arcadeRecordMatch);
+  const statsRecordCup = useBeerpongStore((s) => s.statsRecordCup);
+  const statsRecordMatch = useBeerpongStore((s) => s.statsRecordMatch);
   const recordRivalsMatch = useBeerpongStore((s) => s.recordRivalsMatch);
   const recordWeekendMatch = useBeerpongStore((s) => s.recordWeekendMatch);
   const trackDaily = useBeerpongStore((s) => s.trackDaily);
@@ -285,6 +297,9 @@ export default function MatchScreen() {
 
   const resetRound = () => {
     clearTimers();
+    myThrows.current = 0;
+    myCups.current = 0;
+    startedAt.current = Date.now();
     setOvertime(0);
     setOpponentAlive(Array(CUP_COUNT).fill(true));
     setPlayerAlive(Array(CUP_COUNT).fill(true));
@@ -361,7 +376,27 @@ export default function MatchScreen() {
       feedback.defeat();
     }
 
+    /**
+     * The match itself, for form and for how long a game takes.
+     *
+     * Called at the end of each branch rather than up here, because the
+     * division a ranked match belongs to is the one it *left you in* — reading
+     * it before `recordRivalsMatch` would file every promotion under the
+     * division you were promoted out of.
+     */
+    const keepRecord = (division?: number) =>
+      statsRecordMatch({
+        at: Date.now(),
+        mode,
+        won,
+        cupsHit: myCups.current,
+        throws: myThrows.current,
+        seconds: Math.round((Date.now() - startedAt.current) / 1000),
+        division,
+      });
+
     if (isPassPlay) {
+      keepRecord();
       setResultNote(
         t('match.passplayClears', {
           team: won ? trackerTeams[0].name : trackerTeams[1].name,
@@ -373,6 +408,7 @@ export default function MatchScreen() {
 
     if (mode === 'rivals') {
       const result = recordRivalsMatch(won);
+      keepRecord(result.division);
       const division = getDivision(result.division);
       const name = divisionName(language, division);
       setResultNote(
@@ -397,6 +433,7 @@ export default function MatchScreen() {
       }
     } else if (mode === 'weekend') {
       const result = recordWeekendMatch(won);
+      keepRecord();
       setRunFinished(result.finished);
       setResultNote(
         result.finished
@@ -424,6 +461,7 @@ export default function MatchScreen() {
       }
     } else {
       arcadeRecordMatch(setup.id, won);
+      keepRecord();
       setResultNote(won ? t('match.offlineWin') : t('match.offlineLose'));
     }
 
@@ -567,6 +605,7 @@ export default function MatchScreen() {
     overshoot?: number;
     sideways?: number;
   }) => {
+    myThrows.current += 1;
     arcadeRecordThrow(result.hit);
     trackDaily('throws');
     if (result.hit) {
@@ -581,6 +620,10 @@ export default function MatchScreen() {
       return;
     }
     setMissNote(null);
+    myCups.current += 1;
+    // Where on the rack it fell, for the heatmap. Only your own throws: the
+    // point of it is your aim, not theirs.
+    statsRecordCup(result.cupIndex);
     feedback.cupHit();
     if (result.bounce) feedback.streak();
     flashRef.current?.flash(ballSkin.accent, 0.18);

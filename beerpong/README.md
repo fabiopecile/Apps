@@ -305,6 +305,39 @@ wer nicht geworfen hat, wirft jetzt. Das stimmt, bis eine Regel den Ball
 derselben Seite zurückgibt, und genau das tut die Verlängerung. Die
 Übergabe-Aufforderung nennt die Seite jetzt, statt sie zu erraten.
 
+## Deine Zahlen: Trefferbild, Form, Tempo
+
+Die Zähler, die es vorher gab, beantworten „wie viel habe ich gespielt". Die
+Fragen, die man sich über das eigene Spiel wirklich stellt, beantworten sie
+nicht: *wo* treffe ich, bin ich gerade in Form, dauert ein Spiel länger als
+sonst. Dafür müssen einzelne Ergebnisse aufgehoben werden statt aufsummiert.
+
+* **Trefferbild** — das Rack, gezeichnet an denselben Positionen, auf die das
+  Spiel wirft. Es ist ein Bild des Racks, keine Kachelgrafik dafür: eine
+  Schlagseite nach hinten links sieht man als Schlagseite nach hinten links.
+  Gezählt werden deine eigenen Arcade-Würfe. Am echten Tisch weiß die App nur,
+  *dass* ein Becher weg ist — nicht, wer wohin gezielt hat, und das behauptet
+  sie hier auch nicht.
+* **Form** — die letzten zehn Spiele als Kette, neueste links, plus Siege minus
+  Niederlagen als eine Zahl.
+* **Tempo** — Zeit pro selbst versenktem Becher, getrennt nach Offline,
+  Pass & Play und Kamera.
+* **Aufstieg** — die Division nach jedem Rivalen-Spiel. Sie steht in dem
+  Datensatz, in den sie gehört: der Division, in der das Spiel dich
+  *zurückgelassen* hat, nicht der, aus der du aufgestiegen bist.
+
+Aufgehoben werden die letzten 30 Spiele, nur lokal — ein paar Kilobyte, und
+zwei Abende sind ohnehin der Horizont, über den „Form" etwas bedeutet.
+
+`npm run test:stats` prüft vor allem den leeren Fall, denn den sieht jeder
+zuerst: ein Zehntel pro Becher oder eine 0 statt eines Strichs malt ein
+zuversichtliches Bild von nichts, und das ist schlechter als ein leeres.
+
+**Was hier fehlt und nicht ehrlich ginge:** Clubs und Team-Statistiken wie in
+den Screenshots. Die brauchen Konten und einen Server, der Mitgliedschaften
+kennt — die Räume für den Online-Modus halten bewusst nichts über ein Spiel
+hinaus. Das wäre ein eigener Schritt, kein Bildschirm.
+
 ## Ein Gegner, der ein Spiel zumachen kann
 
 Die Schwierigkeit war bis jetzt eine einzige Zahl: wie eng die Würfe des
