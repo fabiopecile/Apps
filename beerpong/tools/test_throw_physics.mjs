@@ -24,14 +24,18 @@ async function load(name) {
     .transpileModule(source, {
       compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
     })
-    .outputText // the physics module imports only a type, which erases to nothing
-    .replace(/^import .*$/gm, '');
+    .outputText
+    // Type-only imports erase to nothing; real ones have to keep working, so
+    // point them at the sibling file this same loader just wrote.
+    .replace(/^import type .*$/gm, '')
+    .replace(/from '\.\/([A-Za-z]+)'/g, "from './$1.mjs'");
   const file = join(dir, `${name}.mjs`);
   writeFileSync(file, js);
   return import(file);
 }
 
 const layout = await load('arcadeLayout');
+const geometry = await load('cupGeometry');
 const physics = await load('throwPhysics');
 const {
   GRAVITY,
@@ -269,6 +273,47 @@ check('the target is the hole, which sits above the middle of the cup', () => {
   );
   // ...and landing on the stored centre is no longer a clean hit.
   assert.equal(resolveLanding({ x: apex.x, y: apex.y }, cups, allAlive).hit, false);
+});
+
+check('the mouth the physics aims at is the mouth that gets drawn', () => {
+  // These two drifted apart once already: the art put the opening a third of
+  // the cup's height above the stored point while the physics aimed at the
+  // point, so a ball scored without ever looking like it went in. Both now
+  // read `lib/cupGeometry`, and this is what keeps them reading the same.
+  for (const cup of cups) {
+    const mouth = cupMouth(cup);
+    const art = geometry.cupArtGeometry(cup.width);
+    // Where the drawing puts the rim, in the same table points the physics uses.
+    const drawnY =
+      cup.y - cup.height / 2 + (art.rimCy / geometry.ART_HEIGHT) * cup.height;
+    assert.ok(
+      Math.abs(mouth.y - drawnY) < 0.01,
+      `cup ${cup.index}: aimed at ${mouth.y.toFixed(1)}, drawn at ${drawnY.toFixed(1)}`
+    );
+    // And the catching ellipse is squashed the same way the drawn one is.
+    assert.ok(Math.abs(mouth.ry / mouth.rx - art.openness) < 0.001);
+  }
+});
+
+check('a cup further away shows less of its mouth', () => {
+  // The one cue that stops a cup reading as a sticker. Cups are ordered from
+  // the far end of the rack to the near one.
+  const far = geometry.cupArtGeometry(cups[0].width);
+  const near = geometry.cupArtGeometry(cups[cups.length - 1].width);
+  assert.ok(
+    near.openness > far.openness * 1.4,
+    `near ${near.openness.toFixed(2)} vs far ${far.openness.toFixed(2)}`
+  );
+  // A rounder mouth takes more room, so it leaves a shorter body on show:
+  // real foreshortening rather than the same sprite at two sizes.
+  const bodyShare = (g) => (g.baseCy - g.rimCy) / geometry.ART_HEIGHT;
+  assert.ok(bodyShare(near) < bodyShare(far));
+  // Every step down the rack has to move in the same direction, with no ties.
+  for (let i = 1; i < cups.length; i++) {
+    const before = geometry.cupOpenness(cups[i - 1].width);
+    const now = geometry.cupOpenness(cups[i].width);
+    assert.ok(now >= before, `cup ${i} opens less than the one behind it`);
+  }
 });
 
 check('a landing in the hole is in, one on the rim bounces out', () => {

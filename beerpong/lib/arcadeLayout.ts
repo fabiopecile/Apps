@@ -56,6 +56,21 @@ export const TABLE_HEIGHT = PLAYER_RACK_TOP + PLAYER_RACK_HEIGHT + 28;
 // The window you actually look through. The table is taller than this, so the
 // camera pans between the two ends depending on whose turn it is: on your turn
 // you see the opponent's rack far up the table, on theirs you see your own.
+/**
+ * The table narrows towards the far end, because it is a real slab seen from
+ * one end rather than a rectangle painted on the screen. These are half-widths
+ * as fractions of the drawing width: the far edge is a little over half as wide
+ * as the near one, which is about what a 2.4m table looks like from behind it.
+ */
+export const TABLE_FAR_HALF = 0.31;
+export const TABLE_NEAR_HALF = 0.5;
+
+/** Half the table's width at a given point down it, in table points. */
+export function tableHalfWidth(width: number, y: number): number {
+  const share = Math.max(0, Math.min(1, y / TABLE_HEIGHT));
+  return width * (TABLE_FAR_HALF + (TABLE_NEAR_HALF - TABLE_FAR_HALF) * share);
+}
+
 export const VIEWPORT_HEIGHT = 430;
 export const CAMERA_PAN = TABLE_HEIGHT - VIEWPORT_HEIGHT;
 
