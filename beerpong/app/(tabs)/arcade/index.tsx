@@ -23,6 +23,7 @@ import {
   todayKey,
   type AchievementStats,
 } from '@/lib/progression';
+import { canPlayLucky } from '@/lib/luckyShot';
 import { selectCareerProgress, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { divisionName, useLanguage, useT } from '@/lib/i18n';
@@ -39,6 +40,8 @@ export default function ArcadeHubScreen() {
   const ownedSkinIds = useBeerpongStore((s) => s.ownedSkinIds);
   const claimedAchievements = useBeerpongStore((s) => s.claimedAchievements);
   const claimedSeasonTiers = useBeerpongStore((s) => s.claimedSeasonTiers);
+  const lucky = useBeerpongStore((s) => s.lucky);
+  const luckyReady = canPlayLucky(lucky, new Date());
   const { level, progress } = selectCareerProgress(arcade.careerXP);
   const t = useT();
   const language = useLanguage();
@@ -148,6 +151,17 @@ export default function ArcadeHubScreen() {
 
           <View style={styles.section}>
             <SectionLabel>{t('hub.progress')}</SectionLabel>
+            {/* Sits above the tasks card on purpose: it is the one thing here
+                that expires today. */}
+            <ModeCard
+              icon="star"
+              title={t('lucky.hubTitle')}
+              subtitle={luckyReady ? t('lucky.hubReady') : t('lucky.hubDone')}
+              accent={luckyReady ? colors.gold : colors.textMuted}
+              href="/(tabs)/arcade/lucky"
+              index={4}
+              badge={luckyReady ? 1 : undefined}
+            />
             <ModeCard
               icon="checkmark-done"
               title={t('hub.challenges.title')}
