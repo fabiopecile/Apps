@@ -27,6 +27,7 @@ import {
   generatePlayerRack,
   reRackFlags,
   CUP_COUNT,
+  OVERTIME_CUP_COUNT,
   OPPONENT_BALL_Y,
   PLAYER_BALL_Y,
   TABLE_WIDTH_REFERENCE,
@@ -121,8 +122,21 @@ export default function MatchScreen() {
   const tableWidth = TABLE_WIDTH_REFERENCE;
   const stageHeight = Math.max(300, height - 300);
   const stageWidth = width - spacing.lg * 2;
-  const opponentCups = useMemo(() => generateOpponentRack(tableWidth), [tableWidth]);
-  const playerCups = useMemo(() => generatePlayerRack(tableWidth), [tableWidth]);
+  /**
+   * Ten cups, or three once the game goes to overtime. The racks are rebuilt
+   * rather than half-emptied, because three cups left standing in a ten-cup
+   * triangle is a rack somebody knocked over, not a fresh one.
+   */
+  const [overtime, setOvertime] = useState(0);
+  const rackSize = overtime > 0 ? OVERTIME_CUP_COUNT : CUP_COUNT;
+  const opponentCups = useMemo(
+    () => generateOpponentRack(tableWidth, rackSize),
+    [tableWidth, rackSize]
+  );
+  const playerCups = useMemo(
+    () => generatePlayerRack(tableWidth, rackSize),
+    [tableWidth, rackSize]
+  );
 
   const [opponentAlive, setOpponentAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
   const [playerAlive, setPlayerAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
@@ -137,7 +151,7 @@ export default function MatchScreen() {
   const [playerTurnState, setPlayerTurnState] = useState<TurnState>(() => startTurn());
   const [opponentTurnState, setOpponentTurnState] = useState<TurnState>(() => startTurn());
   /** The one thing on screen worth shouting about, briefly. */
-  const [turnNote, setTurnNote] = useState<'ballsBack' | 'redemption' | null>(null);
+  const [turnNote, setTurnNote] = useState<'ballsBack' | 'redemption' | 'overtime' | null>(null);
   const [roundResult, setRoundResult] = useState<RoundResult>(null);
   const [opponentTurnToken, setOpponentTurnToken] = useState(0);
   const [matchSeed, setMatchSeed] = useState(0);
@@ -146,6 +160,15 @@ export default function MatchScreen() {
   const [runFinished, setRunFinished] = useState(false);
   // Pass & Play: the phone changes hands, so a prompt gates each turn.
   const [handOver, setHandOver] = useState(false);
+  /**
+   * Who gets the phone next.
+   *
+   * This used to be a toggle inside the prompt — hand over, and whoever was not
+   * throwing throws now. That holds right up until a rule hands the ball back
+   * to the side that just threw, which is exactly what overtime does: the side
+   * that shot redemption starts it. Naming the side removes the guess.
+   */
+  const [handOverTo, setHandOverTo] = useState<Turn>('opponent');
   const [bounceArmed, setBounceArmed] = useState(false);
   /**
    * What went wrong with the last throw. With the swipe deciding everything,
@@ -252,6 +275,7 @@ export default function MatchScreen() {
 
   const resetRound = () => {
     clearTimers();
+    setOvertime(0);
     setOpponentAlive(Array(CUP_COUNT).fill(true));
     setPlayerAlive(Array(CUP_COUNT).fill(true));
     setRoundResult(null);
@@ -274,7 +298,7 @@ export default function MatchScreen() {
   const scheduleOpponentTurn = () => {
     clearTimers();
     if (isPassPlay) {
-      turnTimer.current = setTimeout(() => setHandOver(true), 280);
+      turnTimer.current = setTimeout(() => passTo('opponent'), 280);
       return;
     }
     turnTimer.current = setTimeout(() => {
@@ -283,10 +307,16 @@ export default function MatchScreen() {
     }, 180);
   };
 
+  /** Pass & Play: put the prompt up, and say who it is for. */
+  const passTo = (side: Turn) => {
+    setHandOverTo(side);
+    setHandOver(true);
+  };
+
   const returnTurnToPlayer = (delay: number) => {
     clearTimers();
     if (isPassPlay) {
-      turnTimer.current = setTimeout(() => setHandOver(true), delay);
+      turnTimer.current = setTimeout(() => passTo('player'), delay);
       return;
     }
     turnTimer.current = setTimeout(() => setTurn('player'), delay);
@@ -296,7 +326,7 @@ export default function MatchScreen() {
   const confirmHandOver = () => {
     setHandOver(false);
     setBounceArmed(false);
-    setTurn((current) => (current === 'player' ? 'opponent' : 'player'));
+    setTurn(handOverTo);
   };
 
   const doReRack = (side: 0 | 1) => {
@@ -456,6 +486,43 @@ export default function MatchScreen() {
     router.replace('/(tabs)/arcade');
   };
 
+  /**
+   * Redemption came good: nobody has won yet.
+   *
+   * This is the rule the game used to get wrong. Clearing their rack and then
+   * watching them clear yours from the brink is not a defeat — it is level, and
+   * level goes to overtime: three cups each, and the side that just shot
+   * redemption throws first, because they earned the ball.
+   */
+  const startOvertime = (throwsFirst: Turn) => {
+    clearTimers();
+    setOvertime((round) => round + 1);
+    setOpponentAlive(Array(OVERTIME_CUP_COUNT).fill(true));
+    setPlayerAlive(Array(OVERTIME_CUP_COUNT).fill(true));
+    setPlayerTurnState(startTurn());
+    setOpponentTurnState(startTurn());
+    // Borrowing the advice line: three cups on the table needs explaining once,
+    // and it is replaced by the next throw's own note anyway.
+    setMissNote(t('match.overtimeHint', { cups: OVERTIME_CUP_COUNT }));
+    setBounceArmed(false);
+    // A fresh rack each side, so the re-racks come back with them.
+    setReRacksLeft([1, 1]);
+    setTurnNote('overtime');
+    feedback.streak();
+    if (throwsFirst === 'player') {
+      returnTurnToPlayer(900);
+      return;
+    }
+    if (isPassPlay) {
+      turnTimer.current = setTimeout(() => passTo('opponent'), 900);
+      return;
+    }
+    turnTimer.current = setTimeout(() => {
+      setTurn('opponent');
+      setOpponentTurnToken((token) => token + 1);
+    }, 900);
+  };
+
   const startRedemption = (side: Turn) => {
     setTurnNote('redemption');
     feedback.streak();
@@ -523,7 +590,8 @@ export default function MatchScreen() {
     }
     const { next, outcome } = afterThrow(playerTurnState, hit, theirCupsLeft);
     setPlayerTurnState(next);
-    if (outcome === 'redeemed') return endRound('win');
+    // You shot redemption and cleared them: level, not won.
+    if (outcome === 'overtime') return startOvertime('player');
     if (outcome === 'eliminated') return endRound('lose');
     if (outcome === 'ballsBack') {
       setTurnNote('ballsBack');
@@ -584,7 +652,9 @@ export default function MatchScreen() {
     }
     const { next, outcome } = afterThrow(opponentTurnState, hit, yourCupsLeft);
     setOpponentTurnState(next);
-    if (outcome === 'redeemed') return endRound('lose');
+    // They shot redemption and cleared you. That is level — and the game you
+    // were winning is not lost, it goes to overtime.
+    if (outcome === 'overtime') return startOvertime('opponent');
     if (outcome === 'eliminated') return endRound('win');
     if (outcome === 'ballsBack') setTurnNote('ballsBack');
     if (keepsThrowing(outcome)) {
@@ -657,14 +727,34 @@ export default function MatchScreen() {
           </View>
         </View>
 
+        {/* Overtime changes the rack size, so it has to be said out loud —
+            otherwise three cups reads as a game nearly over. */}
+        {overtime > 0 ? (
+          <View style={styles.overtimeChip}>
+            <Ionicons name="flash" size={13} color={colors.gold} />
+            <Text style={styles.overtimeText} selectable={false}>
+              {overtime > 1
+                ? t('match.overtimeRound', { round: overtime, cups: OVERTIME_CUP_COUNT })
+                : t('match.overtimeChip', { cups: OVERTIME_CUP_COUNT })}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.scoreRow}>
-          <RackBadge label={setup.name} count={opponentRemaining} color={setup.color} active={playerTurn} />
+          <RackBadge
+            label={setup.name}
+            count={opponentRemaining}
+            outOf={rackSize}
+            color={setup.color}
+            active={playerTurn}
+          />
           <Text style={styles.vsText} selectable={false}>
             VS
           </Text>
           <RackBadge
             label={t('common.you')}
             count={playerRemaining}
+            outOf={rackSize}
             color={colors.neon}
             active={!playerTurn && roundResult == null}
             align="right"
@@ -825,6 +915,10 @@ export default function MatchScreen() {
                   <Text style={[styles.turnNote, { color: colors.gold }]} selectable={false}>
                     {t('match.ballsBack')}
                   </Text>
+                ) : turnNote === 'overtime' ? (
+                  <Text style={[styles.turnNote, { color: colors.gold }]} selectable={false}>
+                    {t('match.overtimeNote')}
+                  </Text>
                 ) : null}
               </>
             )}
@@ -928,7 +1022,7 @@ export default function MatchScreen() {
           <Ionicons name="swap-horizontal" size={44} color={colors.neon} />
           <Text style={styles.handOverTitle} selectable={false}>
             {t('match.handOverTitle', {
-              team: turn === 'player' ? trackerTeams[1].name : trackerTeams[0].name,
+              team: handOverTo === 'player' ? trackerTeams[0].name : trackerTeams[1].name,
             })}
           </Text>
           <Text style={styles.handOverBody} selectable={false}>
@@ -960,12 +1054,15 @@ export default function MatchScreen() {
 function RackBadge({
   label,
   count,
+  outOf,
   color,
   active,
   align = 'left',
 }: {
   label: string;
   count: number;
+  /** The rack this side started with — three in overtime, ten otherwise. */
+  outOf: number;
   color: string;
   active: boolean;
   align?: 'left' | 'right';
@@ -978,7 +1075,7 @@ function RackBadge({
           {label}
         </Text>
         <Text style={[styles.rackBadgeCount, { color }]} selectable={false}>
-          {count}/{CUP_COUNT}
+          {count}/{outOf}
         </Text>
       </View>
     </View>
@@ -1132,6 +1229,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 2,
     marginLeft: spacing.xs,
+  },
+  overtimeChip: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
+  overtimeText: {
+    fontFamily: fonts.label,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: colors.gold,
   },
   hint: {
     textAlign: 'center',

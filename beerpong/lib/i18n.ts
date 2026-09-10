@@ -479,6 +479,19 @@ const STRINGS = {
     de: 'Letzte Chance — triff, solange du kannst. Ein Fehlwurf und es ist vorbei.',
     en: 'Redemption — keep sinking them. One miss and it is over.',
   },
+  'match.overtimeNote': { de: 'VERLÄNGERUNG', en: 'OVERTIME' },
+  'match.overtimeChip': {
+    de: 'Verlängerung · {cups} Becher',
+    en: 'Overtime · {cups} cups',
+  },
+  'match.overtimeRound': {
+    de: '{round}. Verlängerung · {cups} Becher',
+    en: 'Overtime {round} · {cups} cups',
+  },
+  'match.overtimeHint': {
+    de: 'Ausgeglichen! Neue Racks mit {cups} Bechern — jetzt entscheidet es sich.',
+    en: 'All square! Fresh racks of {cups} — this is where it is decided.',
+  },
   'match.bounceArmed': {
     de: 'Bounce-Wurf scharf — schwerer, aber zwei Cups',
     en: 'Bounce shot armed — harder, but takes two cups',
