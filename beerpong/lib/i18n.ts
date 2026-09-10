@@ -229,6 +229,10 @@ const STRINGS = {
     de: 'Rack von {team} komplett verändert — Kamera bewegt oder Licht gewechselt. Bei Fehlern neu ausrichten.',
     en: '{team}’s rack changed all at once — camera moved or the light did. Line up again if it starts guessing.',
   },
+  'detect.rebaselined': {
+    de: 'Bild neu eingelesen ({team}) — falls dabei ein Becher gefallen ist, bitte von Hand nachtragen.',
+    en: 'View re-read ({team}) — if a cup went down meanwhile, add it by hand.',
+  },
   'detect.noFrame': {
     de: 'Kein Kamerabild — Zugriff erlaubt und Kamera frei?',
     en: 'No camera image — is access allowed and the lens clear?',

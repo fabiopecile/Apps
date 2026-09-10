@@ -179,6 +179,64 @@ check('a dimmer room does not empty the rack', () => {
   assert.equal(events.filter((e) => e.type === 'cupGone').length, 0);
 });
 
+check('the light going down does not empty the rack, and a real hit still lands', () => {
+  // The old detector judged each patch against its own calibration in
+  // absolute terms, so a room getting darker looked like every cup changing
+  // at once — twelve false calls and four hundred deaf frames on the bench.
+  // Now each cup is judged against what the *rest of the rack* is doing.
+  const dim = (samples, k) =>
+    samples.map((c) => ({ r: c.r * k, g: c.g * k, b: c.b * k, contrast: c.contrast * k }));
+  let state = calibrate(createDetector([10]), full(10));
+  const frames = [];
+  for (let f = 1; f <= 120; f++) frames.push(dim(full(10), 1 - 0.3 * (f / 120)));
+  const drift = run(state, frames);
+  assert.equal(drift.events.length, 0, 'a dimmer room is not ten hits');
+
+  // ...and a cup going out under that dimmer light is still found.
+  const dark = dim(full(10), 0.7);
+  dark[4] = { r: EMPTY.r * 0.7, g: EMPTY.g * 0.7, b: EMPTY.b * 0.7, contrast: EMPTY.contrast * 0.7 };
+  const hit = run(drift.state, Array(6).fill(dark));
+  assert.ok(
+    hit.events.some((e) => e.type === 'cupGone' && e.index === 4),
+    'the cup that actually went was missed'
+  );
+});
+
+check('a view that stays wholly changed is taken again rather than staying deaf', () => {
+  // A knocked phone puts every patch off its cup for good. Before this, that
+  // ended the feature: 599 frames of disturbance on the bench and the hit that
+  // followed was never found.
+  let state = calibrate(createDetector([10]), full(10));
+  const moved = Array.from({ length: 10 }, () => ({ ...HAND }));
+  const long = run(state, Array(40).fill(moved));
+  assert.ok(
+    long.events.some((e) => e.type === 'rebaselined'),
+    'it never took the view again'
+  );
+
+  // And from there it works on the new view: a cup going out is found.
+  const after = [...moved];
+  after[2] = { ...EMPTY };
+  const hit = run(long.state, Array(6).fill(after));
+  assert.ok(hit.events.some((e) => e.type === 'cupGone' && e.index === 2));
+});
+
+check('three cups changing at once is a shadow, not three throws', () => {
+  // Too many for throws, too few for the whole-rack guard. A throw takes one
+  // cup; a person leaning over one end takes three patches at the same instant.
+  let state = calibrate(createDetector([10]), full(10));
+  const shaded = full(10);
+  for (let i = 0; i < 3; i++) {
+    shaded[i] = { r: CUP.r * 0.6, g: CUP.g * 0.6, b: CUP.b * 0.6, contrast: CUP.contrast * 0.6 };
+  }
+  const result = run(state, Array(10).fill(shaded));
+  assert.ok(
+    !result.events.some((e) => e.type === 'cupGone'),
+    'a shadow was scored as hits'
+  );
+  assert.ok(result.events.some((e) => e.type === 'disturbed'));
+});
+
 console.log('two racks');
 const both = (n) => full(2 * n);
 

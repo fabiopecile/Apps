@@ -173,6 +173,14 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
           flash(t('detect.disturbed', { team: teamNames[racksRef.current[event.rack]] }));
           break;
         }
+        if (event.type === 'rebaselined') {
+          // The view changed for good — the phone was moved, or the lights
+          // went. Worth saying out loud rather than quietly carrying on:
+          // anything that went down while it was confused was not counted, and
+          // only the player can put that right.
+          flash(t('detect.rebaselined', { team: teamNames[racksRef.current[event.rack]] }));
+          break;
+        }
       }
     };
 
