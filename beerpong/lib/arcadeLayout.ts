@@ -62,13 +62,28 @@ export const TABLE_HEIGHT = PLAYER_RACK_TOP + PLAYER_RACK_HEIGHT + 28;
  * as fractions of the drawing width: the far edge is a little over half as wide
  * as the near one, which is about what a 2.4m table looks like from behind it.
  */
-export const TABLE_FAR_HALF = 0.31;
+export const TABLE_FAR_HALF = 0.26;
 export const TABLE_NEAR_HALF = 0.5;
 
 /** Half the table's width at a given point down it, in table points. */
 export function tableHalfWidth(width: number, y: number): number {
   const share = Math.max(0, Math.min(1, y / TABLE_HEIGHT));
   return width * (TABLE_FAR_HALF + (TABLE_NEAR_HALF - TABLE_FAR_HALF) * share);
+}
+
+/**
+ * How big a thing at this point down the table looks, with 1 at the spot the
+ * ball rests on.
+ *
+ * Taken from the racks themselves: a cup is 34 across at the far end and 68 at
+ * the near one, so anything else on the table has to follow the same ramp. The
+ * ball did not — it stayed exactly one size whether it sat in your hand or lay
+ * against the back row, which is a large part of why the table read flat.
+ */
+export function tableScaleAt(y: number): number {
+  const raw = 0.5 + ((y - 49) * 0.5) / 656;
+  const atRest = 0.5 + ((PLAYER_BALL_Y - 49) * 0.5) / 656;
+  return Math.max(0.45, Math.min(1.35, raw / atRest));
 }
 
 export const VIEWPORT_HEIGHT = 430;

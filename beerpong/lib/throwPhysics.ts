@@ -55,9 +55,12 @@ export const MAX_RANGE = 520;
  * Wobble at zero steadiness, in points. Scaled down by steadiness and up by
  * how hard the ball was thrown. Tuned by simulation rather than by feel, and
  * re-tuned whenever the cup's shape moves: with this, a normal thrower aiming
- * well lands 83% of their throws at the nearest cup and 46% at the far row.
+ * well lands 87% of their throws at the nearest cup and 51% at the far row.
+ * Lowering it further is not available — at 42 a steady thrower reaches 98% at
+ * the near cup and the test refuses it, because a throw that cannot miss is not
+ * a throw.
  */
-const SPREAD_AT_ZERO_SKILL = 50;
+const SPREAD_AT_ZERO_SKILL = 46;
 /** A bounce shot is thrown flatter and lands wilder. */
 const BOUNCE_SPREAD_FACTOR = 1.6;
 /** How much speed the ball keeps when it bounces off the table. */
@@ -356,6 +359,63 @@ export function resolveLanding(
   return { cupIndex: closest.index, hit: false, rimOut: true };
 }
 
+/**
+ * How much a throw that is nearly the right strength gets pulled onto the right
+ * strength.
+ *
+ * Judging how hard to flick is the hardest part of the gesture and the least
+ * interesting: there is nothing on screen that tells you how fast your thumb
+ * just moved, so it is guesswork with a one-throw-per-turn feedback loop.
+ * Direction you can see and aim; strength you cannot. So strength is helped and
+ * direction is not — the pull is along the line of the throw only, never
+ * sideways, and it never moves the ball to a different cup than the one it was
+ * already heading for.
+ *
+ * The window is wide enough to cover the jump in required strength when a row
+ * is cleared away — measured in the browser, sinking the front cup moves the
+ * nearest target from 212pt to 273pt, and a throw 114pt short got no help at
+ * all under the old 58pt window. Strength therefore picks roughly which row,
+ * and the pull finishes the job; direction is still entirely yours. A wild
+ * overthrow is still a wild overthrow: nothing is pulled onto a cup it was
+ * never near.
+ */
+const ASSIST_WINDOW = 95;
+const ASSIST_STRENGTH = 0.85;
+
+/**
+ * Pulls the landing distance towards whichever standing cup the throw was
+ * nearly reaching. Returns the aim point unchanged when nothing is close.
+ */
+function assistDistance(
+  start: Point,
+  aim: Point,
+  cups: CupSpec[],
+  aliveFlags: boolean[]
+): Point {
+  const dx = aim.x - start.x;
+  const dy = aim.y - start.y;
+  const range = Math.hypot(dx, dy);
+  if (range < 1) return aim;
+
+  let best: number | null = null;
+  let bestGap = Infinity;
+  for (const cup of cups) {
+    if (!aliveFlags[cup.index]) continue;
+    const mouth = cupMouth(cup);
+    // How far away that cup is, and how far the aim point sits from it.
+    const cupRange = Math.hypot(mouth.x - start.x, mouth.y - start.y);
+    const miss = Math.hypot(aim.x - mouth.x, aim.y - mouth.y);
+    if (miss < bestGap) {
+      bestGap = miss;
+      best = cupRange;
+    }
+  }
+  if (best === null || Math.abs(best - range) > ASSIST_WINDOW) return aim;
+
+  const pulled = range + (best - range) * ASSIST_STRENGTH;
+  return { x: start.x + (dx / range) * pulled, y: start.y + (dy / range) * pulled };
+}
+
 export interface ThrowOutcome extends LandingResult {
   /** 0-1, how hard it was thrown. */
   power: number;
@@ -387,7 +447,7 @@ export function resolveThrow(params: {
   const aimed = previewFlight({ start, velocityX, velocityY, direction, bounce, carry });
   if (!aimed) return null;
 
-  const aim = aimed.landing;
+  const aim = assistDistance(start, aimed.landing, cups, aliveFlags);
   // How hard it was thrown, not how far it happened to travel — a ball let go
   // half way up the table was still thrown that hard, and pays the same
   // accuracy for it.
