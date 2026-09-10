@@ -262,6 +262,33 @@ zählen) und aus denen danach Becher verschwinden (müssen **genau einmal** und
 dem **richtigen Team** gemeldet werden). Chromium kann sie per
 `--use-file-for-fake-video-capture=t.y4m` als Kamera ausgeben.
 
+## Was ein Skin kostet
+
+Gemessen an dem, was ein Spieltag einbringt: die Tagesaufgaben sind 70 bis 220
+Münzen wert und es sind mehrere, also rund 400 am Tag. Zu den alten Preisen war
+der ganze Laden nach zwei Tagen leergekauft und es gab nichts mehr, worauf man
+hinspielt.
+
+| | vorher | jetzt | ≈ Spieltage |
+|---|---|---|---|
+| Neon Strike | 150 | **600** | 1,5 |
+| Inferno · Cryo | 300 | **1400** | 3,5 |
+| Neon Arena | 200 | **800** | 2 |
+| Midnight | 400 | **1800** | 4,5 |
+| Champion Gold | 750 | **4000** | 10 |
+| Champion's Court | 900 | **5000** | 12 |
+
+Oben bewusst steil: irgendetwas muss es wert sein, es zu haben.
+
+## Zurück heißt zurück ins Hauptmenü
+
+Ein einfaches `back()` führte aus einem Match dorthin zurück, wo es gestartet
+wurde — in die Offline-Liste, die Rivalen-Leiter, die Weekend League. Das ist
+fast nie der Ort, an dem man nach einem Spiel sein will. `dismissTo` wickelt den
+Stapel stattdessen in einem Schritt bis zum Arcade-Hauptmenü ab, so dass die
+Zwischenschirme nicht vorbeiblitzen und ein weiteres Zurück nicht in sie
+hineinläuft.
+
 ## Die Kamera-Erkennung im Wohnzimmer
 
 Die Regeln der Erkennung waren getestet, ihr Verhalten in einem echten Raum
