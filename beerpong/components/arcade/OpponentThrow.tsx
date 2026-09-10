@@ -76,8 +76,14 @@ export function OpponentThrow({
     const target = alive[Math.floor(Math.random() * alive.length)];
 
     // Where they meant it to go, and where their hand actually put it.
+    //
+    // Aimed at the mouth, not at the cup's stored centre. Aiming at the centre
+    // threw every ball a cup-mouth's height low and left the spread to rescue
+    // it: measured, a dead-steady opponent with a 15pt spread landed 2.7% of
+    // its throws. The same mistake the player's throw had.
+    const mouth = cupMouth(target);
     const offset = wobble(spreadForAccuracy(accuracy));
-    const landing = { x: target.x + offset.x, y: target.y + offset.y };
+    const landing = { x: mouth.x + offset.x, y: mouth.y + offset.y };
     const outcome = resolveLanding(landing, cups, aliveFlags);
     const thrown = buildFlight({ x: startX, y: startY }, landing, false);
 

@@ -297,16 +297,48 @@ Jetzt wirfst du wirklich — die Geste ist die von Pokémon GO:
    vom ersten, dieselbe Zahl wie beim Aufsetzer. Zu fest geworfen segelt er über
    das Rack, zu sanft fällt er davor auf den Tisch.
 
-**Gezielt wird auf das Loch, nicht auf den Becher.** Ein Becher wird auf einem
-100×125-Feld gezeichnet, seine Öffnung liegt bei y=21 — also **ein Drittel der
-Becherhöhe über** dem Punkt, den das Layout speichert. Beim vorderen Becher sind
-das 25 Punkte. Genau darauf hatte die Physik gezielt, und deshalb landete der
-Ball mitten in der Plastikwand: es zählte als Treffer, sah aber nie wie einer
-aus.
+### Die Becher sind Körper, keine Aufkleber
+
+Vorher wurde **jeder** Becher mit derselben Öffnungs-Ellipse gezeichnet
+(`rx=37, ry=9.6`), egal ob er vorne oder hinten stand. Das ist der Grund, warum
+sie flach wirkten: in echter Perspektive sieht man einen nahen Becher von oben,
+seine Öffnung ist fast rund, und einen fernen fast von der Seite, seine Öffnung
+ist ein Schlitz.
+
+Die Form liegt jetzt in `lib/cupGeometry.ts` und wird aus der Becherbreite
+berechnet — 0,28 hinten bis 0,54 vorne. Daraus folgt der Rest von selbst: eine
+rundere Öffnung braucht mehr Platz, also bleibt weniger Körper sichtbar, und
+das ist echte Verkürzung statt derselben Grafik in zwei Größen.
+
+**Warum die Breite und nicht eine Kamera:** Der Tisch ist keine einheitliche
+Perspektive. Der Versuch, eine Lochkamera an die beiden Racks zu fitten, landet
+6,35 pt daneben und läuft in die Suchgrenzen — weil die Kamera den Tisch
+entlangschwenkt und jedes Rack dafür ausgelegt ist, für sich betrachtet zu
+werden. Die Tiefe steckt hier in der Breite.
+
+**Gezielt wird auf das Loch, nicht auf den Becher.** Grafik und Physik lesen
+beide dieselbe Geometrie, und ein Test prüft für jeden der zwanzig Becher, dass
+der Punkt, auf den geworfen wird, auf den Pixel mit dem gezeichneten Rand
+zusammenfällt. Genau das war einmal auseinandergelaufen: die Physik zielte auf
+die Bechermitte, das Loch lag ein Drittel der Becherhöhe höher, und ein Treffer
+zählte, ohne je wie einer auszusehen.
+
+**Der Tisch ist eine Platte.** Keine Rechteckfläche mehr, sondern ein Trapez mit
+sichtbarer Kante an den Seiten und vorne — am fernen Ende gut halb so breit wie
+an deinem.
 
 Dazu kommt ein kleiner Streuungsfehler für die ruhige Hand
-(`88 × (1 − Ruhe) × (0,8 + Kraft × 0,35)`, dreieckig verteilt). Er wird größer,
+(`50 × (1 − Ruhe) × (0,8 + Kraft × 0,35)`, dreieckig verteilt). Er wird größer,
 je härter du wirfst — deshalb ist die hintere Reihe schwerer.
+
+**Eine Untergrenze für die Mundhöhe**, damit die ehrliche Perspektive das Spiel
+nicht heimlich schwerer macht: ein ferner Becher wird fast von der Seite
+gesehen, sein gezeichnetes Loch ist ein Schlitz — aber der Ball fällt beinahe
+senkrecht hinein, und was ihn fängt, ist der Kreis auf dem Tisch, nicht die
+Sichel, die die Kamera zeigt. Ohne sie fiel die hintere Reihe von 46 % auf 36 %,
+allein weil die Zeichnung ehrlich wurde. Gemessen greift sie ausschließlich
+hinten: die Quote des vordersten Bechers bewegt sich kein Prozent, wenn man sie
+von 6 auf 12 zieht.
 
 **Der Bounce-Wurf ist jetzt wirklich ein Aufsetzer.** Der Ball kommt vor dem
 Rack auf, behält 60 % seiner Aufwärtsgeschwindigkeit und springt flach in den
@@ -324,8 +356,8 @@ Trefferquoten bei perfektem Schwung, je 8 000 simulierte Würfe:
 
 | gezielt auf | wacklig | normal | ruhig |
 |---|---|---|---|
-| nächster Becher | 73 % | 82 % | 91 % |
-| hintere Reihe | 38 % | 44 % | 54 % |
+| nächster Becher | 75 % | 83 % | 91 % |
+| hintere Reihe | 39 % | 46 % | 57 % |
 
 Das ist die entschärfte Fassung: die Trefferfläche ist großzügiger als das
 gezeichnete Loch (0,52 statt 0,37 der Becherbreite — ein Ball, der die
@@ -349,7 +381,16 @@ zwei verschiedene Spiele. Jetzt fliegt er dieselbe Parabel, und sein Können ist
 eine Streuung um den Becher, den er sich ausgesucht hat. Welche Streuung zu
 welcher Trefferquote gehört, ist gemessen und nicht hergeleitet (Tabelle in
 `lib/throwPhysics.ts`), weil ein weit danebengegangener Ball bei vollem Rack
-trotzdem im Nachbarbecher landet — unter etwa 26 % kommt keiner. Ein Test prüft
+trotzdem im Nachbarbecher landet.
+
+**Auch der Gegner zielte auf die Bechermitte statt aufs Loch** — derselbe
+Fehler, der beim eigenen Wurf schon behoben war, nur beim Gegner übersehen. Er
+warf damit jeden Ball eine Mundhöhe zu tief, und nur die Streuung rettete ihn:
+ein absolut ruhiger Gegner mit 15 pt Streuung traf **2,7 %**. Die alte Tabelle
+war um diesen Fehler herum gemessen, deshalb kam sie nie unter etwa ein Viertel.
+Richtig gezielt reicht sie von 98 % bis 18 %, und ein schwacher Gegner darf
+endlich schwach sein. Gemessen wird auf *deinem* Rack, denn dorthin wirft er —
+und das ist das nahe, breite. Ein Test prüft
 für jeden Gegner der Liga, dass er ungefähr so oft trifft, wie sein Profil
 behauptet.
 
