@@ -1,111 +1,69 @@
 /**
- * The shape of a cup, in one place.
+ * The shape of a cup, as a profile to spin into a solid.
  *
- * Both the drawing and the physics need to agree on where a cup's mouth is and
- * how big it is. They did not once before: the art put the opening a third of
- * the cup's height above its centre while the physics aimed at the centre, so
- * a ball scored without ever looking like it went in. Everything about the
- * silhouette now comes from here, and `tools/test_throw_physics.mjs` checks the
- * two still line up.
+ * A cup is a solid of revolution, so all it needs is its silhouette from the
+ * axis outwards; the renderer lathes this into geometry and the camera decides
+ * what it looks like from where you sit. That is a real simplification over
+ * what stood here before: the drawing used to work out for itself how open each
+ * mouth should appear, because there was no camera to do it.
  *
- * Coordinates are fractions of the sprite box, which is `width` across and
- * `width * CUP_ASPECT` tall, so one set of numbers serves every cup size.
+ * All measurements are fractions of the cup's mouth diameter, so one profile
+ * serves any size.
  */
 
-/** height = width * this, like a real moulded cup. */
-export const CUP_ASPECT = 1.35;
+import { CUP_ASPECT } from './arcadeLayout';
 
-/** The drawing board every cup is laid out on. */
-export const ART_WIDTH = 100;
-export const ART_HEIGHT = ART_WIDTH * CUP_ASPECT;
+/** Outer radius at the rim and at the base, as fractions of the diameter. */
+export const RIM_RADIUS = 0.5;
+export const BASE_RADIUS = 0.365;
+/** Wall thickness, so the rim reads as a rim rather than a paper edge. */
+const WALL = 0.022;
+/** How far down the inside the beer sits. */
+export const BEER_DEPTH = 0.12;
 
-/** Rim and base radii across, in art units. A cup tapers towards its base. */
-export const RIM_RX = 37;
-export const BASE_RX = 27;
-/** Clearance above the rim and below the base, so nothing clips the box. */
-const TOP_MARGIN = 5;
-const BOTTOM_MARGIN = 9;
-
-/**
- * How open a cup's mouth looks — the `ry / rx` of the rim ellipse.
- *
- * This is the cue that makes a cup read as an object rather than a sticker: a
- * cup close to you is seen from above and its mouth is nearly round, one at the
- * far end is seen almost edge-on and its mouth is a thin slit. Every cup used
- * to be drawn with the same 0.26, which is why they all looked flat.
- *
- * Driven by the cup's own width rather than by one camera over the whole
- * table, and that is deliberate: the table is *not* a single perspective.
- * Fitting a pinhole camera to the two racks lands 6.35pt out on widths of
- * 34-68 and pins against its bounds, because the camera pans down the table
- * and each rack is laid out to be looked at in turn. Width is what actually
- * encodes depth here.
- */
-export const MIN_CUP_WIDTH = 34;
-export const MAX_CUP_WIDTH = 68;
-const OPENNESS_FAR = 0.28;
-const OPENNESS_NEAR = 0.54;
-
-export function cupOpenness(width: number): number {
-  const share = (width - MIN_CUP_WIDTH) / (MAX_CUP_WIDTH - MIN_CUP_WIDTH);
-  const clamped = Math.max(0, Math.min(1, share));
-  return OPENNESS_FAR + (OPENNESS_NEAR - OPENNESS_FAR) * clamped;
-}
-
-export interface CupArtGeometry {
-  openness: number;
-  rimRx: number;
-  rimRy: number;
-  rimCy: number;
-  baseRx: number;
-  baseRy: number;
-  baseCy: number;
-  /** Where the beer sits, below the rim. */
-  beerRx: number;
-  beerRy: number;
-  beerCy: number;
+export interface ProfilePoint {
+  /** Distance from the axis, in diameters. */
+  r: number;
+  /** Height above the table, in diameters. */
+  y: number;
 }
 
 /**
- * The cup's silhouette in art units.
+ * The silhouette, walked as one loop: up the outside, across the rim, and back
+ * down the inside to the base. Spun about the axis this gives a cup with a
+ * genuine wall — you can see into it, and the rim has thickness.
  *
- * The mouth sits lower on the board the rounder it is, because a more open
- * ellipse takes more room — which also shortens the body, and that is real
- * foreshortening rather than a fudge: a cup seen more from above shows less of
- * its side.
+ * Slightly barrelled rather than a straight cone, which is what a moulded cup
+ * actually does and what catches the light along its side.
  */
-export function cupArtGeometry(width: number): CupArtGeometry {
-  const openness = cupOpenness(width);
-  const rimRy = RIM_RX * openness;
-  const baseRy = BASE_RX * openness;
-  const rimCy = TOP_MARGIN + rimRy;
-  const baseCy = ART_HEIGHT - BOTTOM_MARGIN - baseRy;
-  // A cup is never full; the surface sits a little way down the inside.
-  const beerDrop = (baseCy - rimCy) * 0.1;
-  const beerRx = RIM_RX * 0.82;
-  return {
-    openness,
-    rimRx: RIM_RX,
-    rimRy,
-    rimCy,
-    baseRx: BASE_RX,
-    baseRy,
-    baseCy,
-    beerRx,
-    beerRy: beerRx * openness,
-    beerCy: rimCy + beerDrop,
-  };
+export function cupProfile(): ProfilePoint[] {
+  const h = CUP_ASPECT;
+  const outside: ProfilePoint[] = [];
+  const steps = 10;
+  for (let i = 0; i <= steps; i++) {
+    const t = i / steps;
+    const r = BASE_RADIUS + (RIM_RADIUS - BASE_RADIUS) * t;
+    // A gentle outward bow through the middle of the wall.
+    const bow = Math.sin(t * Math.PI) * 0.012;
+    outside.push({ r: r + bow, y: t * h });
+  }
+  const inside: ProfilePoint[] = [];
+  for (let i = steps; i >= 0; i--) {
+    const t = i / steps;
+    const r = BASE_RADIUS + (RIM_RADIUS - BASE_RADIUS) * t;
+    const bow = Math.sin(t * Math.PI) * 0.012;
+    inside.push({ r: Math.max(0.02, r + bow - WALL), y: Math.max(WALL * 2, t * h) });
+  }
+  return [{ r: 0, y: 0 }, ...outside, ...inside, { r: 0, y: WALL * 2 }];
 }
 
-/**
- * How far above a cup's stored position its mouth sits, as a fraction of the
- * cup's height.
- *
- * The layout stores a cup by the centre of its sprite box. The opening is well
- * above that, and this is the number that says by how much — the one the
- * physics has to aim at.
- */
-export function mouthAboveCentre(width: number): number {
-  const { rimCy } = cupArtGeometry(width);
-  return (ART_HEIGHT / 2 - rimCy) / ART_HEIGHT;
+/** Where the beer surface sits, in diameters above the table. */
+export function beerHeight(): number {
+  return CUP_ASPECT * (1 - BEER_DEPTH);
+}
+
+/** How wide the beer disc is at that height, in diameters. */
+export function beerRadius(): number {
+  const t = 1 - BEER_DEPTH;
+  return BASE_RADIUS + (RIM_RADIUS - BASE_RADIUS) * t - WALL;
 }

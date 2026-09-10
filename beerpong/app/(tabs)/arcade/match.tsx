@@ -17,10 +17,9 @@ import { GlowButton } from '@/components/ui/GlowButton';
 import { Confetti } from '@/components/ui/Confetti';
 import { ParticleBurst, type ParticleBurstHandle } from '@/components/ui/ParticleBurst';
 import { FlashOverlay, type FlashOverlayHandle } from '@/components/ui/FlashOverlay';
-import { CupPyramid } from '@/components/arcade/CupPyramid';
+import { Table3D } from '@/components/arcade/Table3D';
 import { ThrowBall } from '@/components/arcade/ThrowBall';
 import { OpponentThrow } from '@/components/arcade/OpponentThrow';
-import { TableSurface } from '@/components/arcade/TableSurface';
 import { PromotionOverlay } from '@/components/arcade/PromotionOverlay';
 import { ShareResultButton } from '@/components/ui/ShareableResult';
 import {
@@ -30,10 +29,10 @@ import {
   CUP_COUNT,
   OPPONENT_BALL_Y,
   PLAYER_BALL_Y,
-  TABLE_HEIGHT,
-  VIEWPORT_HEIGHT,
+  TABLE_WIDTH_REFERENCE,
 } from '@/lib/arcadeLayout';
 import { cupMouth } from '@/lib/throwPhysics';
+import { useBallFlight } from '@/components/arcade/useBallFlight';
 import {
   AI_PRESETS,
   WEEKEND_MATCHES,
@@ -43,6 +42,16 @@ import {
   type MatchMode,
 } from '@/lib/competition';
 import { LEAGUE_OPPONENTS } from '@/lib/opponents';
+
+/**
+ * Screen points per table point at the ball's resting depth.
+ *
+ * The camera is a perspective one, so this is only exactly right where the ball
+ * sits — which is where the drag starts and where it matters. Measured against
+ * the running app rather than derived from the projection: dragging a known
+ * number of screen points and reading back where the ball ended up.
+ */
+const SCREEN_POINTS_PER_TABLE_POINT = 1;
 import { SKINS } from '@/lib/skins';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
@@ -97,34 +106,22 @@ export default function MatchScreen() {
   // (see `landscape` below) rather than rearranging itself.
   const landscape = width > height;
 
-  // Short screens get a smaller table, never a cropped one.
-  //
-  // Cropping was tried and it broke the game outright: the ball sits at 391pt
-  // down the board, so a window shorter than that leaves it outside — invisible
-  // and, because the window clips touches too, unthrowable. That is every
-  // iPhone in Safari, where the address bar takes the usable height to about
-  // 664pt and the window came out at 384. It only looked fine at 844pt.
-  const stageHeight = Math.min(VIEWPORT_HEIGHT, Math.max(260, height - 280));
-  const stageScale = stageHeight / VIEWPORT_HEIGHT;
-  const viewportHeight = VIEWPORT_HEIGHT;
-  // Divided by the scale so the felt still runs edge to edge once shrunk.
-  const tableWidth = (width - spacing.lg * 2) / stageScale;
+  /**
+   * The table is a fixed size in table points and the camera fits it to the
+   * screen, so there is nothing to shrink or crop here any more. The stage is
+   * simply as tall as the screen can spare.
+   */
+  const tableWidth = TABLE_WIDTH_REFERENCE;
+  const stageHeight = Math.max(300, height - 300);
+  const stageWidth = width - spacing.lg * 2;
   const opponentCups = useMemo(() => generateOpponentRack(tableWidth), [tableWidth]);
   const playerCups = useMemo(() => generatePlayerRack(tableWidth), [tableWidth]);
 
   const [opponentAlive, setOpponentAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
   const [playerAlive, setPlayerAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
-  /**
-   * Held still so the memoised `TableSurface` only redraws when a cup actually
-   * goes, rather than on every score, hint or turn change.
-   */
-  const racks = useMemo(
-    () => [
-      { cups: opponentCups, aliveFlags: opponentAlive },
-      { cups: playerCups, aliveFlags: playerAlive },
-    ],
-    [opponentCups, opponentAlive, playerCups, playerAlive]
-  );
+  /** Both balls live here: the throw components steer them, the scene draws them. */
+  const playerFlight = useBallFlight(tableWidth / 2, PLAYER_BALL_Y);
+  const opponentFlight = useBallFlight(tableWidth / 2, OPPONENT_BALL_Y);
   const [turn, setTurn] = useState<Turn>('player');
   const [roundResult, setRoundResult] = useState<RoundResult>(null);
   const [opponentTurnToken, setOpponentTurnToken] = useState(0);
@@ -220,18 +217,6 @@ export default function MatchScreen() {
   const ballSkin = SKINS.find((s) => s.id === arcade.equippedBall) ?? SKINS[0];
   const opponentRemaining = opponentAlive.filter(Boolean).length;
   const playerRemaining = playerAlive.filter(Boolean).length;
-
-  const cameraY = useSharedValue(0);
-  useEffect(() => {
-    const pan = Math.max(0, TABLE_HEIGHT - viewportHeight);
-    cameraY.value = withTiming(turn === 'player' ? 0 : -pan, {
-      duration: 650,
-      easing: Easing.inOut(Easing.cubic),
-    });
-  }, [turn, cameraY, viewportHeight]);
-  const cameraStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: cameraY.value }],
-  }));
 
   // The hint breathes while you are on the clock, and sits still otherwise —
   // it is the only thing on screen telling you the game is waiting for you.
@@ -572,81 +557,75 @@ export default function MatchScreen() {
           />
         </View>
 
-        {/* Outer box is the space the table gets; the inner one is the table at
-            its true size, shrunk to fit. Scaling about the centre would push it
-            off its box, so it is pinned to the top left corner. */}
         <View
           style={{
-            width: tableWidth * stageScale,
-            height: viewportHeight * stageScale,
+            width: stageWidth,
+            height: stageHeight,
             alignSelf: 'center',
             marginTop: spacing.md,
           }}
         >
-        <View
-          style={[
-            styles.viewport,
-            styles.viewportScaled,
-            { width: tableWidth, height: viewportHeight, transform: [{ scale: stageScale }] },
-          ]}
-        >
-          <Animated.View
-            style={[styles.table, { width: tableWidth, height: TABLE_HEIGHT }, cameraStyle]}
-          >
-            <TableSurface width={tableWidth} racks={racks} />
+          <Table3D
+            width={tableWidth}
+            racks={[
+              { cups: opponentCups, aliveFlags: opponentAlive, colour: setup.color },
+              { cups: playerCups, aliveFlags: playerAlive, colour: colors.neon },
+            ]}
+            balls={[playerFlight, opponentFlight]}
+            ballColours={[ballSkin.accent, isPassPlay ? colors.gold : colors.danger]}
+            watching={playerTurn ? 'far' : 'near'}
+          />
 
-            <CupPyramid cups={opponentCups} aliveFlags={opponentAlive} accent={setup.color} />
-            <CupPyramid cups={playerCups} aliveFlags={playerAlive} accent={colors.neon} />
-
+          <ThrowBall
+            flight={playerFlight}
+            startX={tableWidth / 2}
+            startY={PLAYER_BALL_Y}
+            cups={opponentCups}
+            aliveFlags={opponentAlive}
+            accent={ballSkin.accent}
+            skill={setup.playerSkill}
+            bounce={bounceArmed}
+            onResult={handlePlayerResult}
+            onRim={feedback.rimOut}
+            onLaunch={feedback.whoosh}
+            inputScale={SCREEN_POINTS_PER_TABLE_POINT}
+            disabled={!playerTurn || handOver}
+            hidden={!playerTurn}
+          />
+          {isPassPlay ? (
             <ThrowBall
+              flight={opponentFlight}
               startX={tableWidth / 2}
-              startY={PLAYER_BALL_Y}
-              cups={opponentCups}
-              aliveFlags={opponentAlive}
-              accent={ballSkin.accent}
+              startY={OPPONENT_BALL_Y}
+              cups={playerCups}
+              aliveFlags={playerAlive}
+              accent={colors.gold}
               skill={setup.playerSkill}
+              direction="down"
               bounce={bounceArmed}
-              onResult={handlePlayerResult}
+              onResult={handleSecondPlayerResult}
               onRim={feedback.rimOut}
               onLaunch={feedback.whoosh}
-              inputScale={stageScale}
-              disabled={!playerTurn || handOver}
-              hidden={!playerTurn}
+              inputScale={SCREEN_POINTS_PER_TABLE_POINT}
+              disabled={playerTurn || handOver || roundResult != null}
+              hidden={playerTurn || roundResult != null}
             />
-            {isPassPlay ? (
-              <ThrowBall
-                startX={tableWidth / 2}
-                startY={OPPONENT_BALL_Y}
-                cups={playerCups}
-                aliveFlags={playerAlive}
-                accent={colors.gold}
-                skill={setup.playerSkill}
-                direction="down"
-                bounce={bounceArmed}
-                onResult={handleSecondPlayerResult}
-                onRim={feedback.rimOut}
-                onLaunch={feedback.whoosh}
-                inputScale={stageScale}
-                disabled={playerTurn || handOver || roundResult != null}
-                hidden={playerTurn || roundResult != null}
-              />
-            ) : (
-              <OpponentThrow
-                startX={tableWidth / 2}
-                startY={OPPONENT_BALL_Y}
-                cups={playerCups}
-                aliveFlags={playerAlive}
-                accuracy={setup.accuracy}
-                accent={colors.danger}
-                turnToken={opponentTurnToken}
-                onResult={handleOpponentResult}
-              />
-            )}
+          ) : (
+            <OpponentThrow
+              flight={opponentFlight}
+              startX={tableWidth / 2}
+              startY={OPPONENT_BALL_Y}
+              cups={playerCups}
+              aliveFlags={playerAlive}
+              accuracy={setup.accuracy}
+              accent={colors.danger}
+              turnToken={opponentTurnToken}
+              onResult={handleOpponentResult}
+            />
+          )}
 
-            <ParticleBurst ref={particleRef} />
-            <FlashOverlay ref={flashRef} />
-          </Animated.View>
-        </View>
+          <ParticleBurst ref={particleRef} />
+          <FlashOverlay ref={flashRef} />
         </View>
 
         <View style={styles.actionRow}>
