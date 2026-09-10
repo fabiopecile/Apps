@@ -1,33 +1,37 @@
 import { useCallback } from 'react';
 import {
   runOnJS,
-  useAnimatedStyle,
   useSharedValue,
   withTiming,
   Easing,
   type SharedValue,
 } from 'react-native-reanimated';
 
-import { tableScaleAt } from '@/lib/arcadeLayout';
-import { APEX, GRAVITY, RESTITUTION, type Flight } from '@/lib/throwPhysics';
+import { GRAVITY, RESTITUTION, type Flight } from '@/lib/throwPhysics';
 
-export const BALL_SIZE = 30;
-/**
- * How much of the ball's real height turns into travel up the screen. The
- * table is drawn from a low angle, so height and distance share an axis; the
- * shadow stays on the ground and tells the two apart.
- */
-export const HEIGHT_LIFT = 0.55;
-/** How much bigger the ball looks at the top of its arc. */
-const HEIGHT_ZOOM = 0.42;
+/** Ball diameter, in table points. A real ping-pong ball against a 46pt cup. */
+export const BALL_SIZE = 18;
+
+export interface BallPoint {
+  /** Where the ball is on the table. */
+  x: number;
+  y: number;
+  /** How high above it, in table points. */
+  height: number;
+  /** 0 while resting in the hand, 1 while a hop is playing. */
+  flying: number;
+  scale: number;
+  opacity: number;
+}
 
 /**
- * Plays a `Flight` — the shared animation behind both balls on the table.
+ * The state of a ball in flight — position only, no drawing.
  *
- * Your throw and the opponent's are the same physics, so they have to be the
- * same animation too: an arc drawn one way for you and a flat slide for them
- * reads as two different games. Only the input differs — your swipe against
- * their aim.
+ * It stays on Reanimated shared values because the gesture writes to them from
+ * the UI thread and has to stay smooth; the 3D scene reads them once per frame
+ * in its own render loop. Splitting it this way is what lets the same physics
+ * drive your throw and the opponent's: an arc animated one way for you and a
+ * flat slide for them reads as two different games.
  */
 export function useBallFlight(restX: number, restY: number) {
   // Ground position: where the ball is on the table, ignoring how high it is.
@@ -108,121 +112,50 @@ export function useBallFlight(restX: number, restY: number) {
     [airborne, groundX, groundY, scale]
   );
 
-  const ballStyle = useAnimatedStyle(() => {
-    const point = flightPoint(
-      airborne.value, legT.value,
-      legStartX.value, legStartY.value, legEndX.value, legEndY.value,
-      legSeconds.value, legUp.value, groundX.value, groundY.value
-    );
-    // Two things change how big the ball looks, and they are different things:
-    // how far down the table it is, and how high above it. Distance shrinks it,
-    // height brings it back towards the camera.
-    const depth = tableScaleAt(point.y);
-    const zoom = (1 + (point.height / APEX) * HEIGHT_ZOOM) * depth;
-    return {
-      opacity: opacity.value,
-      // Sorted against the cups by where the ball is *on the table*, not by how
-      // high it is: a ball sailing over the back row is still behind the cups
-      // in front of it. `+1` so it clears a cup standing on the same line.
-      zIndex: Math.round(point.y) + 1,
-      transform: [
-        { translateX: point.x - BALL_SIZE / 2 },
-        { translateY: point.y - point.height * HEIGHT_LIFT - BALL_SIZE / 2 },
-        { scale: scale.value * zoom },
-      ],
-    };
-  });
-
-  const trailStyle = useAnimatedStyle(() => {
-    const point = flightPoint(
-      airborne.value, legT.value,
-      legStartX.value, legStartY.value, legEndX.value, legEndY.value,
-      legSeconds.value, legUp.value, groundX.value, groundY.value
-    );
-    return {
-      opacity: trail.value * opacity.value * 0.35,
-      zIndex: Math.round(point.y),
-      transform: [
-        { translateX: point.x - BALL_SIZE / 2 },
-        { translateY: point.y - point.height * HEIGHT_LIFT - BALL_SIZE / 2 + 12 },
-        { scale: scale.value * 1.15 * tableScaleAt(point.y) },
-      ],
-    };
-  });
-
   /**
-   * The shadow stays flat on the table under the ball. It is what makes the
-   * arc readable: the ball rising up the screen and the shadow running along
-   * the table are the same throw seen two ways.
+   * Where the ball is right now. Called once a frame by the renderer, on the
+   * JS side, so it reads plain numbers off the shared values rather than
+   * running as a worklet.
    */
-  const shadowStyle = useAnimatedStyle(() => {
-    const point = flightPoint(
-      airborne.value, legT.value,
-      legStartX.value, legStartY.value, legEndX.value, legEndY.value,
-      legSeconds.value, legUp.value, groundX.value, groundY.value
-    );
-    const climb = Math.min(1, point.height / APEX);
-    // The shadow lies on the table, so it takes the table's scale flat — no
-    // height term at all. That difference is the depth cue.
-    const depth = tableScaleAt(point.y);
+  const sample = useCallback((): BallPoint => {
+    const active = airborne.value;
+    if (active < 0.5) {
+      return {
+        x: groundX.value,
+        y: groundY.value,
+        height: 0,
+        flying: 0,
+        scale: scale.value,
+        opacity: opacity.value,
+      };
+    }
+    const seconds = legSeconds.value;
+    const t = Math.max(0, Math.min(legT.value, seconds));
+    const share = t / Math.max(0.0001, seconds);
     return {
-      opacity: opacity.value * 0.45 * (1 - climb * 0.75),
-      // On the table, so it belongs to the same depth as the ball's ground
-      // position but must never cover the cup it slides under.
-      zIndex: Math.round(point.y),
-      transform: [
-        { translateX: point.x - BALL_SIZE / 2 },
-        { translateY: point.y + BALL_SIZE * 0.34 * depth },
-        { scaleX: (1 - climb * 0.4) * depth },
-        { scaleY: (1 - climb * 0.4) * 0.3 * depth },
-      ],
+      x: legStartX.value + (legEndX.value - legStartX.value) * share,
+      y: legStartY.value + (legEndY.value - legStartY.value) * share,
+      height: Math.max(0, legUp.value * t - 0.5 * GRAVITY * t * t),
+      flying: 1,
+      scale: scale.value,
+      opacity: opacity.value,
     };
-  });
+  }, [airborne, groundX, groundY, legEndX, legEndY, legSeconds, legStartX, legStartY, legT, legUp, opacity, scale]);
 
   return {
     play,
     playLeg,
     settle,
+    sample,
     groundX,
     groundY,
     scale,
     opacity,
     trail,
-    ballStyle,
-    trailStyle,
-    shadowStyle,
   } as const;
 }
 
 export type BallFlight = ReturnType<typeof useBallFlight>;
-
-/**
- * One point of the flight, as a worklet. Deliberately takes plain numbers
- * rather than the `Flight` object: a shared value holding a nested object
- * would have to be copied across to the UI thread on every frame.
- */
-function flightPoint(
-  active: number,
-  t: number,
-  fromX: number,
-  fromY: number,
-  toX: number,
-  toY: number,
-  seconds: number,
-  up: number,
-  restX: number,
-  restY: number
-) {
-  'worklet';
-  if (active < 0.5) return { x: restX, y: restY, height: 0 };
-  const clamped = Math.max(0, Math.min(t, seconds));
-  const share = clamped / Math.max(0.0001, seconds);
-  return {
-    x: fromX + (toX - fromX) * share,
-    y: fromY + (toY - fromY) * share,
-    height: Math.max(0, up * clamped - 0.5 * GRAVITY * clamped * clamped),
-  };
-}
 
 /** Re-exported so both ball components share one declaration. */
 export type { SharedValue };

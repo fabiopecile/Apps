@@ -1,7 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { StyleSheet } from 'react-native';
-import Animated, { withTiming } from 'react-native-reanimated';
-import { glow } from '@/theme';
+import { withTiming } from 'react-native-reanimated';
 import type { CupSpec } from '@/lib/arcadeLayout';
 import {
   buildFlight,
@@ -10,8 +8,7 @@ import {
   spreadForAccuracy,
   wobble,
 } from '@/lib/throwPhysics';
-import { BallArt } from './BallArt';
-import { BALL_SIZE, useBallFlight } from './useBallFlight';
+import type { BallFlight } from './useBallFlight';
 
 /** How long they pause before letting go. */
 const AIM_DURATION = 220;
@@ -22,6 +19,8 @@ interface OpponentResult {
 }
 
 interface OpponentThrowProps {
+  /** Their ball. Owned by the match screen, drawn by the scene. */
+  flight: BallFlight;
   startX: number;
   startY: number;
   cups: CupSpec[];
@@ -44,6 +43,7 @@ interface OpponentThrowProps {
  * miss looks like a near miss and their rim-outs are real rim-outs.
  */
 export function OpponentThrow({
+  flight,
   startX,
   startY,
   cups,
@@ -53,7 +53,6 @@ export function OpponentThrow({
   turnToken,
   onResult,
 }: OpponentThrowProps) {
-  const flight = useBallFlight(startX, startY);
   const aimTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -116,35 +115,6 @@ export function OpponentThrow({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [turnToken]);
 
-  return (
-    <>
-      <Animated.View pointerEvents="none" style={[styles.ballShadow, flight.shadowStyle]} />
-      <Animated.View pointerEvents="none" style={[styles.ball, flight.trailStyle]}>
-        <BallArt accent={accent} />
-      </Animated.View>
-      <Animated.View
-        pointerEvents="none"
-        style={[styles.ball, glow('medium', accent), flight.ballStyle]}
-      >
-        <BallArt accent={accent} />
-      </Animated.View>
-    </>
-  );
+  return null;
 }
 
-const styles = StyleSheet.create({
-  ball: {
-    position: 'absolute',
-    width: BALL_SIZE,
-    height: BALL_SIZE,
-    // Keeps the neon glow round instead of casting a square halo on web.
-    borderRadius: BALL_SIZE / 2,
-  },
-  ballShadow: {
-    position: 'absolute',
-    width: BALL_SIZE,
-    height: BALL_SIZE,
-    borderRadius: BALL_SIZE / 2,
-    backgroundColor: '#000000',
-  },
-});

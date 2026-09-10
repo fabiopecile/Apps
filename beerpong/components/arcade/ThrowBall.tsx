@@ -2,14 +2,10 @@ import { useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useSharedValue, withTiming } from 'react-native-reanimated';
-import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
 import { RESTITUTION, cupMouth, resolveThrow, type Point } from '@/lib/throwPhysics';
-import { BallArt } from './BallArt';
-import { BALL_SIZE, useBallFlight } from './useBallFlight';
+import type { BallFlight } from './useBallFlight';
 
-/** Let go later than this after the hand stopped and it is not a throw. */
-const STALE_HAND_MS = 120;
 /**
  * How much of a swinging hand's travel the ball still comes along for, and the
  * hand speeds between which its grip fades from full to that.
@@ -41,6 +37,8 @@ export interface ThrowResult {
 }
 
 interface ThrowBallProps {
+  /** The ball this controls. Owned by the match screen, drawn by the scene. */
+  flight: BallFlight;
   startX: number;
   startY: number;
   cups: CupSpec[];
@@ -70,6 +68,7 @@ interface ThrowBallProps {
 }
 
 export function ThrowBall({
+  flight,
   startX,
   startY,
   cups,
@@ -85,8 +84,6 @@ export function ThrowBall({
   onLaunch,
   inputScale = 1,
 }: ThrowBallProps) {
-  const flight = useBallFlight(startX, startY);
-
   const flyingRef = useRef(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -142,11 +139,11 @@ export function ThrowBall({
    * A real throw: the ball leaves from wherever your finger let go of it, at
    * the speed your hand was moving.
    */
-  const throwBall = (velocityX: number, velocityY: number, fromX: number, fromY: number) => {
+  const throwBall = (dragX: number, dragY: number, fromX: number, fromY: number) => {
     const outcome = resolveThrow({
       start: { x: fromX, y: fromY },
-      velocityX,
-      velocityY,
+      dragX,
+      dragY,
       direction,
       skill,
       bounce,
@@ -154,8 +151,8 @@ export function ThrowBall({
       aliveFlags,
       carry: carriedFrom(fromY),
     });
-    // Too slow to leave the hand — not a throw, so not a turn. The ball rolls
-    // back to its mark instead of staying wherever it was dropped.
+    // Too short to be a throw, so not a turn either. The ball rolls back to
+    // its mark instead of staying wherever it was dropped.
     if (!outcome) {
       flight.settle(startX, startY);
       return;
@@ -239,6 +236,16 @@ export function ThrowBall({
   /** The last finger position the ball was moved to follow. */
   const grabX = useSharedValue(0);
   const grabY = useSharedValue(0);
+  /**
+   * Where the finger first went down, kept for the whole gesture.
+   *
+   * The distance from here to where you let go *is* the throw's strength, so
+   * unlike `grab` above it never moves. Strength used to come from how fast the
+   * hand was going, which cannot be seen and cannot be corrected part-way; this
+   * is under your thumb the whole time.
+   */
+  const originX = useSharedValue(0);
+  const originY = useSharedValue(0);
   /** Screen points per table point; see `inputScale`. */
   const scale = useSharedValue(inputScale);
   scale.value = inputScale;
@@ -255,6 +262,8 @@ export function ThrowBall({
       lastY.value = e.absoluteY;
       grabX.value = e.absoluteX;
       grabY.value = e.absoluteY;
+      originX.value = e.absoluteX;
+      originY.value = e.absoluteY;
       lastAt.value = Date.now();
       velX.value = 0;
       velY.value = 0;
@@ -292,17 +301,19 @@ export function ThrowBall({
       grabY.value = e.absoluteY;
 
     })
-    .onEnd(() => {
+    .onEnd((e) => {
       if (busy.value) return;
-      // A hand that has stopped is not throwing. Without this, lining the ball
-      // up slowly, pausing and letting go would launch it with whatever speed
-      // the last movement happened to have — no movement means no new samples,
-      // so the average never decays on its own.
-      if (Date.now() - lastAt.value > STALE_HAND_MS) {
-        runOnJS(settleBack)();
-        return;
-      }
-      runOnJS(throwBall)(velX.value, velY.value, flight.groundX.value, flight.groundY.value);
+      // Pausing before you let go is allowed now, and that matters: with the
+      // strength coming from how far you dragged rather than how fast, there is
+      // nothing stale about a hand that has stopped. You can line the shot up,
+      // think, and release.
+      const factor = 1 / Math.max(0.05, scale.value);
+      runOnJS(throwBall)(
+        (e.absoluteX - originX.value) * factor,
+        (e.absoluteY - originY.value) * factor,
+        flight.groundX.value,
+        flight.groundY.value
+      );
     })
     .onFinalize((_e, success) => {
       if (busy.value) return;
@@ -322,17 +333,12 @@ export function ThrowBall({
   }
 
   return (
-    <>
-      <Animated.View pointerEvents="none" style={[styles.ballShadow, flight.shadowStyle]} />
-      <Animated.View pointerEvents="none" style={[styles.ball, flight.trailStyle]}>
-        <BallArt accent={accent} />
-      </Animated.View>
-      <GestureDetector gesture={pan}>
-        <Animated.View style={[styles.ball, glow('medium', accent), flight.ballStyle]}>
-          <BallArt accent={accent} />
-        </Animated.View>
-      </GestureDetector>
-    </>
+    <GestureDetector gesture={pan}>
+      {/* The whole table is the grab area. There is nothing else to touch in
+          here, and hunting for a 18pt ball with a thumb is its own difficulty
+          nobody asked for. */}
+      <Animated.View style={StyleSheet.absoluteFill} />
+    </GestureDetector>
   );
 }
 
@@ -365,19 +371,4 @@ function missDistance(
   return { overshoot: along, sideways: landing.x - best.x };
 }
 
-const styles = StyleSheet.create({
-  ball: {
-    position: 'absolute',
-    width: BALL_SIZE,
-    height: BALL_SIZE,
-    // Keeps the neon glow round instead of casting a square halo on web.
-    borderRadius: BALL_SIZE / 2,
-  },
-  ballShadow: {
-    position: 'absolute',
-    width: BALL_SIZE,
-    height: BALL_SIZE,
-    borderRadius: BALL_SIZE / 2,
-    backgroundColor: '#000000',
-  },
-});
+const styles = StyleSheet.create({});
