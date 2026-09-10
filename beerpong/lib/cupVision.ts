@@ -38,6 +38,38 @@ export interface DetectorConfig {
   disturbedRatio: number;
   /** Frames a rejected cup is ignored for, so it does not nag. */
   cooldownFrames: number;
+  /**
+   * How long a rack may stay wholly changed before its baseline is taken
+   * again.
+   *
+   * Without this a knocked phone ends the feature for the rest of the game:
+   * every patch is off its cup, every frame reads as disturbed, and nothing
+   * ever recovers. Measured on the bench, a knock cost 599 frames of deafness
+   * and the hit that followed was never found.
+   *
+   * Frames, not seconds, and the screen samples every 180ms — so twenty of
+   * them is about three and a half seconds. Long enough that reaching across
+   * the rack does not trigger it, short enough that a knocked phone costs a
+   * throw rather than the game.
+   */
+  rebaselineFrames: number;
+  /**
+   * Fewest cups still being watched for the light correction below to be
+   * trusted. A median over two samples is not a median.
+   */
+  minCupsForGain: number;
+  /**
+   * How many cups may be changing at the same moment before it stops being
+   * throws and starts being the room.
+   *
+   * A throw takes one cup. Two is possible — a bounce shot, or a ball knocking
+   * its neighbour — but three patches going at once, seconds apart from any
+   * throw, is a shadow moving across the rack. The whole-rack guard above only
+   * catches the case where most of the rack goes; this catches the slice that
+   * is too small for it. Measured on the bench: a person leaning over one end
+   * of the table cost three false calls, and none with this.
+   */
+  maxSimultaneous: number;
 }
 
 export const DEFAULT_CONFIG: DetectorConfig = {
@@ -45,6 +77,9 @@ export const DEFAULT_CONFIG: DetectorConfig = {
   confirmFrames: 4,
   disturbedRatio: 0.6,
   cooldownFrames: 25,
+  rebaselineFrames: 20,
+  minCupsForGain: 4,
+  maxSimultaneous: 2,
 };
 
 export interface DetectorState {
@@ -56,6 +91,8 @@ export interface DetectorState {
   streak: number[];
   /** Frames left to ignore per cup, after the user rejected a proposal. */
   cooldown: number[];
+  /** Consecutive frames each rack has been wholly changed for. */
+  disturbedFor: number[];
   /**
    * Which rack each cup belongs to. Two racks are watched at once when the
    * camera sees the whole table, and they have to be judged separately — a
@@ -68,7 +105,14 @@ export interface DetectorState {
 export type DetectorEvent =
   | { type: 'cupGone'; index: number; rack: number; distance: number }
   /** Too much changed at once — the calibration can no longer be trusted. */
-  | { type: 'disturbed'; rack: number; changed: number };
+  | { type: 'disturbed'; rack: number; changed: number }
+  /**
+   * The rack stayed wholly changed long enough that the old baseline is not
+   * coming back — the phone was moved, or the lights were switched. Taken
+   * again from the current frame, and the screen should say so, because any
+   * cup that went down while it was confused is not coming back on its own.
+   */
+  | { type: 'rebaselined'; rack: number };
 
 /**
  * `racks` gives the cup count of each rack being watched, in the order their
@@ -83,6 +127,7 @@ export function createDetector(racks: number[]): DetectorState {
     watching: Array(total).fill(true),
     streak: Array(total).fill(0),
     cooldown: Array(total).fill(0),
+    disturbedFor: Array(racks.length).fill(0),
     rack,
   };
 }
@@ -94,6 +139,58 @@ export function calibrate(state: DetectorState, samples: CupSample[]): DetectorS
     baseline: samples.map((sample) => ({ ...sample })),
     streak: state.streak.map(() => 0),
     cooldown: state.cooldown.map(() => 0),
+    disturbedFor: state.disturbedFor.map(() => 0),
+  };
+}
+
+/** How bright a patch is overall — what a dimmer or a cloud scales. */
+function luminance(sample: CupSample): number {
+  return 0.299 * sample.r + 0.587 * sample.g + 0.114 * sample.b;
+}
+
+/**
+ * How much the light has changed since calibration, judged by the cups
+ * themselves.
+ *
+ * The detector's whole job is to notice one patch changing, so anything that
+ * changes *all* of them is noise it has to see past. Taking the median ratio
+ * across the cups still being watched gives that for free: a dimmer, a cloud,
+ * the phone's own auto-exposure all move every patch by nearly the same factor,
+ * and dividing it out leaves only what is genuinely different about one cup.
+ *
+ * The median rather than the mean because up to half the rack may be sitting on
+ * bare table by then, and those patches are not a light reading.
+ */
+function lightGain(
+  samples: CupSample[],
+  baseline: CupSample[],
+  members: number[],
+  watching: boolean[],
+  config: DetectorConfig
+): number {
+  const ratios: number[] = [];
+  for (const i of members) {
+    if (!watching[i]) continue;
+    const before = luminance(baseline[i]);
+    if (before < 8) continue; // too dark to give a ratio worth having
+    ratios.push(luminance(samples[i]) / before);
+  }
+  if (ratios.length < config.minCupsForGain) return 1;
+  ratios.sort((a, b) => a - b);
+  const mid = Math.floor(ratios.length / 2);
+  const median =
+    ratios.length % 2 === 0 ? (ratios[mid - 1] + ratios[mid]) / 2 : ratios[mid];
+  // Refuse to believe wild corrections: those are a moved camera, not light.
+  return Math.max(0.45, Math.min(2.2, median));
+}
+
+/** The same patch as it would have looked under the calibration's light. */
+function underCalibrationLight(sample: CupSample, gain: number): CupSample {
+  return {
+    r: sample.r / gain,
+    g: sample.g / gain,
+    b: sample.b / gain,
+    contrast: sample.contrast / gain,
   };
 }
 
@@ -117,6 +214,8 @@ export interface StepResult {
   events: DetectorEvent[];
   /** Per-cup distances, for the debug overlay. */
   distances: number[];
+  /** The light correction applied to each rack, for the debug overlay. */
+  gain: number[];
 }
 
 /** Feeds one frame in and reports what it means. */
@@ -125,21 +224,30 @@ export function step(
   samples: CupSample[],
   config: DetectorConfig = DEFAULT_CONFIG
 ): StepResult {
-  const distances = samples.map((sample, i) =>
-    state.baseline ? sampleDistance(sample, state.baseline[i]) : 0
-  );
-
-  if (!state.baseline) return { state, events: [], distances };
+  const distances = Array<number>(samples.length).fill(0);
+  if (!state.baseline) return { state, events: [], distances, gain: [] };
 
   const rackCount = state.rack.length > 0 ? Math.max(...state.rack) + 1 : 0;
   const streak = [...state.streak];
   const cooldown = [...state.cooldown];
+  const disturbedFor = [...state.disturbedFor];
+  let baseline = state.baseline;
+  const gain: number[] = [];
   const events: DetectorEvent[] = [];
 
   for (let rack = 0; rack < rackCount; rack++) {
     const members = state.rack
       .map((value, i) => (value === rack ? i : -1))
       .filter((i) => i >= 0);
+
+    // Judge every cup under the light the calibration was taken in, so that a
+    // room getting darker is not ten cups getting scored.
+    const k = lightGain(samples, baseline, members, state.watching, config);
+    gain[rack] = k;
+    for (const i of members) {
+      distances[i] = sampleDistance(underCalibrationLight(samples[i], k), baseline[i]);
+    }
+
     const watched = members.filter((i) => state.watching[i]);
     const changedNow = watched.filter((i) => distances[i] > config.threshold).length;
 
@@ -150,8 +258,31 @@ export function step(
       watched.length > 0 &&
       changedNow >= Math.ceil(watched.length * config.disturbedRatio)
     ) {
-      events.push({ type: 'disturbed', rack, changed: changedNow });
+      disturbedFor[rack] += 1;
       for (const i of members) streak[i] = 0;
+
+      // Still wholly changed after all this time? Then the old baseline is not
+      // coming back — the phone was knocked, or someone hit the lights. Take
+      // the picture again rather than staying deaf for the rest of the game.
+      if (disturbedFor[rack] >= config.rebaselineFrames) {
+        const next = baseline.map((sample, i) =>
+          members.includes(i) ? { ...samples[i] } : sample
+        );
+        baseline = next;
+        disturbedFor[rack] = 0;
+        events.push({ type: 'rebaselined', rack });
+      } else {
+        events.push({ type: 'disturbed', rack, changed: changedNow });
+      }
+      continue;
+    }
+    disturbedFor[rack] = 0;
+
+    // Too many at once for throws, too few for the whole-rack guard: a shadow
+    // crossing part of the rack. Hold them all rather than call any of them.
+    if (changedNow > config.maxSimultaneous) {
+      for (const i of watched) streak[i] = 0;
+      events.push({ type: 'disturbed', rack, changed: changedNow });
       continue;
     }
 
@@ -174,7 +305,12 @@ export function step(
     }
   }
 
-  return { state: { ...state, streak, cooldown }, events, distances };
+  return {
+    state: { ...state, streak, cooldown, disturbedFor, baseline },
+    events,
+    distances,
+    gain,
+  };
 }
 
 /** The user confirmed a hit: stop watching that cup. */
