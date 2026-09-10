@@ -1,14 +1,24 @@
 import type { TranslationKey } from './i18n';
+import type { AimStrategy } from './opponentAi';
 
-export type AiDifficulty = 'easy' | 'medium' | 'hard';
+export type AiDifficulty = 'easy' | 'medium' | 'hard' | 'pro';
 export type MatchMode = 'offline' | 'rivals' | 'weekend' | 'passplay';
 
 export interface AiPreset {
   id: AiDifficulty;
   labelKey: TranslationKey;
   descriptionKey: TranslationKey;
-  /** How often the AI sinks a cup. */
+  /** How often the AI sinks a cup at a full rack. */
   opponentAccuracy: number;
+  /**
+   * How much better they get as your rack empties, added by the last cup.
+   *
+   * Measured to be the only thing that decides matches — see `lib/opponentAi.ts`
+   * and `npm run bench:ai`. Without it an opponent cannot close a game.
+   */
+  focus: number;
+  /** Where they aim. `cluster` is the sheltered middle of the rack. */
+  aim: AimStrategy;
   /** Your own base hit chance before the swipe-power bonus. */
   playerSkill: number;
   color: string;
@@ -21,6 +31,10 @@ export const AI_PRESETS: Record<AiDifficulty, AiPreset> = {
     labelKey: 'ai.easy.label',
     descriptionKey: 'ai.easy.description',
     opponentAccuracy: 0.3,
+    // No focus and no plan: they throw at whatever cup they fancy and the last
+    // ones give them as much trouble as they give you.
+    focus: 0,
+    aim: 'random',
     playerSkill: 0.62,
     color: '#39FF14',
     rewardCoins: 40,
@@ -30,6 +44,8 @@ export const AI_PRESETS: Record<AiDifficulty, AiPreset> = {
     labelKey: 'ai.medium.label',
     descriptionKey: 'ai.medium.description',
     opponentAccuracy: 0.45,
+    focus: 0.08,
+    aim: 'random',
     playerSkill: 0.55,
     color: '#FFC94A',
     rewardCoins: 70,
@@ -39,9 +55,25 @@ export const AI_PRESETS: Record<AiDifficulty, AiPreset> = {
     labelKey: 'ai.hard.label',
     descriptionKey: 'ai.hard.description',
     opponentAccuracy: 0.62,
+    focus: 0.15,
+    aim: 'cluster',
     playerSkill: 0.48,
     color: '#FF3B4E',
     rewardCoins: 120,
+  },
+  pro: {
+    id: 'pro',
+    labelKey: 'ai.pro.label',
+    descriptionKey: 'ai.pro.description',
+    // Measured: against somebody swiping as well as they can (about 90%), this
+    // wins a little over half the games. Anything less and the top of the
+    // ladder is a formality.
+    opponentAccuracy: 0.74,
+    focus: 0.24,
+    aim: 'cluster',
+    playerSkill: 0.44,
+    color: '#7C4DFF',
+    rewardCoins: 220,
   },
 };
 
@@ -127,6 +159,8 @@ const GAMERTAG_SUFFIX = [
 export interface OnlineOpponent {
   name: string;
   accuracy: number;
+  focus: number;
+  aim: AimStrategy;
   color: string;
 }
 
@@ -141,9 +175,15 @@ export function generateOnlineOpponent(divisionId: number, boost = 0): OnlineOpp
   const suffix = GAMERTAG_SUFFIX[Math.floor(Math.random() * GAMERTAG_SUFFIX.length)];
   const number = Math.floor(Math.random() * 90) + 10;
   const spread = (Math.random() - 0.5) * 0.08;
+  // Climbing the ladder should mean meeting people who can close a game, not
+  // just people who throw a bit straighter. From about the middle divisions up
+  // they aim at the sheltered part of the rack and steady as it empties.
+  const stepsUp = ENTRY_DIVISION - division.id;
   return {
     name: `${prefix}${suffix}${number}`,
     accuracy: Math.max(0.2, Math.min(0.8, division.opponentAccuracy + boost + spread)),
+    focus: Math.min(0.22, stepsUp * 0.026),
+    aim: stepsUp >= 4 ? 'cluster' : 'random',
     color: division.color,
   };
 }

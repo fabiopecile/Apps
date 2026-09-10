@@ -34,6 +34,11 @@ const STRINGS = {
   'tab.arcade': { de: 'Arcade', en: 'Arcade' },
 
   // ------------------------------------------------------------ difficulty
+  'ai.pro.label': { de: 'Profi', en: 'Pro' },
+  'ai.pro.description': {
+    de: 'Zielt auf die geschützte Mitte und wird ruhiger, je leerer dein Rack wird. Wer hier gewinnt, hat gut geworfen.',
+    en: 'Aims at the sheltered middle and steadies as your rack empties. Beating this one means you threw well.',
+  },
   'ai.easy.label': { de: 'Einfach', en: 'Easy' },
   'ai.easy.description': {
     de: 'Lockerer Gegner, viel Spielraum für deine Würfe.',

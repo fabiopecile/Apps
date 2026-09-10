@@ -198,8 +198,8 @@ export default function MatchScreen() {
   const endTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const difficulty: AiDifficulty =
-    params.difficulty === 'easy' || params.difficulty === 'medium' || params.difficulty === 'hard'
-      ? params.difficulty
+    params.difficulty != null && params.difficulty in AI_PRESETS
+      ? (params.difficulty as AiDifficulty)
       : storedDifficulty;
 
   // Who you're up against and how the throws are weighted, per mode. For the
@@ -207,18 +207,24 @@ export default function MatchScreen() {
   const setup = useMemo(() => {
     if (mode === 'offline') {
       const preset = AI_PRESETS[difficulty];
+      // The hardest characters play the two hardest settings; Pro takes the
+      // top of the pool rather than a fifth tier of names nobody has met.
       const pool = LEAGUE_OPPONENTS.filter((o) =>
         difficulty === 'easy'
           ? o.difficulty <= 2
           : difficulty === 'medium'
             ? o.difficulty === 3
-            : o.difficulty >= 4
+            : difficulty === 'hard'
+              ? o.difficulty >= 4
+              : o.difficulty >= 5
       );
       const character = pool[Math.floor(Math.random() * pool.length)] ?? LEAGUE_OPPONENTS[0];
       return {
         id: character.id,
         name: `${character.nickname} · ${translate(language, preset.labelKey)}`,
         accuracy: preset.opponentAccuracy,
+        focus: preset.focus,
+        aim: preset.aim,
         playerSkill: preset.playerSkill,
         color: preset.color,
         badge: translate(language, 'match.badge.ai', {
@@ -231,6 +237,8 @@ export default function MatchScreen() {
         id: 'passplay',
         name: trackerTeams[1].name,
         accuracy: 0,
+        focus: 0,
+        aim: 'random' as const,
         playerSkill: 0.58,
         color: colors.gold,
         badge: 'Pass & Play',
@@ -242,6 +250,8 @@ export default function MatchScreen() {
       id: online.name,
       name: online.name,
       accuracy: online.accuracy,
+      focus: online.focus,
+      aim: online.aim,
       playerSkill: mode === 'weekend' ? 0.53 : 0.55,
       color: online.color,
       badge:
@@ -822,6 +832,9 @@ export default function MatchScreen() {
               cups={playerCups}
               aliveFlags={playerAlive}
               accuracy={setup.accuracy}
+              focus={setup.focus}
+              aim={setup.aim}
+              startCups={rackSize}
               accent={colors.danger}
               turnToken={opponentTurnToken}
               onResult={handleOpponentResult}

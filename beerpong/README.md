@@ -305,6 +305,48 @@ wer nicht geworfen hat, wirft jetzt. Das stimmt, bis eine Regel den Ball
 derselben Seite zurückgibt, und genau das tut die Verlängerung. Die
 Übergabe-Aufforderung nennt die Seite jetzt, statt sie zu erraten.
 
+## Ein Gegner, der ein Spiel zumachen kann
+
+Die Schwierigkeit war bis jetzt eine einzige Zahl: wie eng die Würfe des
+Gegners streuen. `npm run bench:ai` simuliert stattdessen ganze Spiele durch
+denselben Code, den die App benutzt — und was dabei herauskam, war nicht das,
+was ich erwartet hatte.
+
+**Wohin der Gegner zielt, entscheidet fast keine Spiele.** Auf die geschützte
+Mitte des Racks zu zielen hebt einen einzelnen Wurf von 62 % auf 86 %, weil ein
+knapper Fehlwurf noch im Nachbarbecher landen kann. Über ein ganzes Spiel
+gerechnet: 85 % gewonnene Spiele vorher wie nachher. Früh gut zu sein bringt
+einen nur schneller an die schwere Stelle.
+
+**Die letzten Becher entscheiden alles.** Jede Strategie fällt auf ~24 % beim
+letzten Becher — ein einzelner Becher ist ein kleines Ziel, und die Streuung
+ist die Streuung.
+
+Also gibt es jetzt einen zweiten Regler: **Fokus**, das Modell eines Spielers,
+der sich konzentriert, wenn es eng wird. Das ist der Unterschied zwischen einem
+Gegner, der ein Spiel nicht zumachen kann, und einem, der es kann. Die Zielwahl
+bleibt trotzdem drin — sie kostet nichts und lässt die frühen Würfe aussehen,
+als wären sie gemeint.
+
+Gemessen, wie oft der Gegner ein ganzes Spiel gewinnt (3000 Spiele je Zelle,
+Spieler durch dieselbe Physik):
+
+| Der Spieler trifft | 50 % | 65 % | 80 % | 90 % |
+|---|---|---|---|---|
+| Einfach | 8 % | 0 % | 0 % | 0 % |
+| Mittel | 52 % | 11 % | 0 % | 0 % |
+| Schwer | 98 % | 84 % | 25 % | 3 % |
+| **Profi** (neu) | 100 % | 99 % | 84 % | **49 %** |
+| *vorher: Schwer* | *85 %* | *38 %* | *3 %* | *0 %* |
+
+Profi ist damit gegen jemanden, der so gut wischt wie es geht, ein Münzwurf —
+und genau das soll die oberste Stufe sein. Wer die Kontrolle sucht: dieselbe
+Tabelle enthält eine Zeile „gleich stark", in der beide Seiten mit 50 % werfen;
+sie landet bei 49 % und sagt damit, dass die Simulation nicht schummelt.
+
+In den Rivalen-Divisionen wächst beides mit dem Aufstieg mit, ab etwa der
+Tischmitte der Leiter.
+
 ## Lucky Shot: ein goldener Becher pro Tag
 
 Ein Wurf am Tag, auf ein Rack mit einem goldenen Becher darin. Kein Gegner,
