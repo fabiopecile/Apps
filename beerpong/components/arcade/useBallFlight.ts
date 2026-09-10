@@ -8,6 +8,7 @@ import {
   type SharedValue,
 } from 'react-native-reanimated';
 
+import { tableScaleAt } from '@/lib/arcadeLayout';
 import { APEX, GRAVITY, RESTITUTION, type Flight } from '@/lib/throwPhysics';
 
 export const BALL_SIZE = 30;
@@ -113,9 +114,17 @@ export function useBallFlight(restX: number, restY: number) {
       legStartX.value, legStartY.value, legEndX.value, legEndY.value,
       legSeconds.value, legUp.value, groundX.value, groundY.value
     );
-    const zoom = 1 + (point.height / APEX) * HEIGHT_ZOOM;
+    // Two things change how big the ball looks, and they are different things:
+    // how far down the table it is, and how high above it. Distance shrinks it,
+    // height brings it back towards the camera.
+    const depth = tableScaleAt(point.y);
+    const zoom = (1 + (point.height / APEX) * HEIGHT_ZOOM) * depth;
     return {
       opacity: opacity.value,
+      // Sorted against the cups by where the ball is *on the table*, not by how
+      // high it is: a ball sailing over the back row is still behind the cups
+      // in front of it. `+1` so it clears a cup standing on the same line.
+      zIndex: Math.round(point.y) + 1,
       transform: [
         { translateX: point.x - BALL_SIZE / 2 },
         { translateY: point.y - point.height * HEIGHT_LIFT - BALL_SIZE / 2 },
@@ -132,10 +141,11 @@ export function useBallFlight(restX: number, restY: number) {
     );
     return {
       opacity: trail.value * opacity.value * 0.35,
+      zIndex: Math.round(point.y),
       transform: [
         { translateX: point.x - BALL_SIZE / 2 },
         { translateY: point.y - point.height * HEIGHT_LIFT - BALL_SIZE / 2 + 12 },
-        { scale: scale.value * 1.15 },
+        { scale: scale.value * 1.15 * tableScaleAt(point.y) },
       ],
     };
   });
@@ -152,13 +162,19 @@ export function useBallFlight(restX: number, restY: number) {
       legSeconds.value, legUp.value, groundX.value, groundY.value
     );
     const climb = Math.min(1, point.height / APEX);
+    // The shadow lies on the table, so it takes the table's scale flat — no
+    // height term at all. That difference is the depth cue.
+    const depth = tableScaleAt(point.y);
     return {
       opacity: opacity.value * 0.45 * (1 - climb * 0.75),
+      // On the table, so it belongs to the same depth as the ball's ground
+      // position but must never cover the cup it slides under.
+      zIndex: Math.round(point.y),
       transform: [
         { translateX: point.x - BALL_SIZE / 2 },
-        { translateY: point.y + BALL_SIZE * 0.34 },
-        { scaleX: 1 - climb * 0.4 },
-        { scaleY: (1 - climb * 0.4) * 0.3 },
+        { translateY: point.y + BALL_SIZE * 0.34 * depth },
+        { scaleX: (1 - climb * 0.4) * depth },
+        { scaleY: (1 - climb * 0.4) * 0.3 * depth },
       ],
     };
   });
