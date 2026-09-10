@@ -58,18 +58,35 @@ export const OPPONENT_BALL_Y = 55;
 export const NET_Y = (OPPONENT_APEX_Y + PLAYER_APEX_Y) / 2;
 
 export const CUP_COUNT = 10;
+/**
+ * Overtime is racked with three cups a side, as at a real table: one row of two
+ * behind a single cup, and the game carries on.
+ */
+export const OVERTIME_CUP_COUNT = 3;
+
+/** How many rows a triangle of this many cups has: 1, 3, 6, 10, 15. */
+function rowsFor(cupCount: number): number {
+  let rows = 1;
+  while ((rows * (rows + 1)) / 2 < cupCount) rows += 1;
+  return rows;
+}
 
 /**
- * A ten-cup triangle. `towards` is the direction the rows grow in: the far rack
- * has its four-cup row at the back and its apex pointing at you, yours is the
+ * A triangle of cups. `towards` is the direction the rows grow in: the far rack
+ * has its widest row at the back and its apex pointing at you, yours is the
  * other way round.
  */
-function buildRack(tableWidth: number, apexY: number, towards: 1 | -1): CupSpec[] {
+function buildRack(
+  tableWidth: number,
+  apexY: number,
+  towards: 1 | -1,
+  cupCount: number
+): CupSpec[] {
   const cups: CupSpec[] = [];
   let index = 0;
   // Rows listed apex-first, so index 0 is always the cup nearest the thrower's
   // side of that rack and the last indices are the back row.
-  for (let row = 0; row < 4; row++) {
+  for (let row = 0; row < rowsFor(cupCount); row++) {
     const count = row + 1;
     const y = apexY + towards * row * ROW_PITCH;
     const rowWidth = (count - 1) * COLUMN_PITCH;
@@ -86,17 +103,20 @@ function buildRack(tableWidth: number, apexY: number, towards: 1 | -1): CupSpec[
   }
   // Ordered far-to-near, the way the rest of the game expects: the last cup is
   // the one closest to whoever is throwing at this rack.
-  return cups.reverse().map((cup, i) => ({ ...cup, index: i }));
+  return cups
+    .reverse()
+    .slice(0, cupCount)
+    .map((cup, i) => ({ ...cup, index: i }));
 }
 
 /** The rack you throw at, at the far end of the table. */
-export function generateOpponentRack(tableWidth: number): CupSpec[] {
-  return buildRack(tableWidth, OPPONENT_APEX_Y, -1);
+export function generateOpponentRack(tableWidth: number, cupCount = CUP_COUNT): CupSpec[] {
+  return buildRack(tableWidth, OPPONENT_APEX_Y, -1, cupCount);
 }
 
 /** Your own rack, right in front of you, that the opponent throws at. */
-export function generatePlayerRack(tableWidth: number): CupSpec[] {
-  return buildRack(tableWidth, PLAYER_APEX_Y, 1);
+export function generatePlayerRack(tableWidth: number, cupCount = CUP_COUNT): CupSpec[] {
+  return buildRack(tableWidth, PLAYER_APEX_Y, 1, cupCount);
 }
 
 /**

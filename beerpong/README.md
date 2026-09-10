@@ -280,6 +280,167 @@ hinspielt.
 
 Oben bewusst steil: irgendetwas muss es wert sein, es zu haben.
 
+## Verlängerung statt Niederlage
+
+Gemeldeter Fehler, und ein echter: wer das gegnerische Rack zuerst leer räumt
+und dann zusieht, wie die andere Seite aus der letzten Chance zurückkommt, hat
+**verloren** — sagte die App. Das ist weder die Regel noch ein Unentschieden.
+
+Die letzte Chance ist ein Aufschub, kein Sieg. Wer sich da herauswirft, steht
+**gleichauf** — und gleichauf heißt Verlängerung: neue Racks mit drei Bechern
+pro Seite, Anwurf bei der Seite, die die letzte Chance genutzt hat. Das
+wiederholt sich, so oft es nötig ist. Genau eine Sache beendet ein Spiel: ein
+Fehlwurf in der letzten Chance. `npm run test:turns` prüft das nicht an vier
+Beispielen, sondern läuft den ganzen Möglichkeitsraum ab und behauptet danach
+genau diesen einen Satz — damit der Fehler nicht still zurückkommen kann.
+
+Die drei Becher sind ein richtiges Rack, keine sieben entfernten: der
+Rack-Bauer nimmt jetzt eine Becherzahl, und drei davon stehen als sauberes
+zweireihiges Dreieck an derselben Stelle. Die Anzeige zählt 3/3 statt 3/10 und
+ein goldener Streifen sagt, die wievielte Verlängerung läuft — sonst liest sich
+ein Tisch mit drei Bechern wie ein fast verlorenes Spiel.
+
+Nebenbei aufgefallen: Pass & Play hat das Handy per Umschalten weitergegeben —
+wer nicht geworfen hat, wirft jetzt. Das stimmt, bis eine Regel den Ball
+derselben Seite zurückgibt, und genau das tut die Verlängerung. Die
+Übergabe-Aufforderung nennt die Seite jetzt, statt sie zu erraten.
+
+## Highlights: die Sekunden vor dem Treffer
+
+Das Interessante an einem Treffer ist vorbei, bevor jemand zum Handy greift.
+Ein Highlight muss also **schon aufgenommen sein**, wenn man es haben will —
+und genau so läuft es: Bei eingeschaltetem Schalter nimmt die Kamera
+durchgehend in einen kurzen Ring auf, und sobald ein Becher bestätigt wird,
+werden die letzten acht Sekunden herausgehoben und behalten.
+
+Aufgenommen wird nur, solange ein Rack wirklich beobachtet wird — beim
+Ausrichten wäre es Akku für Aufnahmen von jemandem, der Kästchen verschiebt.
+Gespeichert wird erst bei der **Bestätigung**, nicht bei der Erkennung, sonst
+füllt sich die Liste mit Fehlalarmen.
+
+Die Clips liegen in der Speicherung des Browsers (IndexedDB), überstehen also
+das Schließen der App. Zwölf Stück, der älteste fällt heraus: Das ist die
+Zusammenfassung eines Abends, kein Archiv, und der Speicher des Handys gehört
+nicht uns. Hochgeladen wird nichts, nirgendwohin.
+
+Zu finden über das **Filmstreifen-Symbol** oben im Kamera-Modus.
+
+Zwei Dinge, die dabei nicht offensichtlich waren:
+
+* **Der erste Datenblock ist besonders.** `MediaRecorder` liefert im
+  Sekundentakt Häppchen — aber nur das erste enthält den Dateikopf, alle
+  weiteren sind bloße Cluster. Ein paar aktuelle Häppchen allein sind also
+  keine Datei, die irgendein Player öffnet. Der Kopf wird dauerhaft
+  aufgehoben und jedem Clip vorangestellt.
+* **`highlights.web.ts` darf nicht `./highlights` importieren.** Auf der
+  Web-Plattform löst Metro diesen Namen auf *dieselbe Datei* auf; ein
+  Re-Export darüber ist eine unendlich rekursive Funktion, und weil der Router
+  beim Start alle Routen lädt, nimmt sie die ganze App mit. Alles Gemeinsame
+  steht deshalb in `highlightsShared.ts`. Gefunden wurde das beim Ausprobieren,
+  nicht beim Lesen.
+
+Auf einem nativen Build ist die Funktion aus: `expo-camera` kann ein Video
+aufnehmen, aber nicht während dieselbe Vorschau für die Becher-Erkennung
+abgetastet wird — und ein Highlight aus einem Spiel, dem die App nicht zusieht,
+ist keins.
+
+## Deine Zahlen: Trefferbild, Form, Tempo
+
+Die Zähler, die es vorher gab, beantworten „wie viel habe ich gespielt". Die
+Fragen, die man sich über das eigene Spiel wirklich stellt, beantworten sie
+nicht: *wo* treffe ich, bin ich gerade in Form, dauert ein Spiel länger als
+sonst. Dafür müssen einzelne Ergebnisse aufgehoben werden statt aufsummiert.
+
+* **Trefferbild** — das Rack, gezeichnet an denselben Positionen, auf die das
+  Spiel wirft. Es ist ein Bild des Racks, keine Kachelgrafik dafür: eine
+  Schlagseite nach hinten links sieht man als Schlagseite nach hinten links.
+  Gezählt werden deine eigenen Arcade-Würfe. Am echten Tisch weiß die App nur,
+  *dass* ein Becher weg ist — nicht, wer wohin gezielt hat, und das behauptet
+  sie hier auch nicht.
+* **Form** — die letzten zehn Spiele als Kette, neueste links, plus Siege minus
+  Niederlagen als eine Zahl.
+* **Tempo** — Zeit pro selbst versenktem Becher, getrennt nach Offline,
+  Pass & Play und Kamera.
+* **Aufstieg** — die Division nach jedem Rivalen-Spiel. Sie steht in dem
+  Datensatz, in den sie gehört: der Division, in der das Spiel dich
+  *zurückgelassen* hat, nicht der, aus der du aufgestiegen bist.
+
+Aufgehoben werden die letzten 30 Spiele, nur lokal — ein paar Kilobyte, und
+zwei Abende sind ohnehin der Horizont, über den „Form" etwas bedeutet.
+
+`npm run test:stats` prüft vor allem den leeren Fall, denn den sieht jeder
+zuerst: ein Zehntel pro Becher oder eine 0 statt eines Strichs malt ein
+zuversichtliches Bild von nichts, und das ist schlechter als ein leeres.
+
+**Was hier fehlt und nicht ehrlich ginge:** Clubs und Team-Statistiken wie in
+den Screenshots. Die brauchen Konten und einen Server, der Mitgliedschaften
+kennt — die Räume für den Online-Modus halten bewusst nichts über ein Spiel
+hinaus. Das wäre ein eigener Schritt, kein Bildschirm.
+
+## Ein Gegner, der ein Spiel zumachen kann
+
+Die Schwierigkeit war bis jetzt eine einzige Zahl: wie eng die Würfe des
+Gegners streuen. `npm run bench:ai` simuliert stattdessen ganze Spiele durch
+denselben Code, den die App benutzt — und was dabei herauskam, war nicht das,
+was ich erwartet hatte.
+
+**Wohin der Gegner zielt, entscheidet fast keine Spiele.** Auf die geschützte
+Mitte des Racks zu zielen hebt einen einzelnen Wurf von 62 % auf 86 %, weil ein
+knapper Fehlwurf noch im Nachbarbecher landen kann. Über ein ganzes Spiel
+gerechnet: 85 % gewonnene Spiele vorher wie nachher. Früh gut zu sein bringt
+einen nur schneller an die schwere Stelle.
+
+**Die letzten Becher entscheiden alles.** Jede Strategie fällt auf ~24 % beim
+letzten Becher — ein einzelner Becher ist ein kleines Ziel, und die Streuung
+ist die Streuung.
+
+Also gibt es jetzt einen zweiten Regler: **Fokus**, das Modell eines Spielers,
+der sich konzentriert, wenn es eng wird. Das ist der Unterschied zwischen einem
+Gegner, der ein Spiel nicht zumachen kann, und einem, der es kann. Die Zielwahl
+bleibt trotzdem drin — sie kostet nichts und lässt die frühen Würfe aussehen,
+als wären sie gemeint.
+
+Gemessen, wie oft der Gegner ein ganzes Spiel gewinnt (3000 Spiele je Zelle,
+Spieler durch dieselbe Physik):
+
+| Der Spieler trifft | 50 % | 65 % | 80 % | 90 % |
+|---|---|---|---|---|
+| Einfach | 8 % | 0 % | 0 % | 0 % |
+| Mittel | 52 % | 11 % | 0 % | 0 % |
+| Schwer | 98 % | 84 % | 25 % | 3 % |
+| **Profi** (neu) | 100 % | 99 % | 84 % | **49 %** |
+| *vorher: Schwer* | *85 %* | *38 %* | *3 %* | *0 %* |
+
+Profi ist damit gegen jemanden, der so gut wischt wie es geht, ein Münzwurf —
+und genau das soll die oberste Stufe sein. Wer die Kontrolle sucht: dieselbe
+Tabelle enthält eine Zeile „gleich stark", in der beide Seiten mit 50 % werfen;
+sie landet bei 49 % und sagt damit, dass die Simulation nicht schummelt.
+
+In den Rivalen-Divisionen wächst beides mit dem Aufstieg mit, ab etwa der
+Tischmitte der Leiter.
+
+## Lucky Shot: ein goldener Becher pro Tag
+
+Ein Wurf am Tag, auf ein Rack mit einem goldenen Becher darin. Kein Gegner,
+kein eigenes Rack, nichts zu verlieren — und danach ist der Tag vorbei, egal
+wie er ausgegangen ist. Genau das ist der Grund, morgen wieder aufzumachen.
+
+Drei Entscheidungen dahinter, alle mit Absicht:
+
+* **Der goldene Becher steht für den ganzen Tag fest.** Seine Position kommt
+  aus dem Datum, nicht aus einem Würfel beim Öffnen des Bildschirms. Sonst wäre
+  das Spiel „so lange neu laden, bis der goldene Becher der einfache ist".
+* **Ein Fehlwurf kostet den Tag trotzdem.** Alles andere wäre kein Wurf,
+  sondern ein Wurf, den man beliebig oft macht.
+* **Bezahlt wird die Serie, nicht das Glück.** Sieben Tage hintereinander sind
+  mehr wert als einmal Glück, weil das Wiederkommen die Sache ist, die belohnt
+  gehört: 500 Coins für den goldenen Becher, +100 pro Tag Serie bis 900, und
+  60 als Trostgeld für jeden anderen Becher.
+
+`npm run test:lucky` prüft die Wege, auf denen daraus stilles Gratisgeld würde:
+zweimal am selben Tag kassieren, eine Serie, die einen ausgelassenen Tag
+überlebt, ein goldener Becher, der beim Neuladen woanders steht.
+
 ## Online spielen
 
 Zwei Tische, ein Spiel. Eine Seite eröffnet einen Raum und bekommt einen Code

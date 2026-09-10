@@ -8,6 +8,7 @@ import {
   spreadForAccuracy,
   wobble,
 } from '@/lib/throwPhysics';
+import { effectiveAccuracy, pickTarget, type AimStrategy } from '@/lib/opponentAi';
 import type { BallFlight } from './useBallFlight';
 
 /** How long they pause before letting go. */
@@ -25,8 +26,14 @@ interface OpponentThrowProps {
   startY: number;
   cups: CupSpec[];
   aliveFlags: boolean[];
-  /** 0-1, roughly the share of throws they land. */
+  /** 0-1, roughly the share of throws they land at a full rack. */
   accuracy: number;
+  /** How much steadier they get as the rack empties; see `lib/opponentAi.ts`. */
+  focus?: number;
+  /** Where they aim. */
+  aim?: AimStrategy;
+  /** The rack they started against, which is what `focus` is measured against. */
+  startCups: number;
   accent: string;
   /** Increment to make the opponent take one throw. */
   turnToken: number;
@@ -49,6 +56,9 @@ export function OpponentThrow({
   cups,
   aliveFlags,
   accuracy,
+  focus = 0,
+  aim = 'random',
+  startCups,
   accent,
   turnToken,
   onResult,
@@ -70,9 +80,9 @@ export function OpponentThrow({
   useEffect(() => {
     if (turnToken <= 0) return;
 
-    const alive = cups.filter((c) => aliveFlags[c.index]);
-    if (alive.length === 0) return;
-    const target = alive[Math.floor(Math.random() * alive.length)];
+    const standing = cups.filter((c) => aliveFlags[c.index]).length;
+    const target = pickTarget(aim, cups, aliveFlags);
+    if (!target) return;
 
     // Where they meant it to go, and where their hand actually put it.
     //
@@ -81,7 +91,10 @@ export function OpponentThrow({
     // it: measured, a dead-steady opponent with a 15pt spread landed 2.7% of
     // its throws. The same mistake the player's throw had.
     const mouth = cupMouth(target);
-    const offset = wobble(spreadForAccuracy(accuracy));
+    // They steady as the rack empties, which is the thing that lets them close
+    // a game — see the measurement in `lib/opponentAi.ts`.
+    const sharpness = effectiveAccuracy(accuracy, focus, standing, startCups);
+    const offset = wobble(spreadForAccuracy(sharpness));
     const landing = { x: mouth.x + offset.x, y: mouth.y + offset.y };
     const outcome = resolveLanding(landing, cups, aliveFlags);
     const thrown = buildFlight({ x: startX, y: startY }, landing, false);

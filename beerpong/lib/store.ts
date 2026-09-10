@@ -9,6 +9,20 @@ import {
   registerTrackedGame,
   type TrackerUse,
 } from './entitlement';
+import {
+  EMPTY_LUCKY,
+  playLucky,
+  type LuckyOutcome,
+  type LuckyResult,
+  type LuckyState,
+} from './luckyShot';
+import {
+  EMPTY_STATS,
+  recordCup,
+  recordMatch,
+  type MatchRecord,
+  type StatsState,
+} from './stats';
 import { todayKey, type DailyMetric } from './progression';
 import type { Language } from './languages';
 import type { TranslationKey } from './i18n';
@@ -166,6 +180,32 @@ interface BeerpongStore {
    */
   beginTrackedGame: () => boolean;
 
+  /**
+   * The record behind the stats screen: which cups go down and how the last
+   * thirty matches went. See `lib/stats.ts`.
+   */
+  stats: StatsState;
+  /** One sunk cup, at the rack position it fell at. */
+  statsRecordCup: (index: number) => void;
+  statsRecordMatch: (match: MatchRecord) => void;
+
+  /**
+   * Record the seconds around a confirmed cup as a clip.
+   *
+   * Off by default: it is a camera recording continuously, and that is
+   * somebody's decision to make rather than a default to discover.
+   */
+  highlightsEnabled: boolean;
+  setHighlightsEnabled: (value: boolean) => void;
+
+  /** The daily golden-cup shot; see `lib/luckyShot.ts`. */
+  lucky: LuckyState;
+  /**
+   * Takes today's shot and pays for it. Returns what it was worth — zero, and
+   * an untouched state, if the day was already used.
+   */
+  playLuckyShot: (outcome: LuckyOutcome) => LuckyResult;
+
   houseRules: HouseRules;
   toggleHouseRule: (key: keyof HouseRules) => void;
 
@@ -302,6 +342,23 @@ export const useBeerpongStore = create<BeerpongStore>()(
         if (!canTrackGame(trackerUse, now, pro)) return false;
         set({ trackerUse: registerTrackedGame(trackerUse, now, pro) });
         return true;
+      },
+
+      stats: EMPTY_STATS,
+      statsRecordCup: (index) => set((s) => ({ stats: recordCup(s.stats, index) })),
+      statsRecordMatch: (match) => set((s) => ({ stats: recordMatch(s.stats, match) })),
+
+      highlightsEnabled: false,
+      setHighlightsEnabled: (value) => set({ highlightsEnabled: value }),
+
+      lucky: EMPTY_LUCKY,
+      playLuckyShot: (outcome) => {
+        const result = playLucky(get().lucky, outcome, new Date());
+        // A repeat call returns the same object it was given, which is how the
+        // day stays spent even if two taps land at once.
+        if (result.state === get().lucky) return result;
+        set((s) => ({ lucky: result.state, coins: s.coins + result.coins }));
+        return result;
       },
 
       houseRules: { reRacks: true, island: true, redemption: false },
@@ -703,6 +760,9 @@ export const useBeerpongStore = create<BeerpongStore>()(
         proNotifyRequested: state.proNotifyRequested,
         pro: state.pro,
         trackerUse: state.trackerUse,
+        lucky: state.lucky,
+        stats: state.stats,
+        highlightsEnabled: state.highlightsEnabled,
         houseRules: state.houseRules,
         camera: state.camera,
         tracker: state.tracker,

@@ -20,13 +20,17 @@ import { FlashOverlay, type FlashOverlayHandle } from '@/components/ui/FlashOver
 import { Table3D } from '@/components/arcade/Table3D';
 import { ThrowBall } from '@/components/arcade/ThrowBall';
 import { OpponentThrow } from '@/components/arcade/OpponentThrow';
-import { PromotionOverlay } from '@/components/arcade/PromotionOverlay';
+import {
+  CelebrationOverlay,
+  type CelebrationKind,
+} from '@/components/arcade/CelebrationOverlay';
 import { ShareResultButton } from '@/components/ui/ShareableResult';
 import {
   generateOpponentRack,
   generatePlayerRack,
   reRackFlags,
   CUP_COUNT,
+  OVERTIME_CUP_COUNT,
   OPPONENT_BALL_Y,
   PLAYER_BALL_Y,
   TABLE_WIDTH_REFERENCE,
@@ -60,7 +64,7 @@ import { LEAGUE_OPPONENTS } from '@/lib/opponents';
  */
 const SCREEN_POINTS_PER_TABLE_POINT = 1;
 import { SKINS } from '@/lib/skins';
-import { useBeerpongStore } from '@/lib/store';
+import { selectCareerLevel, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { divisionName, translate, useLanguage, useT, type TranslationKey as MatchKey } from '@/lib/i18n';
 import { colors, fonts, spacing, radius } from '@/theme';
@@ -91,11 +95,12 @@ type Turn = 'player' | 'opponent';
 type RoundResult = 'win' | 'lose' | null;
 
 interface Celebration {
-  kind: 'promotion' | 'relegation';
+  kind: CelebrationKind;
   title: string;
   subtitle: string;
   badgeLabel: string;
   color: string;
+  icon?: 'trophy' | 'trending-up';
 }
 
 export default function MatchScreen() {
@@ -121,8 +126,21 @@ export default function MatchScreen() {
   const tableWidth = TABLE_WIDTH_REFERENCE;
   const stageHeight = Math.max(300, height - 300);
   const stageWidth = width - spacing.lg * 2;
-  const opponentCups = useMemo(() => generateOpponentRack(tableWidth), [tableWidth]);
-  const playerCups = useMemo(() => generatePlayerRack(tableWidth), [tableWidth]);
+  /**
+   * Ten cups, or three once the game goes to overtime. The racks are rebuilt
+   * rather than half-emptied, because three cups left standing in a ten-cup
+   * triangle is a rack somebody knocked over, not a fresh one.
+   */
+  const [overtime, setOvertime] = useState(0);
+  const rackSize = overtime > 0 ? OVERTIME_CUP_COUNT : CUP_COUNT;
+  const opponentCups = useMemo(
+    () => generateOpponentRack(tableWidth, rackSize),
+    [tableWidth, rackSize]
+  );
+  const playerCups = useMemo(
+    () => generatePlayerRack(tableWidth, rackSize),
+    [tableWidth, rackSize]
+  );
 
   const [opponentAlive, setOpponentAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
   const [playerAlive, setPlayerAlive] = useState<boolean[]>(Array(CUP_COUNT).fill(true));
@@ -137,15 +155,33 @@ export default function MatchScreen() {
   const [playerTurnState, setPlayerTurnState] = useState<TurnState>(() => startTurn());
   const [opponentTurnState, setOpponentTurnState] = useState<TurnState>(() => startTurn());
   /** The one thing on screen worth shouting about, briefly. */
-  const [turnNote, setTurnNote] = useState<'ballsBack' | 'redemption' | null>(null);
+  const [turnNote, setTurnNote] = useState<'ballsBack' | 'redemption' | 'overtime' | null>(null);
   const [roundResult, setRoundResult] = useState<RoundResult>(null);
   const [opponentTurnToken, setOpponentTurnToken] = useState(0);
   const [matchSeed, setMatchSeed] = useState(0);
-  const [celebration, setCelebration] = useState<Celebration | null>(null);
+  /**
+   * Milestones waiting to be shown, in order.
+   *
+   * A single slot was enough while a match could only produce one of these.
+   * It can now produce a promotion *and* a career level in the same game, and
+   * whichever was set second used to silently replace the first.
+   */
+  const [celebrations, setCelebrations] = useState<Celebration[]>([]);
+  const celebration = celebrations[0] ?? null;
+  const addCelebration = (next: Celebration) => setCelebrations((queue) => [...queue, next]);
   const [resultNote, setResultNote] = useState('');
   const [runFinished, setRunFinished] = useState(false);
   // Pass & Play: the phone changes hands, so a prompt gates each turn.
   const [handOver, setHandOver] = useState(false);
+  /**
+   * Who gets the phone next.
+   *
+   * This used to be a toggle inside the prompt — hand over, and whoever was not
+   * throwing throws now. That holds right up until a rule hands the ball back
+   * to the side that just threw, which is exactly what overtime does: the side
+   * that shot redemption starts it. Naming the side removes the guess.
+   */
+  const [handOverTo, setHandOverTo] = useState<Turn>('opponent');
   const [bounceArmed, setBounceArmed] = useState(false);
   /**
    * What went wrong with the last throw. With the swipe deciding everything,
@@ -153,6 +189,25 @@ export default function MatchScreen() {
    */
   const [missNote, setMissNote] = useState<string | null>(null);
   const [reRacksLeft, setReRacksLeft] = useState<[number, number]>([1, 1]);
+  /**
+   * Your own throws in this match, and when it started.
+   *
+   * Refs rather than state: nothing on screen reads them, and a re-render per
+   * throw to update a counter nobody can see is a re-render in the middle of a
+   * throw.
+   */
+  const myThrows = useRef(0);
+  const myCups = useRef(0);
+  const startedAt = useRef(Date.now());
+  /**
+   * The career level this match started at.
+   *
+   * XP is earned per throw, so a level can turn over in the middle of a game.
+   * Nothing marked that before — the number on the hub simply went up one day.
+   */
+  const levelAtStart = useRef(
+    selectCareerLevel(useBeerpongStore.getState().arcade.careerXP)
+  );
 
   const arcade = useBeerpongStore((s) => s.arcade);
   const coins = useBeerpongStore((s) => s.coins);
@@ -162,6 +217,8 @@ export default function MatchScreen() {
   const storedDifficulty = useBeerpongStore((s) => s.aiDifficulty);
   const arcadeRecordThrow = useBeerpongStore((s) => s.arcadeRecordThrow);
   const arcadeRecordMatch = useBeerpongStore((s) => s.arcadeRecordMatch);
+  const statsRecordCup = useBeerpongStore((s) => s.statsRecordCup);
+  const statsRecordMatch = useBeerpongStore((s) => s.statsRecordMatch);
   const recordRivalsMatch = useBeerpongStore((s) => s.recordRivalsMatch);
   const recordWeekendMatch = useBeerpongStore((s) => s.recordWeekendMatch);
   const trackDaily = useBeerpongStore((s) => s.trackDaily);
@@ -175,8 +232,8 @@ export default function MatchScreen() {
   const endTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const difficulty: AiDifficulty =
-    params.difficulty === 'easy' || params.difficulty === 'medium' || params.difficulty === 'hard'
-      ? params.difficulty
+    params.difficulty != null && params.difficulty in AI_PRESETS
+      ? (params.difficulty as AiDifficulty)
       : storedDifficulty;
 
   // Who you're up against and how the throws are weighted, per mode. For the
@@ -184,18 +241,24 @@ export default function MatchScreen() {
   const setup = useMemo(() => {
     if (mode === 'offline') {
       const preset = AI_PRESETS[difficulty];
+      // The hardest characters play the two hardest settings; Pro takes the
+      // top of the pool rather than a fifth tier of names nobody has met.
       const pool = LEAGUE_OPPONENTS.filter((o) =>
         difficulty === 'easy'
           ? o.difficulty <= 2
           : difficulty === 'medium'
             ? o.difficulty === 3
-            : o.difficulty >= 4
+            : difficulty === 'hard'
+              ? o.difficulty >= 4
+              : o.difficulty >= 5
       );
       const character = pool[Math.floor(Math.random() * pool.length)] ?? LEAGUE_OPPONENTS[0];
       return {
         id: character.id,
         name: `${character.nickname} · ${translate(language, preset.labelKey)}`,
         accuracy: preset.opponentAccuracy,
+        focus: preset.focus,
+        aim: preset.aim,
         playerSkill: preset.playerSkill,
         color: preset.color,
         badge: translate(language, 'match.badge.ai', {
@@ -208,6 +271,8 @@ export default function MatchScreen() {
         id: 'passplay',
         name: trackerTeams[1].name,
         accuracy: 0,
+        focus: 0,
+        aim: 'random' as const,
         playerSkill: 0.58,
         color: colors.gold,
         badge: 'Pass & Play',
@@ -219,6 +284,8 @@ export default function MatchScreen() {
       id: online.name,
       name: online.name,
       accuracy: online.accuracy,
+      focus: online.focus,
+      aim: online.aim,
       playerSkill: mode === 'weekend' ? 0.53 : 0.55,
       color: online.color,
       badge:
@@ -252,10 +319,15 @@ export default function MatchScreen() {
 
   const resetRound = () => {
     clearTimers();
+    myThrows.current = 0;
+    myCups.current = 0;
+    startedAt.current = Date.now();
+    levelAtStart.current = selectCareerLevel(useBeerpongStore.getState().arcade.careerXP);
+    setOvertime(0);
     setOpponentAlive(Array(CUP_COUNT).fill(true));
     setPlayerAlive(Array(CUP_COUNT).fill(true));
     setRoundResult(null);
-    setCelebration(null);
+    setCelebrations([]);
     setResultNote('');
     setTurn('player');
     setHandOver(false);
@@ -274,7 +346,7 @@ export default function MatchScreen() {
   const scheduleOpponentTurn = () => {
     clearTimers();
     if (isPassPlay) {
-      turnTimer.current = setTimeout(() => setHandOver(true), 280);
+      turnTimer.current = setTimeout(() => passTo('opponent'), 280);
       return;
     }
     turnTimer.current = setTimeout(() => {
@@ -283,10 +355,16 @@ export default function MatchScreen() {
     }, 180);
   };
 
+  /** Pass & Play: put the prompt up, and say who it is for. */
+  const passTo = (side: Turn) => {
+    setHandOverTo(side);
+    setHandOver(true);
+  };
+
   const returnTurnToPlayer = (delay: number) => {
     clearTimers();
     if (isPassPlay) {
-      turnTimer.current = setTimeout(() => setHandOver(true), delay);
+      turnTimer.current = setTimeout(() => passTo('player'), delay);
       return;
     }
     turnTimer.current = setTimeout(() => setTurn('player'), delay);
@@ -296,7 +374,7 @@ export default function MatchScreen() {
   const confirmHandOver = () => {
     setHandOver(false);
     setBounceArmed(false);
-    setTurn((current) => (current === 'player' ? 'opponent' : 'player'));
+    setTurn(handOverTo);
   };
 
   const doReRack = (side: 0 | 1) => {
@@ -321,7 +399,27 @@ export default function MatchScreen() {
       feedback.defeat();
     }
 
+    /**
+     * The match itself, for form and for how long a game takes.
+     *
+     * Called at the end of each branch rather than up here, because the
+     * division a ranked match belongs to is the one it *left you in* — reading
+     * it before `recordRivalsMatch` would file every promotion under the
+     * division you were promoted out of.
+     */
+    const keepRecord = (division?: number) =>
+      statsRecordMatch({
+        at: Date.now(),
+        mode,
+        won,
+        cupsHit: myCups.current,
+        throws: myThrows.current,
+        seconds: Math.round((Date.now() - startedAt.current) / 1000),
+        division,
+      });
+
     if (isPassPlay) {
+      keepRecord();
       setResultNote(
         t('match.passplayClears', {
           team: won ? trackerTeams[0].name : trackerTeams[1].name,
@@ -333,6 +431,7 @@ export default function MatchScreen() {
 
     if (mode === 'rivals') {
       const result = recordRivalsMatch(won);
+      keepRecord(result.division);
       const division = getDivision(result.division);
       const name = divisionName(language, division);
       setResultNote(
@@ -345,7 +444,7 @@ export default function MatchScreen() {
             })
       );
       if (result.promoted || result.relegated) {
-        setCelebration({
+        addCelebration({
           kind: result.promoted ? 'promotion' : 'relegation',
           title: result.promoted ? t('match.promoted') : t('match.relegated'),
           subtitle: result.promoted
@@ -357,6 +456,7 @@ export default function MatchScreen() {
       }
     } else if (mode === 'weekend') {
       const result = recordWeekendMatch(won);
+      keepRecord();
       setRunFinished(result.finished);
       setResultNote(
         result.finished
@@ -369,8 +469,9 @@ export default function MatchScreen() {
             })
       );
       if (result.finished) {
-        setCelebration({
-          kind: 'promotion',
+        addCelebration({
+          kind: 'trophy',
+          icon: 'trophy',
           title: t('weekend.title'),
           subtitle: t('match.weekendCelebration', {
             wins: result.wins,
@@ -384,7 +485,24 @@ export default function MatchScreen() {
       }
     } else {
       arcadeRecordMatch(setup.id, won);
+      keepRecord();
       setResultNote(won ? t('match.offlineWin') : t('match.offlineLose'));
+    }
+
+    // Read back rather than using the render's copy: the XP from this match's
+    // own throws is already in the store by now.
+    const levelNow = selectCareerLevel(useBeerpongStore.getState().arcade.careerXP);
+    if (levelNow > levelAtStart.current) {
+      // Queued after the mode's own milestone, because a promotion is the
+      // bigger news and a level is the one that quietly accumulated.
+      addCelebration({
+        kind: 'levelUp',
+        title: t('match.levelUp', { level: levelNow }),
+        subtitle: t('match.levelUpSub', { level: levelNow }),
+        badgeLabel: `${levelNow}`,
+        color: colors.neonAlt,
+      });
+      levelAtStart.current = levelNow;
     }
 
     // Let the last cup finish falling before the overlay covers the table.
@@ -456,6 +574,43 @@ export default function MatchScreen() {
     router.replace('/(tabs)/arcade');
   };
 
+  /**
+   * Redemption came good: nobody has won yet.
+   *
+   * This is the rule the game used to get wrong. Clearing their rack and then
+   * watching them clear yours from the brink is not a defeat — it is level, and
+   * level goes to overtime: three cups each, and the side that just shot
+   * redemption throws first, because they earned the ball.
+   */
+  const startOvertime = (throwsFirst: Turn) => {
+    clearTimers();
+    setOvertime((round) => round + 1);
+    setOpponentAlive(Array(OVERTIME_CUP_COUNT).fill(true));
+    setPlayerAlive(Array(OVERTIME_CUP_COUNT).fill(true));
+    setPlayerTurnState(startTurn());
+    setOpponentTurnState(startTurn());
+    // Borrowing the advice line: three cups on the table needs explaining once,
+    // and it is replaced by the next throw's own note anyway.
+    setMissNote(t('match.overtimeHint', { cups: OVERTIME_CUP_COUNT }));
+    setBounceArmed(false);
+    // A fresh rack each side, so the re-racks come back with them.
+    setReRacksLeft([1, 1]);
+    setTurnNote('overtime');
+    feedback.streak();
+    if (throwsFirst === 'player') {
+      returnTurnToPlayer(900);
+      return;
+    }
+    if (isPassPlay) {
+      turnTimer.current = setTimeout(() => passTo('opponent'), 900);
+      return;
+    }
+    turnTimer.current = setTimeout(() => {
+      setTurn('opponent');
+      setOpponentTurnToken((token) => token + 1);
+    }, 900);
+  };
+
   const startRedemption = (side: Turn) => {
     setTurnNote('redemption');
     feedback.streak();
@@ -490,6 +645,7 @@ export default function MatchScreen() {
     overshoot?: number;
     sideways?: number;
   }) => {
+    myThrows.current += 1;
     arcadeRecordThrow(result.hit);
     trackDaily('throws');
     if (result.hit) {
@@ -504,6 +660,10 @@ export default function MatchScreen() {
       return;
     }
     setMissNote(null);
+    myCups.current += 1;
+    // Where on the rack it fell, for the heatmap. Only your own throws: the
+    // point of it is your aim, not theirs.
+    statsRecordCup(result.cupIndex);
     feedback.cupHit();
     if (result.bounce) feedback.streak();
     flashRef.current?.flash(ballSkin.accent, 0.18);
@@ -523,7 +683,8 @@ export default function MatchScreen() {
     }
     const { next, outcome } = afterThrow(playerTurnState, hit, theirCupsLeft);
     setPlayerTurnState(next);
-    if (outcome === 'redeemed') return endRound('win');
+    // You shot redemption and cleared them: level, not won.
+    if (outcome === 'overtime') return startOvertime('player');
     if (outcome === 'eliminated') return endRound('lose');
     if (outcome === 'ballsBack') {
       setTurnNote('ballsBack');
@@ -584,7 +745,9 @@ export default function MatchScreen() {
     }
     const { next, outcome } = afterThrow(opponentTurnState, hit, yourCupsLeft);
     setOpponentTurnState(next);
-    if (outcome === 'redeemed') return endRound('lose');
+    // They shot redemption and cleared you. That is level — and the game you
+    // were winning is not lost, it goes to overtime.
+    if (outcome === 'overtime') return startOvertime('opponent');
     if (outcome === 'eliminated') return endRound('win');
     if (outcome === 'ballsBack') setTurnNote('ballsBack');
     if (keepsThrowing(outcome)) {
@@ -657,14 +820,34 @@ export default function MatchScreen() {
           </View>
         </View>
 
+        {/* Overtime changes the rack size, so it has to be said out loud —
+            otherwise three cups reads as a game nearly over. */}
+        {overtime > 0 ? (
+          <View style={styles.overtimeChip}>
+            <Ionicons name="flash" size={13} color={colors.gold} />
+            <Text style={styles.overtimeText} selectable={false}>
+              {overtime > 1
+                ? t('match.overtimeRound', { round: overtime, cups: OVERTIME_CUP_COUNT })
+                : t('match.overtimeChip', { cups: OVERTIME_CUP_COUNT })}
+            </Text>
+          </View>
+        ) : null}
+
         <View style={styles.scoreRow}>
-          <RackBadge label={setup.name} count={opponentRemaining} color={setup.color} active={playerTurn} />
+          <RackBadge
+            label={setup.name}
+            count={opponentRemaining}
+            outOf={rackSize}
+            color={setup.color}
+            active={playerTurn}
+          />
           <Text style={styles.vsText} selectable={false}>
             VS
           </Text>
           <RackBadge
             label={t('common.you')}
             count={playerRemaining}
+            outOf={rackSize}
             color={colors.neon}
             active={!playerTurn && roundResult == null}
             align="right"
@@ -732,6 +915,9 @@ export default function MatchScreen() {
               cups={playerCups}
               aliveFlags={playerAlive}
               accuracy={setup.accuracy}
+              focus={setup.focus}
+              aim={setup.aim}
+              startCups={rackSize}
               accent={colors.danger}
               turnToken={opponentTurnToken}
               onResult={handleOpponentResult}
@@ -824,6 +1010,10 @@ export default function MatchScreen() {
                 {turnNote === 'ballsBack' ? (
                   <Text style={[styles.turnNote, { color: colors.gold }]} selectable={false}>
                     {t('match.ballsBack')}
+                  </Text>
+                ) : turnNote === 'overtime' ? (
+                  <Text style={[styles.turnNote, { color: colors.gold }]} selectable={false}>
+                    {t('match.overtimeNote')}
                   </Text>
                 ) : null}
               </>
@@ -928,7 +1118,7 @@ export default function MatchScreen() {
           <Ionicons name="swap-horizontal" size={44} color={colors.neon} />
           <Text style={styles.handOverTitle} selectable={false}>
             {t('match.handOverTitle', {
-              team: turn === 'player' ? trackerTeams[1].name : trackerTeams[0].name,
+              team: handOverTo === 'player' ? trackerTeams[0].name : trackerTeams[1].name,
             })}
           </Text>
           <Text style={styles.handOverBody} selectable={false}>
@@ -944,13 +1134,17 @@ export default function MatchScreen() {
       ) : null}
 
       {celebration ? (
-        <PromotionOverlay
+        <CelebrationOverlay
+          // Keyed so a second milestone in the queue plays its own animation
+          // from the start rather than inheriting the first one's finished one.
+          key={`${celebration.kind}-${celebration.badgeLabel}`}
           kind={celebration.kind}
           title={celebration.title}
           subtitle={celebration.subtitle}
           badgeLabel={celebration.badgeLabel}
           color={celebration.color}
-          onDismiss={() => setCelebration(null)}
+          icon={celebration.icon}
+          onDismiss={() => setCelebrations((queue) => queue.slice(1))}
         />
       ) : null}
     </View>
@@ -960,12 +1154,15 @@ export default function MatchScreen() {
 function RackBadge({
   label,
   count,
+  outOf,
   color,
   active,
   align = 'left',
 }: {
   label: string;
   count: number;
+  /** The rack this side started with — three in overtime, ten otherwise. */
+  outOf: number;
   color: string;
   active: boolean;
   align?: 'left' | 'right';
@@ -978,7 +1175,7 @@ function RackBadge({
           {label}
         </Text>
         <Text style={[styles.rackBadgeCount, { color }]} selectable={false}>
-          {count}/{CUP_COUNT}
+          {count}/{outOf}
         </Text>
       </View>
     </View>
@@ -1132,6 +1329,25 @@ const styles = StyleSheet.create({
     fontSize: 13,
     letterSpacing: 2,
     marginLeft: spacing.xs,
+  },
+  overtimeChip: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.gold,
+  },
+  overtimeText: {
+    fontFamily: fonts.label,
+    fontSize: 11,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+    color: colors.gold,
   },
   hint: {
     textAlign: 'center',

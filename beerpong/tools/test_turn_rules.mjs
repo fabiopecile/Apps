@@ -23,6 +23,17 @@ const file = join(dir, 'turnRules.mjs');
 writeFileSync(file, js);
 const { BALLS_PER_TURN, startTurn, afterThrow, keepsThrowing } = await import(file);
 
+// The rack sizes belong to the same fix as the overtime rule, so they are
+// checked here rather than in a file of their own.
+const layoutFile = join(dir, 'arcadeLayout.mjs');
+writeFileSync(
+  layoutFile,
+  ts.transpileModule(readFileSync(new URL('../lib/arcadeLayout.ts', import.meta.url), 'utf8'), {
+    compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+  }).outputText
+);
+const layout = await import(layoutFile);
+
 let passed = 0;
 function check(name, fn) {
   fn();
@@ -96,9 +107,13 @@ check('one miss in redemption ends it', () => {
   assert.equal(outcome, 'eliminated');
 });
 
-check('clearing their rack in redemption pulls it back', () => {
+check('clearing their rack in redemption levels it, it does not win it', () => {
+  // The bug this replaces: a successful redemption used to end the match in
+  // favour of the side that had just been one miss from losing — so the player
+  // who cleared the table first lost the game. Redemption gets you level.
   const { outcome } = afterThrow(startTurn(true), true, 0);
-  assert.equal(outcome, 'redeemed');
+  assert.equal(outcome, 'overtime');
+  assert.notEqual(outcome, 'eliminated', 'and it is certainly not a defeat');
 });
 
 check('a redemption run has to clear everything, not just one', () => {
@@ -111,13 +126,52 @@ check('a redemption run has to clear everything, not just one', () => {
     state = step.next;
     assert.equal(step.outcome, 'throwAgain', `throw ${i + 1} should not have ended it`);
   }
-  assert.equal(afterThrow(state, true, 0).outcome, 'redeemed');
+  assert.equal(afterThrow(state, true, 0).outcome, 'overtime');
 });
 
 check('missing the last redemption throw still loses', () => {
   let state = startTurn(true);
   ({ next: state } = afterThrow(state, true, 1));
   assert.equal(afterThrow(state, false, 1).outcome, 'eliminated');
+});
+
+check('only a missed redemption ever ends a match', () => {
+  // Sweeping the whole space rather than trusting the four cases above: the
+  // only outcome that finishes a game is a redemption throw that misses.
+  const finishing = [];
+  for (const redemption of [false, true]) {
+    for (const hit of [true, false]) {
+      for (const cupsLeft of [0, 1, 5]) {
+        for (const firstBall of [false, true]) {
+          let state = startTurn(redemption);
+          if (firstBall && !redemption) ({ next: state } = afterThrow(state, true, cupsLeft));
+          const { outcome } = afterThrow(state, hit, cupsLeft);
+          if (outcome === 'eliminated') finishing.push({ redemption, hit });
+        }
+      }
+    }
+  }
+  assert.ok(finishing.length > 0, 'something has to be able to end a game');
+  for (const case_ of finishing) {
+    assert.ok(case_.redemption && !case_.hit, `${JSON.stringify(case_)} should not end a match`);
+  }
+});
+
+check('an overtime rack is three cups, racked as a triangle', () => {
+  // The rack itself is the other half of the fix: three cups standing in a
+  // ten-cup triangle is a rack somebody knocked over, not a fresh one.
+  assert.equal(layout.OVERTIME_CUP_COUNT, 3);
+  const rack = layout.generateOpponentRack(342, layout.OVERTIME_CUP_COUNT);
+  assert.equal(rack.length, 3);
+  const rows = new Set(rack.map((cup) => Math.round(cup.y)));
+  assert.equal(rows.size, 2, 'two rows: one behind two');
+  assert.deepEqual(
+    rack.map((cup) => cup.index),
+    [0, 1, 2],
+    'indices stay contiguous, because the alive flags are keyed by them'
+  );
+  // Still the full rack by default, so nothing else changed underneath.
+  assert.equal(layout.generateOpponentRack(342).length, 10);
 });
 
 console.log(`\n${passed} checks passed`);

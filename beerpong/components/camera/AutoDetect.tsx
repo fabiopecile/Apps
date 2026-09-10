@@ -16,6 +16,11 @@ import {
   type DetectorState,
 } from '@/lib/cupVision';
 import { createFrameSampler, FRAME_SAMPLING_SUPPORTED, type FrameSampler } from '@/lib/frameSampler';
+import {
+  HIGHLIGHTS_SUPPORTED,
+  createHighlightRecorder,
+  type HighlightRecorder,
+} from '@/lib/highlights';
 import { useT } from '@/lib/i18n';
 import { FREE_TRACKED_GAMES_PER_WEEK, trackedGamesLeft } from '@/lib/entitlement';
 import { useBeerpongStore } from '@/lib/store';
@@ -79,6 +84,8 @@ export function AutoDetect({
 
   const [mode, setMode] = useState<Mode>('aligning');
   const beginTrackedGame = useBeerpongStore((s) => s.beginTrackedGame);
+  const highlightsEnabled = useBeerpongStore((s) => s.highlightsEnabled);
+  const setHighlightsEnabled = useBeerpongStore((s) => s.setHighlightsEnabled);
   const pro = useBeerpongStore((s) => s.pro);
   const trackerUse = useBeerpongStore((s) => s.trackerUse);
   const gamesLeft = trackedGamesLeft(trackerUse, new Date(), pro);
@@ -96,6 +103,7 @@ export function AutoDetect({
   const [notice, setNotice] = useState<string | null>(null);
 
   const samplerRef = useRef<FrameSampler | null>(null);
+  const recorderRef = useRef<HighlightRecorder | null>(null);
   const detectorRef = useRef(detector);
   const pendingRef = useRef<number | null>(null);
   const framesRef = useRef(frames);
@@ -130,6 +138,21 @@ export function AutoDetect({
       if (noticeTimer.current) clearTimeout(noticeTimer.current);
     };
   }, []);
+
+  /**
+   * The rolling recorder runs only while a rack is actually being watched.
+   *
+   * Recording during alignment would burn battery to keep seconds of somebody
+   * lining up boxes, and a highlight can only exist once there is a game.
+   */
+  useEffect(() => {
+    if (!highlightsEnabled || mode !== 'watching') return;
+    recorderRef.current = createHighlightRecorder();
+    return () => {
+      recorderRef.current?.stop();
+      recorderRef.current = null;
+    };
+  }, [highlightsEnabled, mode]);
 
   const flash = useCallback((message: string) => {
     setNotice(message);
@@ -225,6 +248,11 @@ export function AutoDetect({
   const confirm = () => {
     if (pending == null) return;
     const team = teamForIndex(pending);
+    // Captured on confirmation rather than on detection: the ring already holds
+    // the run-up, and a clip per false alarm would fill the reel with nothing.
+    recorderRef.current?.capture().then((clip) => {
+      if (clip) flash(t('highlights.saved'));
+    });
     setDetector((state) => acceptCup(state, pending));
     setPending(null);
     onConfirmHit(team);
@@ -381,6 +409,29 @@ export function AutoDetect({
                   {t('detect.turnTip')}
                 </Text>
               </View>
+            ) : null}
+            {/* Recording is a decision, so it is offered where the game is
+                started rather than buried in settings. */}
+            {HIGHLIGHTS_SUPPORTED && !landscape ? (
+              <Pressable
+                onPress={() => {
+                  feedback.tap();
+                  setHighlightsEnabled(!highlightsEnabled);
+                }}
+                style={styles.recordRow}
+              >
+                <Ionicons
+                  name={highlightsEnabled ? 'radio-button-on' : 'radio-button-off'}
+                  size={16}
+                  color={highlightsEnabled ? colors.danger : colors.textSecondary}
+                />
+                <Text
+                  style={[styles.recordText, highlightsEnabled && { color: colors.textPrimary }]}
+                  selectable={false}
+                >
+                  {t('highlights.toggle')}
+                </Text>
+              </Pressable>
             ) : null}
             {/* Said before the start, not after: nobody should line up two
                 racks and only then find out the week's games are gone. */}
@@ -588,6 +639,18 @@ const styles = StyleSheet.create({
     fontFamily: fonts.label,
     fontSize: 11,
     color: colors.gold,
+  },
+  recordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 7,
+    paddingVertical: 2,
+  },
+  recordText: {
+    flex: 1,
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.textSecondary,
   },
   statusRow: {
     flexDirection: 'row',
