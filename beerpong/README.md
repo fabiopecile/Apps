@@ -280,6 +280,45 @@ hinspielt.
 
 Oben bewusst steil: irgendetwas muss es wert sein, es zu haben.
 
+## Was frei ist, und wofür jemand später zahlen würde
+
+Das Arcade-Spiel ist ein Spiel, und es gibt hundert davon umsonst. Dafür zahlt
+niemand. Die Kamera, die an einem echten Tisch mitzählt, ist kein Spiel, sondern
+ein Werkzeug — und es gibt sonst nichts, was das tut. Deshalb liegt die Grenze
+genau dort und nirgends sonst:
+
+* **Umsonst und ohne Limit:** das ganze Arcade-Spiel, alle Modi, Pass & Play,
+  Turniere, Münzen, Skins, Liga und Saison. Auch das Mitzählen von Hand am
+  echten Tisch — antippen kostet nichts.
+* **Begrenzt:** drei Kamera-getrackte Spiele pro Woche. Die Woche beginnt
+  montags, in der Zeitzone des Handys (`lib/entitlement.ts`), damit ein Spiel um
+  halb eins in der Nacht noch zum Wochenende gehört, das man gerade hat.
+
+Drei ist mit Absicht keine Demo-Zahl. Wer einmal im Monat spielt, läuft nie
+dagegen und soll auch nie zahlen. Wer jedes Wochenende auflegt, ist am ersten
+Abend durch und weiß dann ganz genau, was er kaufen würde — nicht „irgendein
+Pro", sondern *das hier, das ich gerade benutzt habe*.
+
+Verbraucht wird ein Spiel erst beim Start des Trackings, nicht beim Öffnen des
+Bildschirms: die Racks auszurichten und wieder abzubrechen kostet nichts. Und
+bevor man ausrichtet, steht im Panel, wie viele Spiele noch übrig sind — es soll
+niemand zwei Racks einpassen und *danach* erfahren, dass die Woche leer ist.
+
+**Der Entwickler-Schalter.** Eine Grenze zu ziehen, während es keine Möglichkeit
+zu bezahlen gibt, macht die App schlechter, ohne dass jemand etwas davon hat.
+Unten auf dem Pro-Bildschirm sitzt deshalb ein klar benannter Schalter, der das
+Limit abschaltet. Er ist kein Trick und kein Easter Egg — er fliegt raus, sobald
+es einen echten Kauf gibt (App-Store-Abo oder Einmalkauf über
+`expo-in-app-purchases`; beides braucht ein Entwicklerkonto und einen Firmen-
+oder Privateintrag beim Store).
+
+Bevor irgendjemand dafür Geld verlangt, muss die Erkennung an einem echten Tisch
+bestehen. Der Prüfstand unten simuliert ein Wohnzimmer; ein Wohnzimmer ist er
+nicht.
+
+`npm run test:free` prüft die Regeln — drei Spiele, Wochenwechsel am Montag,
+kein Limit für Zahlende, und eine uralte gespeicherte Woche sperrt niemanden aus.
+
 ## Zurück heißt zurück ins Hauptmenü
 
 Ein einfaches `back()` führte aus einem Match dorthin zurück, wo es gestartet

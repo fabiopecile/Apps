@@ -52,8 +52,9 @@
     "web": "expo start --web",
     "test:vision": "node tools/test_cup_vision.mjs",
     "test:throw": "node tools/test_throw_physics.mjs",
-    "test": "npm run test:vision && npm run test:throw && npm run test:turns",
+    "test": "npm run test:vision && npm run test:throw && npm run test:turns && npm run test:free",
     "test:turns": "node tools/test_turn_rules.mjs",
+    "test:free": "node tools/test_entitlement.mjs",
     "bench:vision": "node tools/bench_cup_vision.mjs"
   },
   "private": true

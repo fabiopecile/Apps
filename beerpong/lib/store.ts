@@ -3,6 +3,12 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_BALL_SKIN, DEFAULT_TABLE_SKIN, SKINS } from './skins';
 import { LEAGUE_OPPONENTS } from './opponents';
+import {
+  EMPTY_TRACKER_USE,
+  canTrackGame,
+  registerTrackedGame,
+  type TrackerUse,
+} from './entitlement';
 import { todayKey, type DailyMetric } from './progression';
 import type { Language } from './languages';
 import type { TranslationKey } from './i18n';
@@ -142,6 +148,24 @@ interface BeerpongStore {
   proNotifyRequested: boolean;
   setProNotifyRequested: (value: boolean) => void;
 
+  /**
+   * Whether the camera tracker is unlocked.
+   *
+   * Nothing sets this from a payment yet — there is no payment. It exists so
+   * the free tier is real and testable now, and so that wiring a purchase to it
+   * later is one line rather than a refactor.
+   */
+  pro: boolean;
+  setPro: (value: boolean) => void;
+  /** Tracked games used this week; see `lib/entitlement.ts`. */
+  trackerUse: TrackerUse;
+  /**
+   * Asks for one automatically tracked game. Returns false when the free
+   * allowance is gone, in which case nothing is counted and the caller should
+   * send the player to the Pro screen instead.
+   */
+  beginTrackedGame: () => boolean;
+
   houseRules: HouseRules;
   toggleHouseRule: (key: keyof HouseRules) => void;
 
@@ -261,6 +285,17 @@ export const useBeerpongStore = create<BeerpongStore>()(
 
       proNotifyRequested: false,
       setProNotifyRequested: (value) => set({ proNotifyRequested: value }),
+
+      pro: false,
+      setPro: (value) => set({ pro: value }),
+      trackerUse: EMPTY_TRACKER_USE,
+      beginTrackedGame: () => {
+        const now = new Date();
+        const { trackerUse, pro } = get();
+        if (!canTrackGame(trackerUse, now, pro)) return false;
+        set({ trackerUse: registerTrackedGame(trackerUse, now, pro) });
+        return true;
+      },
 
       houseRules: { reRacks: true, island: true, redemption: false },
       toggleHouseRule: (key) =>
@@ -659,6 +694,8 @@ export const useBeerpongStore = create<BeerpongStore>()(
         language: state.language,
         onboardingDone: state.onboardingDone,
         proNotifyRequested: state.proNotifyRequested,
+        pro: state.pro,
+        trackerUse: state.trackerUse,
         houseRules: state.houseRules,
         camera: state.camera,
         tracker: state.tracker,

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
@@ -16,6 +17,8 @@ import {
 } from '@/lib/cupVision';
 import { createFrameSampler, FRAME_SAMPLING_SUPPORTED, type FrameSampler } from '@/lib/frameSampler';
 import { useT } from '@/lib/i18n';
+import { FREE_TRACKED_GAMES_PER_WEEK, trackedGamesLeft } from '@/lib/entitlement';
+import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
@@ -61,6 +64,11 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
   const feedback = useFeedback();
 
   const [mode, setMode] = useState<Mode>('aligning');
+  const beginTrackedGame = useBeerpongStore((s) => s.beginTrackedGame);
+  const pro = useBeerpongStore((s) => s.pro);
+  const trackerUse = useBeerpongStore((s) => s.trackerUse);
+  const gamesLeft = trackedGamesLeft(trackerUse, new Date(), pro);
+  const router = useRouter();
   /** Which rack is being lined up: 0 first, then 1. */
   const [aligning, setAligning] = useState<TeamIndex>(0);
   const [frames, setFrames] = useState<[RackFrame, RackFrame]>(() => defaultFrames(false));
@@ -137,13 +145,22 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
         flash(t('detect.noFrame'));
         return;
       }
+      // The free allowance is spent here rather than when the screen opens:
+      // lining the boxes up over the cups costs nothing, and a game that never
+      // starts should not cost a game. Keeping score by hand stays free either
+      // way — what is paid for is the camera doing the counting.
+      if (!beginTrackedGame()) {
+        feedback.tap();
+        router.push('/pro');
+        return;
+      }
       feedback.tap();
       setRacks(forRacks);
       racksRef.current = forRacks;
       setDetector(calibrate(createDetector(forRacks.map(() => cupCount)), samples));
       setMode('watching');
     },
-    [cupCount, feedback, flash, readFrame, t]
+    [beginTrackedGame, cupCount, feedback, flash, readFrame, router, t]
   );
 
   // The watch loop. Deliberately an interval rather than a render loop: five
@@ -348,6 +365,18 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
                 </Text>
               </View>
             ) : null}
+            {/* Said before the start, not after: nobody should line up two
+                racks and only then find out the week's games are gone. */}
+            {gamesLeft === null ? null : (
+              <Text
+                style={[styles.tip, gamesLeft === 0 && { color: colors.textMuted }]}
+                selectable={false}
+              >
+                {gamesLeft > 0
+                  ? t('free.left', { left: gamesLeft, total: FREE_TRACKED_GAMES_PER_WEEK })
+                  : t('free.none', { total: FREE_TRACKED_GAMES_PER_WEEK })}
+              </Text>
+            )}
             <View style={styles.row}>
               {aligning === 0 ? (
                 <>
