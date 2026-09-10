@@ -1,8 +1,18 @@
 import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import Svg, { Defs, Ellipse, Line, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
+import Svg, { Defs, Ellipse, Line, LinearGradient, Path, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { colors, fonts } from '@/theme';
-import { NET_Y, OPPONENT_RACK_HEIGHT, OPPONENT_RACK_TOP, TABLE_HEIGHT, type CupSpec } from '@/lib/arcadeLayout';
+import {
+  NET_Y,
+  OPPONENT_RACK_HEIGHT,
+  OPPONENT_RACK_TOP,
+  TABLE_HEIGHT,
+  tableHalfWidth,
+  type CupSpec,
+} from '@/lib/arcadeLayout';
+
+/** How thick the table looks along its near edge and sides, in table points. */
+const RAIL = 12;
 
 interface TableSurfaceProps {
   width: number;
@@ -22,6 +32,24 @@ interface TableSurfaceProps {
  */
 export const TableSurface = memo(function TableSurface({ width, racks }: TableSurfaceProps) {
   const centerX = width / 2;
+  // The table as the slab it is: narrow at the far end, wide at your end.
+  const farHalf = tableHalfWidth(width, 0);
+  const nearHalf = tableHalfWidth(width, TABLE_HEIGHT);
+  const top = centerX - farHalf;
+  const bottom = centerX - nearHalf;
+  const topEdge = 4;
+  const surface = `M${top},${topEdge}L${centerX + farHalf},${topEdge}L${centerX + nearHalf},${TABLE_HEIGHT - RAIL}L${centerX - nearHalf},${TABLE_HEIGHT - RAIL}Z`;
+  // The thickness you see along the near edge and down the two sides.
+  const rails = [
+    `M${centerX - nearHalf},${TABLE_HEIGHT - RAIL}L${centerX + nearHalf},${TABLE_HEIGHT - RAIL}L${centerX + nearHalf},${TABLE_HEIGHT}L${centerX - nearHalf},${TABLE_HEIGHT}Z`,
+    `M${top},${topEdge}L${bottom},${TABLE_HEIGHT - RAIL}L${bottom},${TABLE_HEIGHT}L${top},${topEdge + RAIL}Z`,
+    `M${centerX + farHalf},${topEdge}L${centerX + nearHalf},${TABLE_HEIGHT - RAIL}L${centerX + nearHalf},${TABLE_HEIGHT}L${centerX + farHalf},${topEdge + RAIL}Z`,
+  ];
+  /** A line across the table that stops at its edges rather than the screen's. */
+  const across = (y: number, inset: number) => {
+    const half = tableHalfWidth(width, y) * inset;
+    return { x1: centerX - half, x2: centerX + half, y1: y, y2: y };
+  };
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
@@ -32,6 +60,16 @@ export const TableSurface = memo(function TableSurface({ width, racks }: TableSu
             <Stop offset="0.35" stopColor="#16200f" />
             <Stop offset="0.62" stopColor="#1b2713" />
             <Stop offset="1" stopColor="#0d140a" />
+          </LinearGradient>
+          <LinearGradient id="tableRail" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#3c6b28" />
+            <Stop offset="1" stopColor="#12240c" />
+          </LinearGradient>
+          {/* Whatever the table is standing on, and the dark it recedes into. */}
+          <LinearGradient id="floor" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#040603" />
+            <Stop offset="0.55" stopColor="#070c05" />
+            <Stop offset="1" stopColor="#030502" />
           </LinearGradient>
           <RadialGradient id="farSpot" cx="50%" cy="50%" r="50%">
             <Stop offset="0" stopColor="#8dff6a" stopOpacity={0.16} />
@@ -48,52 +86,55 @@ export const TableSurface = memo(function TableSurface({ width, racks }: TableSu
           </LinearGradient>
         </Defs>
 
-        <Rect x={0} y={0} width={width} height={TABLE_HEIGHT} fill="url(#tableFelt)" />
+        <Rect x={0} y={0} width={width} height={TABLE_HEIGHT} fill="url(#floor)" />
+
+        {/* The thickness first, so the top surface sits on top of it. */}
+        {rails.map((d, i) => (
+          <Path key={`rail-${i}`} d={d} fill="url(#tableRail)" opacity={0.9} />
+        ))}
+        <Path d={surface} fill="url(#tableFelt)" />
 
         {/* Spotlights over each end of the table */}
-        <Ellipse cx={centerX} cy={150} rx={width * 0.62} ry={190} fill="url(#farSpot)" />
-        <Ellipse cx={centerX} cy={TABLE_HEIGHT - 170} rx={width * 0.66} ry={210} fill="url(#nearSpot)" />
+        <Ellipse cx={centerX} cy={150} rx={farHalf * 1.7} ry={190} fill="url(#farSpot)" />
+        <Ellipse cx={centerX} cy={TABLE_HEIGHT - 170} rx={nearHalf * 1.3} ry={210} fill="url(#nearSpot)" />
 
-        {/* Perspective: side rails converging toward the far end */}
-        <Line x1={6} y1={TABLE_HEIGHT} x2={width * 0.2} y2={0} stroke="#ffffff" strokeOpacity={0.07} strokeWidth={2} />
-        <Line
-          x1={width - 6}
-          y1={TABLE_HEIGHT}
-          x2={width * 0.8}
-          y2={0}
-          stroke="#ffffff"
-          strokeOpacity={0.07}
-          strokeWidth={2}
+        {/* The bright lip along each edge, which is what reads as an edge. */}
+        <Path
+          d={`M${top},${topEdge}L${bottom},${TABLE_HEIGHT - RAIL}`}
+          stroke="#8dff6a"
+          strokeOpacity={0.22}
+          strokeWidth={1.6}
         />
-        <Line
-          x1={width * 0.13}
-          y1={TABLE_HEIGHT * 0.62}
-          x2={width * 0.31}
-          y2={TABLE_HEIGHT * 0.1}
-          stroke="#ffffff"
-          strokeOpacity={0.03}
-          strokeWidth={1}
+        <Path
+          d={`M${centerX + farHalf},${topEdge}L${centerX + nearHalf},${TABLE_HEIGHT - RAIL}`}
+          stroke="#8dff6a"
+          strokeOpacity={0.22}
+          strokeWidth={1.6}
         />
-        <Line
-          x1={width * 0.87}
-          y1={TABLE_HEIGHT * 0.62}
-          x2={width * 0.69}
-          y2={TABLE_HEIGHT * 0.1}
-          stroke="#ffffff"
-          strokeOpacity={0.03}
-          strokeWidth={1}
+        <Path
+          d={`M${top},${topEdge}L${centerX + farHalf},${topEdge}`}
+          stroke="#8dff6a"
+          strokeOpacity={0.14}
+          strokeWidth={1.4}
         />
 
-        {/* Halfway line */}
-        <Line
-          x1={width * 0.08}
-          y1={NET_Y}
-          x2={width * 0.92}
-          y2={NET_Y}
-          stroke={colors.neon}
-          strokeOpacity={0.16}
-          strokeWidth={1.5}
+        {/* Two lines running away from you, on the table rather than over it. */}
+        <Line {...across(TABLE_HEIGHT - RAIL, 0.46)} stroke="#ffffff" strokeOpacity={0.04} strokeWidth={1} />
+        <Path
+          d={`M${centerX - farHalf * 0.46},${topEdge}L${centerX - nearHalf * 0.46},${TABLE_HEIGHT - RAIL}`}
+          stroke="#ffffff"
+          strokeOpacity={0.035}
+          strokeWidth={1}
         />
+        <Path
+          d={`M${centerX + farHalf * 0.46},${topEdge}L${centerX + nearHalf * 0.46},${TABLE_HEIGHT - RAIL}`}
+          stroke="#ffffff"
+          strokeOpacity={0.035}
+          strokeWidth={1}
+        />
+
+        {/* Halfway line, stopping at the table's edges */}
+        <Line {...across(NET_Y, 0.94)} stroke={colors.neon} strokeOpacity={0.18} strokeWidth={1.5} />
 
         {/* A faint mirrored sheen under every cup still standing. The cups
             carry their own contact shadow, so none is drawn here. */}

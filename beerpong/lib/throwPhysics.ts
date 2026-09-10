@@ -18,6 +18,7 @@
  */
 
 import type { CupSpec } from './arcadeLayout';
+import { cupOpenness, mouthAboveCentre } from './cupGeometry';
 
 export interface Point {
   x: number;
@@ -52,46 +53,56 @@ export const MAX_RANGE = 520;
 
 /**
  * Wobble at zero steadiness, in points. Scaled down by steadiness and up by
- * how hard the ball was thrown. Tuned by simulation rather than by feel: with
- * this and the mouth below, a normal thrower aiming well lands about two
- * thirds of their throws at the nearest cup and a third at the far row.
+ * how hard the ball was thrown. Tuned by simulation rather than by feel, and
+ * re-tuned whenever the cup's shape moves: with this, a normal thrower aiming
+ * well lands 83% of their throws at the nearest cup and 46% at the far row.
  */
-const SPREAD_AT_ZERO_SKILL = 56;
+const SPREAD_AT_ZERO_SKILL = 50;
 /** A bounce shot is thrown flatter and lands wilder. */
 const BOUNCE_SPREAD_FACTOR = 1.6;
 /** How much speed the ball keeps when it bounces off the table. */
 export const RESTITUTION = 0.6;
 
 /**
- * Where a cup's opening actually is.
+ * The catching ellipse, as a fraction of a cup's width.
  *
- * A cup is drawn on a 100x125 board with its mouth at y=21, and the sprite is
- * centred on `cup.y` — so the hole is a third of the cup's height *above* the
- * point the layout stores. Aiming at `cup.y` put the ball into the middle of
- * the plastic: it registered as a hit and looked like one bouncing off the
- * side. Twenty-five points on the near cup, and the whole reason a hit never
- * looked like it went in.
- */
-const MOUTH_ABOVE_CENTRE = 0.332;
-/**
- * The catching ellipse, as fractions of a cup's width. The drawn hole is 0.37
- * wide and 0.104 tall; this is deliberately bigger, because a ball has to be
- * allowed to clip the rim and drop rather than needing to thread the exact
- * pixels of the opening.
+ * The drawn rim is 0.37 of the width; this is deliberately wider, because a
+ * ball has to be allowed to clip the inside of the lip and drop rather than
+ * needing to thread the exact pixels of the opening. Its height follows the
+ * drawn openness, so the target is the shape you can see.
  */
 const MOUTH_RX = 0.52;
-const MOUTH_RY = 0.26;
+/**
+ * The shortest a mouth may be as a target, in points.
+ *
+ * A cup at the far end is seen almost edge-on, so its drawn opening is a slit —
+ * but the ball comes down close to vertical, and what actually catches it is
+ * the circle of the cup on the table, not the sliver the camera sees. Without
+ * this the back row fell from 46% to 36% purely because the drawing became
+ * honest about perspective. It only ever binds on the far cups: measured, the
+ * nearest cup's rate does not move at all as this is raised from 6 to 12.
+ */
+const MIN_MOUTH_RY = 8;
 /** Inside the first the ball drops in; out to the second it catches the rim. */
 const IN_THRESHOLD = 1;
 const RIM_THRESHOLD = 1.45;
 
-/** The opening of a cup, in table points — what a throw is actually aimed at. */
+/**
+ * The opening of a cup, in table points — what a throw is actually aimed at.
+ *
+ * Both the offset above the cup's stored position and how squashed the mouth
+ * looks come from `lib/cupGeometry`, the same module the drawing uses. That is
+ * not tidiness: when the two were separate the physics aimed at the middle of
+ * the plastic while the hole was drawn a third of the cup's height higher, so
+ * a ball scored without ever looking like it went in.
+ */
 export function cupMouth(cup: CupSpec): Point & { rx: number; ry: number } {
+  const rx = cup.width * MOUTH_RX;
   return {
     x: cup.x,
-    y: cup.y - cup.height * MOUTH_ABOVE_CENTRE,
-    rx: cup.width * MOUTH_RX,
-    ry: cup.width * MOUTH_RY,
+    y: cup.y - cup.height * mouthAboveCentre(cup.width),
+    rx,
+    ry: rx * cupOpenness(cup.width),
   };
 }
 
@@ -143,27 +154,35 @@ export function spreadFor(skill: number, power: number, bounce: boolean): number
  * neighbouring cup on a full rack.
  *
  * So this is measured rather than derived: each pair is a spread in points and
- * the share of throws that landed in *some* cup over 40,000 simulated throws at
- * a random cup of a full rack (`tools/test_throw_physics.mjs` checks the
+ * the share of throws that landed in *some* cup over 60,000 simulated throws at
+ * a random cup of *your* full rack — the one they actually throw at, and the
+ * wide near one, so measuring on the far rack gets it badly wrong (`tools/test_throw_physics.mjs` checks the
  * opponents still hit at the rate their profile claims). Note the floor around
  * a quarter: past a certain wildness the rack is simply a big enough target,
  * so the weakest opponents need a very wide spread for a small change in rate.
  * Re-measure this whenever the cup mouth changes — widening it once made every
  * opponent quietly better than its profile said, and the test caught it.
+ *
+ * The numbers used to bottom out around a quarter no matter how wild the throw.
+ * That was not the rack being a big target: the opponent was aiming at each
+ * cup's stored centre rather than its mouth, so every ball went a mouth-height
+ * low and only the spread ever rescued it. A dead-steady opponent landed 2.7%.
+ * Aimed properly, the table runs from 97% down to 11% and a weak opponent can
+ * actually be weak.
  */
 const ACCURACY_TO_SPREAD: [spread: number, rate: number][] = [
-  [15, 0.993],
-  [20, 0.932],
-  [25, 0.83],
-  [30, 0.721],
-  [35, 0.622],
-  [40, 0.535],
-  [50, 0.412],
-  [60, 0.339],
-  [75, 0.295],
-  [95, 0.269],
-  [120, 0.234],
-  [150, 0.2],
+  [14, 0.981],
+  [20, 0.909],
+  [26, 0.789],
+  [32, 0.668],
+  [38, 0.56],
+  [45, 0.46],
+  [54, 0.375],
+  [66, 0.312],
+  [82, 0.282],
+  [105, 0.257],
+  [135, 0.219],
+  [175, 0.181],
 ];
 
 export function spreadForAccuracy(accuracy: number): number {
@@ -320,7 +339,7 @@ export function resolveLanding(
     if (!aliveFlags[cup.index]) continue;
     const mouth = cupMouth(cup);
     const dx = (landing.x - mouth.x) / mouth.rx;
-    const dy = (landing.y - mouth.y) / Math.max(6, mouth.ry);
+    const dy = (landing.y - mouth.y) / Math.max(MIN_MOUTH_RY, mouth.ry);
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance < closestDistance) {
       closestDistance = distance;
