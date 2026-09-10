@@ -2,11 +2,9 @@ import { useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useSharedValue, withTiming } from 'react-native-reanimated';
-import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
 import { RESTITUTION, cupMouth, resolveThrow, type Point } from '@/lib/throwPhysics';
-import { BallArt } from './BallArt';
-import { BALL_SIZE, useBallFlight } from './useBallFlight';
+import type { BallFlight } from './useBallFlight';
 
 /**
  * How much of a swinging hand's travel the ball still comes along for, and the
@@ -39,6 +37,8 @@ export interface ThrowResult {
 }
 
 interface ThrowBallProps {
+  /** The ball this controls. Owned by the match screen, drawn by the scene. */
+  flight: BallFlight;
   startX: number;
   startY: number;
   cups: CupSpec[];
@@ -68,6 +68,7 @@ interface ThrowBallProps {
 }
 
 export function ThrowBall({
+  flight,
   startX,
   startY,
   cups,
@@ -83,8 +84,6 @@ export function ThrowBall({
   onLaunch,
   inputScale = 1,
 }: ThrowBallProps) {
-  const flight = useBallFlight(startX, startY);
-
   const flyingRef = useRef(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -334,17 +333,12 @@ export function ThrowBall({
   }
 
   return (
-    <>
-      <Animated.View pointerEvents="none" style={[styles.ballShadow, flight.shadowStyle]} />
-      <Animated.View pointerEvents="none" style={[styles.ball, flight.trailStyle]}>
-        <BallArt accent={accent} />
-      </Animated.View>
-      <GestureDetector gesture={pan}>
-        <Animated.View style={[styles.ball, glow('medium', accent), flight.ballStyle]}>
-          <BallArt accent={accent} />
-        </Animated.View>
-      </GestureDetector>
-    </>
+    <GestureDetector gesture={pan}>
+      {/* The whole table is the grab area. There is nothing else to touch in
+          here, and hunting for a 18pt ball with a thumb is its own difficulty
+          nobody asked for. */}
+      <Animated.View style={StyleSheet.absoluteFill} />
+    </GestureDetector>
   );
 }
 
@@ -377,19 +371,4 @@ function missDistance(
   return { overshoot: along, sideways: landing.x - best.x };
 }
 
-const styles = StyleSheet.create({
-  ball: {
-    position: 'absolute',
-    width: BALL_SIZE,
-    height: BALL_SIZE,
-    // Keeps the neon glow round instead of casting a square halo on web.
-    borderRadius: BALL_SIZE / 2,
-  },
-  ballShadow: {
-    position: 'absolute',
-    width: BALL_SIZE,
-    height: BALL_SIZE,
-    borderRadius: BALL_SIZE / 2,
-    backgroundColor: '#000000',
-  },
-});
+const styles = StyleSheet.create({});

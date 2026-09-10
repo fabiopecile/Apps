@@ -90,7 +90,7 @@ function swipeAt(cup, { extraSpeed = 1, offsetX = 0 } = {}) {
   return { dragX: (dx / distance) * drag, dragY: (dy / distance) * drag };
 }
 
-function hitRate(cup, skill, { offsetX = 0, bounce = false, seed = 7, runs = 8000 } = {}) {
+function hitRate(cup, skill, { offsetX = 0, bounce = false, seed = 7, runs = 8000, alive = allAlive } = {}) {
   const random = seeded(seed);
   const swipe = swipeAt(cup, { offsetX });
   let hits = 0;
@@ -102,7 +102,7 @@ function hitRate(cup, skill, { offsetX = 0, bounce = false, seed = 7, runs = 800
       skill,
       bounce,
       cups,
-      aliveFlags: allAlive,
+      aliveFlags: alive,
       random,
     });
     if (outcome?.hit) hits += 1;
@@ -262,59 +262,45 @@ check('a bounce shot arcs lower than a straight throw', () => {
 
 // ------------------------------------------------------------- the target
 
-check('the target is the hole, which sits above the middle of the cup', () => {
-  // A cup is drawn with its mouth a third of its height above the point the
-  // layout stores. Aiming at that stored point put the ball into the side of
-  // the plastic, which is why a hit never looked like one.
-  const mouth = cupMouth(apex);
-  assert.equal(mouth.x, apex.x);
-  assert.ok(
-    mouth.y < apex.y - apex.height * 0.25,
-    `mouth at ${mouth.y.toFixed(1)} should sit well above the centre at ${apex.y.toFixed(1)}`
-  );
-  // ...and landing on the stored centre is no longer a clean hit.
-  assert.equal(resolveLanding({ x: apex.x, y: apex.y }, cups, allAlive).hit, false);
-});
-
-check('the mouth the physics aims at is the mouth that gets drawn', () => {
-  // These two drifted apart once already: the art put the opening a third of
-  // the cup's height above the stored point while the physics aimed at the
-  // point, so a ball scored without ever looking like it went in. Both now
-  // read `lib/cupGeometry`, and this is what keeps them reading the same.
+check('a cup mouth is a circle, right above where the cup stands', () => {
+  // In ground coordinates there is nothing left to get wrong. Both of these
+  // used to be false — the layout was in screen coordinates, so a mouth was an
+  // ellipse sitting a third of a cup's height above the point the cup was
+  // stored at — and getting either wrong meant balls scoring without ever
+  // looking like they went in.
   for (const cup of cups) {
     const mouth = cupMouth(cup);
-    const art = geometry.cupArtGeometry(cup.width);
-    // Where the drawing puts the rim, in the same table points the physics uses.
-    const drawnY =
-      cup.y - cup.height / 2 + (art.rimCy / geometry.ART_HEIGHT) * cup.height;
-    assert.ok(
-      Math.abs(mouth.y - drawnY) < 0.01,
-      `cup ${cup.index}: aimed at ${mouth.y.toFixed(1)}, drawn at ${drawnY.toFixed(1)}`
-    );
-    // And the catching ellipse is squashed the same way the drawn one is.
-    assert.ok(Math.abs(mouth.ry / mouth.rx - art.openness) < 0.001);
+    assert.equal(mouth.x, cup.x);
+    assert.equal(mouth.y, cup.y);
+    assert.ok(Math.abs(mouth.rx - mouth.ry) < 1e-9, 'a mouth on the ground is round');
+    assert.ok(mouth.rx > cup.width * 0.4 && mouth.rx < cup.width * 0.7);
   }
 });
 
-check('a cup further away shows less of its mouth', () => {
-  // The one cue that stops a cup reading as a sticker. Cups are ordered from
-  // the far end of the rack to the near one.
-  const far = geometry.cupArtGeometry(cups[0].width);
-  const near = geometry.cupArtGeometry(cups[cups.length - 1].width);
+check('every cup is the same size, because the camera does perspective now', () => {
+  // The old layout listed far cups as narrower so they would *draw* smaller.
+  // With a real camera in front of them that would shrink them twice over.
+  const all = [...cups, ...layout.generatePlayerRack(TABLE_WIDTH)];
+  assert.equal(new Set(all.map((c) => c.width)).size, 1);
+});
+
+check('a rack is a ten-cup triangle, four rows deep', () => {
+  assert.equal(cups.length, 10);
+  const rows = new Map();
+  for (const cup of cups) rows.set(Math.round(cup.y), (rows.get(Math.round(cup.y)) ?? 0) + 1);
+  assert.deepEqual([...rows.values()].sort(), [1, 2, 3, 4]);
+});
+
+check('you throw from behind your own rack, over it', () => {
+  // Resting mid-table was invisible nonsense once a camera existed: your own
+  // cups stand between you and the middle of the table.
+  const yours = layout.generatePlayerRack(TABLE_WIDTH);
   assert.ok(
-    near.openness > far.openness * 1.4,
-    `near ${near.openness.toFixed(2)} vs far ${far.openness.toFixed(2)}`
+    START.y > Math.max(...yours.map((c) => c.y)),
+    'the ball has to rest nearer you than your own back row'
   );
-  // A rounder mouth takes more room, so it leaves a shorter body on show:
-  // real foreshortening rather than the same sprite at two sizes.
-  const bodyShare = (g) => (g.baseCy - g.rimCy) / geometry.ART_HEIGHT;
-  assert.ok(bodyShare(near) < bodyShare(far));
-  // Every step down the rack has to move in the same direction, with no ties.
-  for (let i = 1; i < cups.length; i++) {
-    const before = geometry.cupOpenness(cups[i - 1].width);
-    const now = geometry.cupOpenness(cups[i].width);
-    assert.ok(now >= before, `cup ${i} opens less than the one behind it`);
-  }
+  // And the arc has to clear them.
+  assert.ok(APEX > layout.CUP_HEIGHT * 1.4, `apex ${APEX.toFixed(0)} vs cup ${layout.CUP_HEIGHT}`);
 });
 
 check('a landing in the hole is in, one on the rim bounces out', () => {
@@ -353,8 +339,12 @@ check('swiping at a cup beats swiping a cup-width beside it', () => {
   );
 });
 
-check('the far row is harder than the cup in front of you', () => {
-  assert.ok(hitRate(backRow, 0.55) < hitRate(apex, 0.55));
+check('a full rack catches misses, a lone cup does not', () => {
+  // Not the other way round, which is what this used to assert. Aiming into
+  // the middle of a full triangle is forgiving because a throw that misses its
+  // cup drops into the neighbour; the same cup on its own is the hard shot.
+  const lonely = allAlive.map((_, i) => i === 1);
+  assert.ok(hitRate(backRow, 0.55) > hitRate(backRow, 0.55, { alive: lonely }));
 });
 
 check('a steadier thrower scores more', () => {
@@ -436,18 +426,21 @@ check('the help does not rescue a wild throw', () => {
   assert.ok(far.y < 0);
 });
 
-check('the rack is not a certainty, and the far row is not hopeless', () => {
-  // This used to demand that even the nearest cup could be missed. That was
-  // the wrong place to put the challenge: at a real table the cup right in
-  // front of you is close to automatic, and holding it under 97% was making
-  // the whole game feel stiff. The rack still has to be beatable-but-not-given,
-  // so the guard moved to the row that is supposed to be hard.
+check('the last cup standing is where the difficulty lives', () => {
+  // This guard has moved twice, and both moves were the point catching up with
+  // the game. It first demanded that even the cup in front of you be missable,
+  // which is not true at a real table and made the whole thing feel stiff. Then
+  // it watched the back row of a *full* rack — but a miss there drops into a
+  // neighbour, so that is the easy case, not the hard one. What is actually
+  // hard is the end of a game: one cup, nothing around it.
+  const lonely = allAlive.map((_, i) => i === 1);
+  const lastCup = hitRate(backRow, 0.55, { alive: lonely });
   const gimme = hitRate(apex, 0.62);
-  const hard = hitRate(backRow, 0.62);
-  const hopeless = hitRate(backRow, 0.48);
-  assert.ok(gimme > 0.9, `the cup in front of you should be a gimme, not ${gimme.toFixed(2)}`);
-  assert.ok(hard < 0.85, `far row at ${hard.toFixed(2)} — the rack has to hold some risk`);
-  assert.ok(hopeless > 0.2, `far row at ${hopeless.toFixed(2)} — there has to be some hope`);
+  const shaky = hitRate(apex, 0.48);
+  assert.ok(gimme > 0.85, `the cup in front of you should be a gimme, not ${gimme.toFixed(2)}`);
+  assert.ok(lastCup < 0.95, `the last cup at ${lastCup.toFixed(2)} — closing out has to cost something`);
+  assert.ok(lastCup > 0.4, `the last cup at ${lastCup.toFixed(2)} — and not be a wall`);
+  assert.ok(gimme > shaky + 0.03, 'a steadier hand still has to be worth having');
 });
 
 check('drag length is the length of the drag', () => {
