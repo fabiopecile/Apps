@@ -68,6 +68,11 @@ jobs:
         run: npx expo export --platform web
         env:
           EXPO_BASE_URL: ${{ steps.base.outputs.value }}
+          # Adresse des Online-Servers. Leer lassen ist in Ordnung: der
+          # Online-Bildschirm sagt dann, dass noch keiner eingetragen ist.
+          # Eintragen unter Settings -> Secrets and variables -> Actions ->
+          # Variables, siehe deploy-server.yml.
+          EXPO_PUBLIC_ONLINE_URL: ${{ vars.ONLINE_URL }}
 
       - name: Jekyll abschalten
         # Ohne diese Datei ignoriert Pages Ordner, die mit _ beginnen — und

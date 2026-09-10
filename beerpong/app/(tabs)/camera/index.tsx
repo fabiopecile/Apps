@@ -138,19 +138,16 @@ export default function CameraTrackerScreen() {
           }
           right={
             <>
-            {/* Online play against another table is a Pro feature — the button
-                is here so it is findable, but it only opens the Pro preview. */}
+            {/* Playing against another table is free: a game is a few dozen
+                messages, so the room costs nothing to run. */}
             <Pressable
-              onPress={() => router.push('/pro')}
-              style={[styles.iconButton, styles.iconButtonPro]}
+              onPress={() => router.push('/(tabs)/camera/online')}
+              style={styles.iconButton}
               hitSlop={8}
               accessibilityRole="button"
               accessibilityLabel={t('tracker.openOnline')}
             >
-              <Ionicons name="globe" size={17} color={colors.gold} />
-              <View style={styles.iconLock}>
-                <Ionicons name="lock-closed" size={8} color={colors.background} />
-              </View>
+              <Ionicons name="globe" size={17} color={colors.neon} />
             </Pressable>
             <Pressable
               onPress={() => router.push('/(tabs)/camera/tournament')}

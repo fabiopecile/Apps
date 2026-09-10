@@ -1,0 +1,74 @@
+name: Online-Server veröffentlichen
+
+# Stellt den kleinen Server für den Online-Modus zu Cloudflare (beerpong/server).
+# Er hält pro Code einen Raum und leitet Treffer und Züge weiter — mehr nicht.
+#
+# Einmalig einzurichten (geht komplett im Handy-Browser):
+#   1. Kostenloses Cloudflare-Konto anlegen.
+#   2. Dort unter "Manage Account -> Account API Tokens" ein Token mit der
+#      Vorlage "Edit Cloudflare Workers" erstellen.
+#   3. Hier im Repository unter Settings -> Secrets and variables -> Actions
+#      zwei Secrets anlegen:
+#        CLOUDFLARE_API_TOKEN    = das Token von oben
+#        CLOUDFLARE_ACCOUNT_ID   = die Account-ID (steht im Cloudflare-Dashboard)
+#   4. Diesen Workflow unter "Actions" einmal von Hand starten.
+#      Am Ende steht die Adresse im Protokoll: https://beerpong-rooms.<name>.workers.dev
+#   5. Diese Adresse unter Settings -> Secrets and variables -> Actions ->
+#      Variables als ONLINE_URL eintragen und die Web-App neu veröffentlichen.
+#
+# Ohne die beiden Secrets bricht hier nichts ab: der Workflow sagt, was fehlt,
+# und hört auf.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'beerpong/server/**'
+      - 'beerpong/lib/onlineProtocol.ts'
+      - '.github/workflows/deploy-server.yml'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Veröffentlichen
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: beerpong/server
+    steps:
+      - uses: actions/checkout@v4
+
+      # Das Secrets-Kontext lässt sich in einer job-weiten Bedingung nicht
+      # zuverlässig lesen, deshalb wird hier einmal nachgesehen und der Rest
+      # daran gehängt.
+      - name: Zugangsdaten prüfen
+        id: creds
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN und/oder CLOUDFLARE_ACCOUNT_ID fehlen — der Online-Server wird nicht veröffentlicht. Die Anleitung steht oben in dieser Datei."
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.creds.outputs.ready == 'yes'
+        with:
+          node-version: 22
+
+      - name: Pakete installieren
+        if: steps.creds.outputs.ready == 'yes'
+        run: npm install --no-audit --no-fund
+
+      - name: Typen prüfen
+        if: steps.creds.outputs.ready == 'yes'
+        run: npx tsc --noEmit
+
+      - name: Nach Cloudflare stellen
+        if: steps.creds.outputs.ready == 'yes'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: npx wrangler deploy
