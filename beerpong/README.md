@@ -283,9 +283,14 @@ damit ganze Spiele ohne Browser durchgerechnet werden können
 ZURÜCK" nach einem Doppel, „LETZTE CHANCE" als das erste Rack leer war, 52 Würfe
 ohne Fehler.
 
-Der Ball-Zähler unter dem Tisch zeigt, bei welchem der beiden Bälle du bist —
-ohne ihn wäre die Regel unsichtbar, man würde sich nur wundern, dass man zweimal
-werfen darf.
+Der Ball-Zähler unter dem Tisch zeigt, bei welchem der beiden Bälle du bist, und
+der Hinweistext sagt die Regel dazu („Ball 1 von 2 — beide treffen und du
+bekommst sie zurück"). Beides zusammen, weil die Punkte allein zu leise waren:
+wer die Regel nicht kennt, wundert sich nur, dass er zweimal werfen darf.
+
+**Achtung beim Ausprobieren:** Die Regel ist erst seit dem Merge von PR #13 in
+der veröffentlichten Fassung. Eine PWA, die noch im Speicher liegt, zeigt
+weiterhin die alte — App komplett schließen und neu öffnen.
 
 **Nebenbei repariert:** Der Funkenregen beim Treffer wurde noch an den
 2D-Koordinaten des Bechers gezündet, was seit dem 3D-Umbau nichts mehr bedeutet.
@@ -368,6 +373,12 @@ Die Form liegt jetzt in `lib/cupGeometry.ts` und wird aus der Becherbreite
 berechnet — 0,28 hinten bis 0,54 vorne. Daraus folgt der Rest von selbst: eine
 rundere Öffnung braucht mehr Platz, also bleibt weniger Körper sichtbar, und
 das ist echte Verkürzung statt derselben Grafik in zwei Größen.
+
+**Die Kamera steht hoch**, rund 32 Grad über dem Filz statt der 12, mit denen
+sie angefangen hat. Von unten ist das ferne Rack ein dünnes Band aus Rändern,
+das man nicht lesen kann; von oben schaut man in die Becher hinein. Ganz
+senkrecht aber nicht: ohne ein Stück Becherwand im Bild ist die Höhe des Balls
+nicht mehr ablesbar, und der Bogen geht mit ihr verloren.
 
 **Warum die Breite und nicht eine Kamera:** Der Tisch ist keine einheitliche
 Perspektive. Der Versuch, eine Lochkamera an die beiden Racks zu fitten, landet

@@ -61,7 +61,7 @@ export function Table3D({ width, racks, balls, ballColours, watching }: Table3DP
         // multisampling on top of that is the most expensive thing here.
         dpr={[1, 2]}
         gl={{ antialias: false, alpha: true, powerPreference: 'high-performance' }}
-        camera={{ fov: 32, near: 0.1, far: 60, position: [0, 2.6, 10.2] }}
+        camera={{ fov: 34, near: 0.1, far: 60, position: [0, 5.2, 8.4] }}
         style={{ backgroundColor: 'transparent' }}
       >
         <Rig watching={watching} />
@@ -89,16 +89,18 @@ function Rig({ watching }: { watching: 'far' | 'near' }) {
     () =>
       watching === 'far'
         ? {
-            // Behind your own end, on a long lens. A wide lens close in makes
-            // your own rack tower over the far one; pulling back and narrowing
-            // the field compresses that, which is what a table actually looks
-            // like from behind it.
-            pos: new THREE.Vector3(0, 2.6, wz(TABLE_LENGTH) + 6.2),
-            at: new THREE.Vector3(0, 0.32, wz(320)),
+            // Behind your own end and high up — about 32 degrees above the
+            // felt rather than the 12 it started at. Low down, the far rack is
+            // a thin band of rims you cannot read; from up here you look into
+            // the cups. Not straight down, though: without some of the side of
+            // a cup showing, the ball's height stops being readable and the
+            // arc goes with it.
+            pos: new THREE.Vector3(0, 5.2, wz(TABLE_LENGTH) + 4.4),
+            at: new THREE.Vector3(0, 0.1, wz(400)),
           }
         : {
-            pos: new THREE.Vector3(0, 3.0, wz(TABLE_LENGTH) + 7.4),
-            at: new THREE.Vector3(0, 0.32, wz(560)),
+            pos: new THREE.Vector3(0, 5.8, wz(TABLE_LENGTH) + 5.2),
+            at: new THREE.Vector3(0, 0.1, wz(540)),
           },
     [watching]
   );
