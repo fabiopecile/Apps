@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo } from 'react';
+import { memo, useEffect, useId, useMemo } from 'react';
 import { StyleSheet } from 'react-native';
 import Animated, {
   useAnimatedStyle,
@@ -29,7 +29,16 @@ interface CupProps {
  * elliptical base, a rolled lip, two moulding ribs, a broad soft gloss on the
  * lit side plus a tight specular on the shaded one, and a beer surface inside.
  */
-function CupArt({ id, accent }: { id: string; accent: string }) {
+/**
+ * A cup, drawn once and then left alone.
+ *
+ * Memoised deliberately, and it is not a micro-optimisation: without it every
+ * score, hint or turn change in the match screen rebuilt all twenty of these
+ * SVGs — around forty elements each — and a CPU profile of one throw came back
+ * with `createElement`, `jsx` and `createDOMProps` at the top by a wide margin.
+ * The props here are a stable id and a colour, so nothing is ever recomputed.
+ */
+const CupArt = memo(function CupArt({ id, accent }: { id: string; accent: string }) {
   return (
     <Svg width="100%" height="100%" viewBox="0 0 100 125">
       <Defs>
@@ -102,9 +111,14 @@ function CupArt({ id, accent }: { id: string; accent: string }) {
       <Ellipse cx={50} cy={21} rx={37} ry={9.6} fill="none" stroke={accent} strokeWidth={1.5} opacity={0.7} />
     </Svg>
   );
-}
+})
 
-function Cup({ spec, alive, accent }: CupProps) {
+/**
+ * One cup on the table. `spec` comes from a memoised rack and the other two
+ * props are primitives, so this only ever re-renders when the cup is actually
+ * knocked down — see the note on `CupArt`.
+ */
+const Cup = memo(function Cup({ spec, alive, accent }: CupProps) {
   const scale = useSharedValue(1);
   const opacity = useSharedValue(1);
   const rotate = useSharedValue(0);
@@ -144,7 +158,7 @@ function Cup({ spec, alive, accent }: CupProps) {
       <CupArt id={svgId} accent={accent} />
     </Animated.View>
   );
-}
+})
 
 interface CupPyramidProps {
   cups: CupSpec[];

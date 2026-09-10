@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Svg, { Defs, Ellipse, Line, LinearGradient, RadialGradient, Rect, Stop } from 'react-native-svg';
 import { colors, fonts } from '@/theme';
@@ -13,8 +14,13 @@ interface TableSurfaceProps {
  * Everything painted *under* the cups: the table itself, the perspective edge
  * lines running away from you, spotlights over each rack, and the soft
  * reflection each standing cup throws onto the surface.
+ *
+ * Memoised, like the cups above it: this is one large SVG plus a reflection
+ * per standing cup, and without it every score, hint or turn change in the
+ * match screen rebuilt the lot. Callers must hand `racks` a stable array —
+ * `match.tsx` keeps one in a `useMemo` — or the memo does nothing.
  */
-export function TableSurface({ width, racks }: TableSurfaceProps) {
+export const TableSurface = memo(function TableSurface({ width, racks }: TableSurfaceProps) {
   const centerX = width / 2;
 
   return (
@@ -114,7 +120,7 @@ export function TableSurface({ width, racks }: TableSurfaceProps) {
       </Text>
     </View>
   );
-}
+})
 
 const styles = StyleSheet.create({
   brand: {
