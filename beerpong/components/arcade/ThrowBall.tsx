@@ -1,24 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { StyleSheet } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { Easing, runOnJS, useSharedValue, withTiming } from 'react-native-reanimated';
-import Svg, { Path } from 'react-native-svg';
 import { glow } from '@/theme';
 import type { CupSpec } from '@/lib/arcadeLayout';
-import {
-  RESTITUTION,
-  cupMouth,
-  previewFlight,
-  resolveThrow,
-  sampleFlight,
-  type Flight,
-  type Point,
-} from '@/lib/throwPhysics';
+import { RESTITUTION, cupMouth, resolveThrow, type Point } from '@/lib/throwPhysics';
 import { BallArt } from './BallArt';
-import { BALL_SIZE, HEIGHT_LIFT, useBallFlight } from './useBallFlight';
+import { BALL_SIZE, useBallFlight } from './useBallFlight';
 
-/** Radius of the ring that marks where the arc comes down. */
-const AIM_MARKER = 26;
 /** Let go later than this after the hand stopped and it is not a throw. */
 const STALE_HAND_MS = 120;
 /**
@@ -36,8 +25,6 @@ const STALE_HAND_MS = 120;
 const SWING_GRIP = 0.32;
 const AIM_SPEED = 300;
 const SWING_SPEED = 900;
-/** How often the aiming arc is redrawn while swiping, in milliseconds. */
-const AIM_REDRAW_MS = 55;
 
 export interface ThrowResult {
   cupIndex: number | null;
@@ -100,8 +87,6 @@ export function ThrowBall({
 }: ThrowBallProps) {
   const flight = useBallFlight(startX, startY);
 
-  const [aim, setAim] = useState<Flight | null>(null);
-  const [flying, setFlying] = useState(false);
   const flyingRef = useRef(false);
   const resetTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -109,9 +94,20 @@ export function ThrowBall({
   // Stable JS target for runOnJS — the prop itself may be undefined.
   const rimContact = () => onRim?.();
 
+  /**
+   * Whether a throw is in the air, kept as a shared value rather than React
+   * state.
+   *
+   * It only ever gated the gesture, and doing that through `.enabled()` meant
+   * a re-render and a rebuilt `Pan` the instant the ball left the hand —
+   * a stall exactly where the throw is being watched. The handlers below check
+   * this instead, and nothing re-renders.
+   */
+  const busy = useSharedValue(0);
+
   const setFlyingState = (value: boolean) => {
     flyingRef.current = value;
-    setFlying(value);
+    busy.value = value ? 1 : 0;
   };
 
   useEffect(() => {
@@ -137,7 +133,6 @@ export function ThrowBall({
 
   const finishThrow = (result: Omit<ThrowResult, 'bounce'>) => {
     setFlyingState(false);
-    setAim(null);
     onResult({ ...result, bounce });
     if (resetTimer.current) clearTimeout(resetTimer.current);
     resetTimer.current = setTimeout(() => flight.settle(startX, startY), 60);
@@ -241,8 +236,6 @@ export function ThrowBall({
   const lastAt = useSharedValue(0);
   const velX = useSharedValue(0);
   const velY = useSharedValue(0);
-  /** When the aiming arc was last redrawn; see `AIM_REDRAW_MS`. */
-  const lastAimAt = useSharedValue(0);
   /** The last finger position the ball was moved to follow. */
   const grabX = useSharedValue(0);
   const grabY = useSharedValue(0);
@@ -251,12 +244,13 @@ export function ThrowBall({
   scale.value = inputScale;
 
   const pan = Gesture.Pan()
-    .enabled(!disabled && !flying)
+    .enabled(!disabled)
     // The ball has to move the instant the finger does. A pan normally waits
     // for a few points of travel before it activates, and that showed up as
     // the ball staying put for the first 40pt of the drag.
     .minDistance(0)
     .onBegin((e) => {
+      if (busy.value) return;
       lastX.value = e.absoluteX;
       lastY.value = e.absoluteY;
       grabX.value = e.absoluteX;
@@ -264,12 +258,12 @@ export function ThrowBall({
       lastAt.value = Date.now();
       velX.value = 0;
       velY.value = 0;
-      lastAimAt.value = 0;
       // Cancel any settling animation and take the ball at its mark.
       flight.groundX.value = startX;
       flight.groundY.value = startY;
     })
     .onUpdate((e) => {
+      if (busy.value) return;
       const factor = 1 / Math.max(0.05, scale.value);
 
       const now = Date.now();
@@ -297,18 +291,9 @@ export function ThrowBall({
       grabX.value = e.absoluteX;
       grabY.value = e.absoluteY;
 
-      // The ball itself is animated on the UI thread and costs nothing to
-      // move. The arc is React: every redraw re-renders the component and
-      // rebuilds a 22-point SVG path. Doing that on every frame of the swipe
-      // is the one thing here heavy enough to make the gesture stutter, and
-      // the arc is a hint, not something read frame by frame.
-      if (now - lastAimAt.value >= AIM_REDRAW_MS) {
-        lastAimAt.value = now;
-        runOnJS(showAim)(velX.value, velY.value, flight.groundX.value, flight.groundY.value);
-      }
     })
     .onEnd(() => {
-      runOnJS(setAim)(null);
+      if (busy.value) return;
       // A hand that has stopped is not throwing. Without this, lining the ball
       // up slowly, pausing and letting go would launch it with whatever speed
       // the last movement happened to have — no movement means no new samples,
@@ -320,7 +305,7 @@ export function ThrowBall({
       runOnJS(throwBall)(velX.value, velY.value, flight.groundX.value, flight.groundY.value);
     })
     .onFinalize((_e, success) => {
-      runOnJS(setAim)(null);
+      if (busy.value) return;
       // Cancelled part-way through: put the ball back rather than leaving it
       // stranded under where the finger was.
       if (!success) runOnJS(settleBack)();
@@ -336,50 +321,8 @@ export function ThrowBall({
     return direction === 'up' ? startY - fromY : fromY - startY;
   }
 
-  /** The arc the current swipe speed would fly, drawn while you swing. */
-  function showAim(velocityX: number, velocityY: number, fromX: number, fromY: number) {
-    setAim(
-      previewFlight({
-        start: { x: fromX, y: fromY },
-        velocityX,
-        velocityY,
-        direction,
-        bounce,
-        carry: carriedFrom(fromY),
-      })
-    );
-  }
-
-  const arc = aim && !flying ? arcPath(aim) : null;
-
   return (
     <>
-      {arc ? (
-        <>
-          <Svg width="100%" height="100%" style={StyleSheet.absoluteFill} pointerEvents="none">
-            <Path
-              d={arc}
-              stroke={accent}
-              strokeWidth={2.5}
-              strokeDasharray="7,7"
-              fill="none"
-              opacity={0.8}
-            />
-          </Svg>
-          <Animated.View
-            pointerEvents="none"
-            style={[
-              styles.aimMarker,
-              {
-                left: aim!.landing.x - AIM_MARKER / 2,
-                top: aim!.landing.y - (AIM_MARKER * 0.42) / 2,
-                borderColor: accent,
-              },
-            ]}
-          />
-        </>
-      ) : null}
-
       <Animated.View pointerEvents="none" style={[styles.ballShadow, flight.shadowStyle]} />
       <Animated.View pointerEvents="none" style={[styles.ball, flight.trailStyle]}>
         <BallArt accent={accent} />
@@ -422,20 +365,6 @@ function missDistance(
   return { overshoot: along, sideways: landing.x - best.x };
 }
 
-/** The aiming arc, drawn the way the ball will actually fly it. */
-function arcPath(flight: Flight): string {
-  const steps = 22;
-  const points: string[] = [];
-  for (let i = 0; i <= steps; i++) {
-    const t = (i / steps) * flight.hang;
-    const point = sampleFlight(flight, t);
-    const x = point.x.toFixed(1);
-    const y = (point.y - point.height * HEIGHT_LIFT).toFixed(1);
-    points.push(`${i === 0 ? 'M' : 'L'}${x},${y}`);
-  }
-  return points.join(' ');
-}
-
 const styles = StyleSheet.create({
   ball: {
     position: 'absolute',
@@ -450,16 +379,5 @@ const styles = StyleSheet.create({
     height: BALL_SIZE,
     borderRadius: BALL_SIZE / 2,
     backgroundColor: '#000000',
-  },
-  /**
-   * Flattened, because it lies on the table rather than facing the camera —
-   * the same squash the cup mouths have.
-   */
-  aimMarker: {
-    position: 'absolute',
-    width: AIM_MARKER,
-    height: AIM_MARKER * 0.42,
-    borderRadius: AIM_MARKER / 2,
-    borderWidth: 2,
   },
 });
