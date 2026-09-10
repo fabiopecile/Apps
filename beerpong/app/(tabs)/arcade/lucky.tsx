@@ -6,10 +6,10 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
 import { GlowButton } from '@/components/ui/GlowButton';
-import { Confetti } from '@/components/ui/Confetti';
 import { CountUp } from '@/components/ui/CountUp';
 import { ParticleBurst, type ParticleBurstHandle } from '@/components/ui/ParticleBurst';
 import { FlashOverlay, type FlashOverlayHandle } from '@/components/ui/FlashOverlay';
+import { CelebrationOverlay } from '@/components/arcade/CelebrationOverlay';
 import { Table3D } from '@/components/arcade/Table3D';
 import { ThrowBall } from '@/components/arcade/ThrowBall';
 import { useBallFlight } from '@/components/arcade/useBallFlight';
@@ -32,7 +32,7 @@ import { SKINS } from '@/lib/skins';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { useT } from '@/lib/i18n';
-import { colors, fonts, glow, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing } from '@/theme';
 
 /**
  * One throw a day at a golden cup.
@@ -198,26 +198,30 @@ export default function LuckyShotScreen() {
         </View>
       ) : null}
 
-      {result ? (
+      {/* The golden cup gets the full celebration — it is the whole point of
+          the screen, and it happens rarely enough to be worth stopping for. */}
+      {result?.outcome === 'golden' ? (
+        <CelebrationOverlay
+          kind="trophy"
+          icon="trophy"
+          title={t('lucky.wonTitle')}
+          subtitle={t('lucky.wonSub', { coins: result.coins, hours: wait.hours })}
+          badgeLabel={`${result.coins}`}
+          color={colors.gold}
+          onDismiss={() => router.back()}
+        />
+      ) : null}
+
+      {result && result.outcome !== 'golden' ? (
         <View style={styles.overlay}>
-          {result.outcome === 'golden' ? <Confetti /> : null}
-          <View
-            style={[
-              styles.card,
-              result.outcome === 'golden' && { borderColor: colors.gold, ...glow('soft', colors.gold) },
-            ]}
-          >
+          <View style={styles.card}>
             <Ionicons
-              name={result.outcome === 'golden' ? 'trophy' : result.outcome === 'cup' ? 'beer' : 'close-circle'}
+              name={result.outcome === 'cup' ? 'beer' : 'close-circle'}
               size={40}
               color={result.outcome === 'miss' ? colors.textSecondary : colors.gold}
             />
             <Text style={styles.cardTitle} selectable={false}>
-              {result.outcome === 'golden'
-                ? t('lucky.wonTitle')
-                : result.outcome === 'cup'
-                  ? t('lucky.cupTitle')
-                  : t('lucky.missTitle')}
+              {result.outcome === 'cup' ? t('lucky.cupTitle') : t('lucky.missTitle')}
             </Text>
             {result.coins > 0 ? (
               <Text style={styles.reward} selectable={false}>
