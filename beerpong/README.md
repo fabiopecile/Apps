@@ -262,6 +262,54 @@ zählen) und aus denen danach Becher verschwinden (müssen **genau einmal** und
 dem **richtigen Team** gemeldet werden). Chromium kann sie per
 `--use-file-for-fake-video-capture=t.y4m` als Kamera ausgeben.
 
+## Die Kamera-Erkennung im Wohnzimmer
+
+Die Regeln der Erkennung waren getestet, ihr Verhalten in einem echten Raum
+nicht. Dafür gibt es jetzt einen Prüfstand (`npm run bench:vision`), der über
+900 Bilder — bei 180 ms Abtastung rund zweieinhalb Minuten Spiel — die Dinge
+simuliert, die ein Wohnzimmer tut, und zwei Zahlen ausgibt: wie oft ein noch
+stehender Becher gemeldet wurde, und wie viele echte Treffer gefunden wurden.
+
+| Szenario | Fehlmeldungen | | gefundene Treffer | |
+|---|---|---|---|---|
+| | **vorher** | **jetzt** | **vorher** | **jetzt** |
+| ruhiger Tisch | 0 | 0 | — | — |
+| Licht wird langsam dunkler | **12** | **0** | 1/1 | 1/1 |
+| Schatten über drei Becher | **3** | **0** | 1/1 | 1/1 |
+| Handy angestoßen | 0 | 0 | **0/1** | **1/1** |
+| starkes Bildrauschen | 0 | 0 | 1/1 | 1/1 |
+| ganzes Spiel, zehn Becher | 0 | 0 | **9/10** | **10/10** |
+
+Drei Änderungen stecken dahinter:
+
+**Jeder Becher wird gegen den Rest des Racks beurteilt, nicht absolut.** Die
+Aufgabe der Erkennung ist, *einen* Fleck sich ändern zu sehen — also muss alles,
+was *alle* verändert, herausgerechnet werden. Der Median der Helligkeits-
+verhältnisse über die noch beobachteten Becher liefert das umsonst: Dimmer,
+Wolke und die Belichtungsautomatik des Handys verschieben jeden Fleck um
+praktisch denselben Faktor. Median statt Mittelwert, weil bis zur Hälfte des
+Racks längst auf blankem Tisch stehen kann, und die sind keine Lichtmessung.
+
+**Ein Bild, das dauerhaft ganz verändert bleibt, wird neu eingelesen.** Ein
+angestoßenes Handy hat vorher das Feature für den Rest des Spiels beendet:
+jeder Fleck neben seinem Becher, jedes Bild „gestört", nie eine Erholung — auf
+dem Prüfstand 599 taube Bilder und der folgende Treffer nie gefunden. Nach rund
+dreieinhalb Sekunden wird die Aufnahme jetzt wiederholt, und die App sagt es,
+denn was in der Zwischenzeit gefallen ist, zählt niemand nach.
+
+**Drei Becher gleichzeitig sind ein Schatten, kein Wurf.** Ein Wurf nimmt einen
+Becher. Zwei sind möglich — Aufsetzer, oder ein Ball, der den Nachbarn umreißt.
+Drei Flecken im selben Augenblick sind jemand, der sich über das Tischende
+beugt. Die Wächter-Regel für „das ganze Rack hat sich bewegt" greift dafür nicht,
+weil drei von zehn zu wenig sind.
+
+Im gestörten Fall meldet die Erkennung jetzt ehrlich „Sicht gestört", statt
+Becher zu erfinden — beim Schattentest 299 Bilder lang, in denen sie nichts
+behauptet.
+
+**Was das nicht ersetzt:** All das ist simuliert. Ob echte Becher auf einem
+echten Tisch bei echtem Licht erkannt werden, kann nur ein Spiel zeigen.
+
 ## Zwei Bälle, Bälle zurück, letzte Chance
 
 Das Spiel gab den Zug vorher nach **jedem** Wurf ab, Treffer wie Fehlwurf. Das
