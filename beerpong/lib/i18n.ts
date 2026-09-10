@@ -551,7 +551,11 @@ const STRINGS = {
     de: 'Ein Ball. Triff den goldenen Becher — jeder andere bringt ein Trostgeld.',
     en: 'One ball. Sink the golden cup — any other one is a consolation.',
   },
-  'lucky.wonTitle': { de: 'Goldener Becher!', en: 'Golden cup!' },
+  'lucky.wonTitle': { de: 'GOLDENER BECHER', en: 'GOLDEN CUP' },
+  'lucky.wonSub': {
+    de: '{coins} Coins. In {hours} Stunden gibt es den nächsten Wurf.',
+    en: '{coins} coins. Your next throw is in {hours} hours.',
+  },
   'lucky.cupTitle': { de: 'Getroffen — aber nicht der goldene', en: 'In — but not the gold one' },
   'lucky.missTitle': { de: 'Daneben', en: 'Missed' },
   'lucky.comeBack': { de: 'In {hours} Stunden gibt es den nächsten Wurf.', en: 'Your next throw is in {hours} hours.' },
@@ -564,6 +568,11 @@ const STRINGS = {
   'lucky.lastCup': { de: 'Zuletzt: ein Becher, +{coins}', en: 'Last time: a cup, +{coins}' },
   'lucky.lastMiss': { de: 'Zuletzt: daneben', en: 'Last time: a miss' },
 
+  'match.levelUp': { de: 'LEVEL {level}', en: 'LEVEL {level}' },
+  'match.levelUpSub': {
+    de: 'Karrierestufe {level} erreicht. Jeder Wurf bringt dich weiter — auch die daneben.',
+    en: 'Career level {level}. Every throw counts towards it, the misses included.',
+  },
   'match.overtimeNote': { de: 'VERLÄNGERUNG', en: 'OVERTIME' },
   'match.overtimeChip': {
     de: 'Verlängerung · {cups} Becher',

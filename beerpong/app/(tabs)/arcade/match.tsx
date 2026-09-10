@@ -20,7 +20,10 @@ import { FlashOverlay, type FlashOverlayHandle } from '@/components/ui/FlashOver
 import { Table3D } from '@/components/arcade/Table3D';
 import { ThrowBall } from '@/components/arcade/ThrowBall';
 import { OpponentThrow } from '@/components/arcade/OpponentThrow';
-import { PromotionOverlay } from '@/components/arcade/PromotionOverlay';
+import {
+  CelebrationOverlay,
+  type CelebrationKind,
+} from '@/components/arcade/CelebrationOverlay';
 import { ShareResultButton } from '@/components/ui/ShareableResult';
 import {
   generateOpponentRack,
@@ -61,7 +64,7 @@ import { LEAGUE_OPPONENTS } from '@/lib/opponents';
  */
 const SCREEN_POINTS_PER_TABLE_POINT = 1;
 import { SKINS } from '@/lib/skins';
-import { useBeerpongStore } from '@/lib/store';
+import { selectCareerLevel, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { divisionName, translate, useLanguage, useT, type TranslationKey as MatchKey } from '@/lib/i18n';
 import { colors, fonts, spacing, radius } from '@/theme';
@@ -92,11 +95,12 @@ type Turn = 'player' | 'opponent';
 type RoundResult = 'win' | 'lose' | null;
 
 interface Celebration {
-  kind: 'promotion' | 'relegation';
+  kind: CelebrationKind;
   title: string;
   subtitle: string;
   badgeLabel: string;
   color: string;
+  icon?: 'trophy' | 'trending-up';
 }
 
 export default function MatchScreen() {
@@ -155,7 +159,16 @@ export default function MatchScreen() {
   const [roundResult, setRoundResult] = useState<RoundResult>(null);
   const [opponentTurnToken, setOpponentTurnToken] = useState(0);
   const [matchSeed, setMatchSeed] = useState(0);
-  const [celebration, setCelebration] = useState<Celebration | null>(null);
+  /**
+   * Milestones waiting to be shown, in order.
+   *
+   * A single slot was enough while a match could only produce one of these.
+   * It can now produce a promotion *and* a career level in the same game, and
+   * whichever was set second used to silently replace the first.
+   */
+  const [celebrations, setCelebrations] = useState<Celebration[]>([]);
+  const celebration = celebrations[0] ?? null;
+  const addCelebration = (next: Celebration) => setCelebrations((queue) => [...queue, next]);
   const [resultNote, setResultNote] = useState('');
   const [runFinished, setRunFinished] = useState(false);
   // Pass & Play: the phone changes hands, so a prompt gates each turn.
@@ -186,6 +199,15 @@ export default function MatchScreen() {
   const myThrows = useRef(0);
   const myCups = useRef(0);
   const startedAt = useRef(Date.now());
+  /**
+   * The career level this match started at.
+   *
+   * XP is earned per throw, so a level can turn over in the middle of a game.
+   * Nothing marked that before — the number on the hub simply went up one day.
+   */
+  const levelAtStart = useRef(
+    selectCareerLevel(useBeerpongStore.getState().arcade.careerXP)
+  );
 
   const arcade = useBeerpongStore((s) => s.arcade);
   const coins = useBeerpongStore((s) => s.coins);
@@ -300,11 +322,12 @@ export default function MatchScreen() {
     myThrows.current = 0;
     myCups.current = 0;
     startedAt.current = Date.now();
+    levelAtStart.current = selectCareerLevel(useBeerpongStore.getState().arcade.careerXP);
     setOvertime(0);
     setOpponentAlive(Array(CUP_COUNT).fill(true));
     setPlayerAlive(Array(CUP_COUNT).fill(true));
     setRoundResult(null);
-    setCelebration(null);
+    setCelebrations([]);
     setResultNote('');
     setTurn('player');
     setHandOver(false);
@@ -421,7 +444,7 @@ export default function MatchScreen() {
             })
       );
       if (result.promoted || result.relegated) {
-        setCelebration({
+        addCelebration({
           kind: result.promoted ? 'promotion' : 'relegation',
           title: result.promoted ? t('match.promoted') : t('match.relegated'),
           subtitle: result.promoted
@@ -446,8 +469,9 @@ export default function MatchScreen() {
             })
       );
       if (result.finished) {
-        setCelebration({
-          kind: 'promotion',
+        addCelebration({
+          kind: 'trophy',
+          icon: 'trophy',
           title: t('weekend.title'),
           subtitle: t('match.weekendCelebration', {
             wins: result.wins,
@@ -463,6 +487,22 @@ export default function MatchScreen() {
       arcadeRecordMatch(setup.id, won);
       keepRecord();
       setResultNote(won ? t('match.offlineWin') : t('match.offlineLose'));
+    }
+
+    // Read back rather than using the render's copy: the XP from this match's
+    // own throws is already in the store by now.
+    const levelNow = selectCareerLevel(useBeerpongStore.getState().arcade.careerXP);
+    if (levelNow > levelAtStart.current) {
+      // Queued after the mode's own milestone, because a promotion is the
+      // bigger news and a level is the one that quietly accumulated.
+      addCelebration({
+        kind: 'levelUp',
+        title: t('match.levelUp', { level: levelNow }),
+        subtitle: t('match.levelUpSub', { level: levelNow }),
+        badgeLabel: `${levelNow}`,
+        color: colors.neonAlt,
+      });
+      levelAtStart.current = levelNow;
     }
 
     // Let the last cup finish falling before the overlay covers the table.
@@ -1094,13 +1134,17 @@ export default function MatchScreen() {
       ) : null}
 
       {celebration ? (
-        <PromotionOverlay
+        <CelebrationOverlay
+          // Keyed so a second milestone in the queue plays its own animation
+          // from the start rather than inheriting the first one's finished one.
+          key={`${celebration.kind}-${celebration.badgeLabel}`}
           kind={celebration.kind}
           title={celebration.title}
           subtitle={celebration.subtitle}
           badgeLabel={celebration.badgeLabel}
           color={celebration.color}
-          onDismiss={() => setCelebration(null)}
+          icon={celebration.icon}
+          onDismiss={() => setCelebrations((queue) => queue.slice(1))}
         />
       ) : null}
     </View>
