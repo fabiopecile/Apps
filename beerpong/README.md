@@ -324,8 +324,31 @@ die Bechermitte, das Loch lag ein Drittel der Becherhöhe höher, und ein Treffe
 zählte, ohne je wie einer auszusehen.
 
 **Der Tisch ist eine Platte.** Keine Rechteckfläche mehr, sondern ein Trapez mit
-sichtbarer Kante an den Seiten und vorne — am fernen Ende gut halb so breit wie
-an deinem.
+sichtbarer Kante an den Seiten und vorne — am fernen Ende halb so breit wie an
+deinem.
+
+### Tiefensortierung: was vorne steht, verdeckt was hinten steht
+
+Vorher lag die Zeichenreihenfolge fest: erst Tisch, dann Becher, dann Ball —
+also **immer** Ball über allen Bechern. Ein Ball, der hinter der letzten Reihe
+landete, rollte sichtbar über das ganze Rack hinweg. Das war kein Schönheits-
+fehler, sondern der Hauptgrund, warum sich das Spiel flach anfühlte.
+
+Jeder Becher und der Ball tragen jetzt eine Tiefe aus ihrer Position auf dem
+Tisch. Der Ball wird nach seiner **Bodenposition** einsortiert, nicht nach
+seiner Höhe: ein Ball, der über die hintere Reihe segelt, ist trotzdem hinter
+den Bechern, die vor ihm stehen.
+
+Gemessen: das kostet nichts. Drei Läufe mit Sortierung (1041/1452/1417 ms
+blockiert) gegen drei ohne (1390/1152/1431 ms) — kein Unterschied. Die
+Vermutung, das animierte `zIndex` sei teuer, ließ sich in einem A/B ebenfalls
+nicht bestätigen.
+
+**Der Ball schrumpft mit der Entfernung.** Er war vorher exakt gleich groß, ob
+er in deiner Hand lag oder an der hinteren Reihe — gemessen sind es jetzt 24,1
+pt vorne und 19,0 pt hinten. Sein Schatten nimmt die Tischskalierung flach mit,
+ohne den Höhenanteil; genau diese Differenz zwischen Ball und Schatten ist der
+Tiefenhinweis.
 
 Dazu kommt ein kleiner Streuungsfehler für die ruhige Hand
 (`50 × (1 − Ruhe) × (0,8 + Kraft × 0,35)`, dreieckig verteilt). Er wird größer,
@@ -345,6 +368,31 @@ Rack auf, behält 60 % seiner Aufwärtsgeschwindigkeit und springt flach in den
 Becher. Wo er aufsetzen muss, ergibt sich aus dieser Zahl: der zweite Hüpfer
 ist genau 60 % so lang wie der erste.
 
+### Die Stärke wird geführt, die Richtung nicht
+
+Wie hart man wischen muss, ist der schwerste Teil der Geste und der
+uninteressanteste: nichts auf dem Bildschirm sagt dir, wie schnell dein Daumen
+gerade war, und du bekommst eine Rückmeldung pro Zug. Die Richtung siehst du und
+kannst sie zielen — die Stärke nicht.
+
+Deshalb wird **nur die Entfernung** nachgezogen, entlang der Wurflinie, nie zur
+Seite. Wie viel das ausmacht, gemessen über je 15 000 Würfe:
+
+| Fehler in der Wischstärke | −35 % | −15 % | 0 % | +15 % | +25 % |
+|---|---|---|---|---|---|
+| volles Rack | 58 % | 82 % | 87 % | 80 % | 43 % |
+| vorderster Becher weg | 0 % | 62 % | 69 % | 45 % | 41 % |
+| nur hintere Reihe | 0 % | 40 % | 52 % | 38 % | 23 % |
+
+Das Fenster ist 95 pt breit, und das ist nicht geraten: im Browser gemessen
+springt das nächste Ziel von 212 pt auf 273 pt, sobald der vorderste Becher
+fällt. Mit dem alten 58-pt-Fenster bekam ein Wurf, der 114 pt zu kurz war,
+überhaupt keine Hilfe — in einem echten Durchgang saß dadurch nur 1 von 12
+Würfen. Danach 2 von 4.
+
+Ein wilder Überwurf wird trotzdem nicht gerettet: gezogen wird nur auf einen
+Becher, den der Wurf ohnehin fast erreicht hätte. Ein Test hält beides fest.
+
 Welche Wischgeschwindigkeit du brauchst (`npm run test:throw`):
 
 | Ziel | Entfernung | nötige Handgeschwindigkeit |
@@ -356,8 +404,12 @@ Trefferquoten bei perfektem Schwung, je 8 000 simulierte Würfe:
 
 | gezielt auf | wacklig | normal | ruhig |
 |---|---|---|---|
-| nächster Becher | 75 % | 83 % | 91 % |
-| hintere Reihe | 39 % | 46 % | 57 % |
+| nächster Becher | 79 % | 87 % | 95 % |
+| hintere Reihe | 43 % | 51 % | 62 % |
+
+Weiter herunter geht nicht: bei Streuung 42 erreicht eine ruhige Hand 98 % am
+vordersten Becher, und der Test verweigert das — ein Wurf, der nicht danebengehen
+kann, ist kein Wurf.
 
 Das ist die entschärfte Fassung: die Trefferfläche ist großzügiger als das
 gezeichnete Loch (0,52 statt 0,37 der Becherbreite — ein Ball, der die

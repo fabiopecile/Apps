@@ -248,7 +248,21 @@ const Cup = memo(function Cup({ spec, alive, accent }: CupProps) {
   return (
     <Animated.View
       pointerEvents="none"
-      style={[styles.cup, { width: spec.width, height: spec.height }, style]}
+      style={[
+        styles.cup,
+        {
+          width: spec.width,
+          height: spec.height,
+          // Depth order: further down the table is nearer the viewer, so it is
+          // drawn over what stands behind it. Without this everything sat in
+          // whatever order it happened to be written in, with the ball on top
+          // of the lot — a ball landing behind the back row rolled across the
+          // front of the rack. A constant, so it stays out of the animated
+          // style, which would re-send it on every frame the cup moves.
+          zIndex: Math.round(spec.y),
+        },
+        style,
+      ]}
     >
       <CupArt id={svgId} accent={accent} width={spec.width} />
     </Animated.View>
