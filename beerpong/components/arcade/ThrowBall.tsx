@@ -176,13 +176,15 @@ export function ThrowBall({
         return;
       }
       if (hit) {
-        // Into the hole, not wherever the parabola happened to end: the ball
-        // slides the last few points to the rim it caught and drops there.
-        const cup = cupIndex != null ? cups.find((c) => c.index === cupIndex) : null;
-        dropIntoCup(cup ? cupMouth(cup) : landing, result);
+        // The flight already ended in the cup that goes; nothing to move.
+        dropIntoCup(landing, result);
         return;
       }
-      finishThrow(result);
+      // A miss has to look like one. Left alone the ball simply stopped where
+      // it landed and was back on its mark sixty milliseconds later — and from
+      // above, a ball resting beside a cup is half hidden behind it, so the
+      // throw read as having gone in and not been counted.
+      bounceAway(landing, result);
     });
   };
 
@@ -205,14 +207,24 @@ export function ThrowBall({
   };
 
   /**
+   * A plain miss: down onto the felt and away. Same two hops as a rim-out but
+   * without the clack, because nothing was touched.
+   */
+  const bounceAway = (at: Point, result: Omit<ThrowResult, 'bounce'>) =>
+    hopAway(at, result, false);
+
+  /**
    * Off the rim. Two hops, the second keeping `RESTITUTION` of the first's
    * bounce — the same number the bounce shot uses, so a ball coming off a cup
    * behaves like a ball coming off the table.
    */
-  const bounceOffRim = (at: Point, result: Omit<ThrowResult, 'bounce'>) => {
+  const bounceOffRim = (at: Point, result: Omit<ThrowResult, 'bounce'>) =>
+    hopAway(at, result, true);
+
+  const hopAway = (at: Point, result: Omit<ThrowResult, 'bounce'>, touchedRim: boolean) => {
     const away = direction === 'up' ? 1 : -1;
     const side = Math.random() < 0.5 ? -1 : 1;
-    rimContact();
+    if (touchedRim) rimContact();
     const first = {
       x: at.x + side * (20 + Math.random() * 14),
       y: at.y + away * (16 + Math.random() * 12),
