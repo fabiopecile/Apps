@@ -34,13 +34,20 @@ export interface Point {
 /**
  * Points per second squared, at the scale this table is drawn.
  *
- * Gravity and hang time are chosen together: the apex is `g * T^2 / 8`, so
- * shortening the flight to keep the game moving needs stronger gravity to keep
- * the arc as high as it was.
+ * Gravity and hang time are chosen together: the apex is `g * T^2 / 8`.
+ *
+ * Both went up when the camera was raised, and the second reason is the less
+ * obvious one. From twelve degrees above the felt, a vertical rise showed on
+ * screen almost in full while travel down the table barely showed at all — so
+ * a modest lob looked like a high arc. From thirty-two degrees the table's
+ * length is half again as visible and the rise slightly less, which flattened
+ * the same throw into a line drive. The apex went from 116 points to 240 to
+ * put the arc back, and the flight from 0.40s to 0.52s because it read as
+ * hurried.
  */
-export const GRAVITY = 5800;
+export const GRAVITY = 7100;
 /** How long a lobbed throw stays in the air. */
-export const HANG_TIME = 0.4;
+export const HANG_TIME = 0.52;
 /** Upward launch speed, the one that gives that hang time. */
 export const LAUNCH_UP = (GRAVITY * HANG_TIME) / 2;
 /** Highest the ball gets, in points: about a third of the table's length. */
