@@ -35,14 +35,21 @@ export interface Rack {
   cups: CupSpec[];
   aliveFlags: boolean[];
   colour: string;
+  /**
+   * One cup painted differently and lit from inside — the Lucky Shot's golden
+   * cup. It has to be unmistakable from the throwing end, where every cup is
+   * the size of a fingernail, so it glows rather than just being a shade off.
+   */
+  highlight?: { index: number; colour: string } | null;
 }
 
 interface Table3DProps {
   width: number;
-  racks: [Rack, Rack];
-  /** Your ball and theirs, in that order. */
-  balls: [BallFlight, BallFlight];
-  ballColours: [string, string];
+  /** Usually two, but a single rack is a table with one end set up. */
+  racks: Rack[];
+  /** Your ball first, theirs second where there is one. */
+  balls: BallFlight[];
+  ballColours: string[];
   /** 'far' looks up the table at their rack, 'near' looks down at yours. */
   watching: 'far' | 'near';
 }
@@ -169,17 +176,21 @@ function CupRack({ rack, width }: { rack: Rack; width: number }) {
 
   return (
     <group>
-      {rack.cups.map((cup) => (
-        <Cup
-          key={cup.index}
-          geometry={geometry}
-          beer={beer}
-          colour={rack.colour}
-          alive={rack.aliveFlags[cup.index]}
-          x={wx(cup.x, width)}
-          z={wz(cup.y)}
-        />
-      ))}
+      {rack.cups.map((cup) => {
+        const golden = rack.highlight?.index === cup.index;
+        return (
+          <Cup
+            key={cup.index}
+            geometry={geometry}
+            beer={beer}
+            colour={golden ? rack.highlight!.colour : rack.colour}
+            glow={golden}
+            alive={rack.aliveFlags[cup.index]}
+            x={wx(cup.x, width)}
+            z={wz(cup.y)}
+          />
+        );
+      })}
     </group>
   );
 }
@@ -188,6 +199,7 @@ function Cup({
   geometry,
   beer,
   colour,
+  glow = false,
   alive,
   x,
   z,
@@ -195,6 +207,8 @@ function Cup({
   geometry: THREE.LatheGeometry;
   beer: { r: number; y: number };
   colour: string;
+  /** Lit from inside and breathing, for a cup that is the point of the shot. */
+  glow?: boolean;
   alive: boolean;
   x: number;
   z: number;
@@ -204,6 +218,7 @@ function Cup({
   const fallen = useRef(0);
   // Which way it topples. Fixed per cup so a rack does not all fall alike.
   const tilt = useMemo(() => (Math.random() < 0.5 ? -1 : 1), []);
+  const clock = useRef(0);
 
   useFrame((_, delta) => {
     const target = alive ? 0 : 1;
@@ -217,7 +232,15 @@ function Cup({
     g.scale.setScalar(1 - f * 0.25);
     g.visible = f < 0.98;
     const body = g.children[0] as THREE.Mesh | undefined;
-    if (body?.material) (body.material as THREE.Material).opacity = 1 - f;
+    if (body?.material) {
+      const material = body.material as THREE.MeshStandardMaterial;
+      material.opacity = 1 - f;
+      if (glow) {
+        // Slow enough to read as a glow rather than a warning light.
+        clock.current += delta;
+        material.emissiveIntensity = (0.75 + Math.sin(clock.current * 2.4) * 0.35) * (1 - f);
+      }
+    }
   });
 
   return (
@@ -226,19 +249,50 @@ function Cup({
         <meshStandardMaterial
           color={colour}
           emissive={colour}
-          emissiveIntensity={0.12}
-          roughness={0.35}
-          metalness={0.05}
+          emissiveIntensity={glow ? 0.9 : 0.12}
+          roughness={glow ? 0.2 : 0.35}
+          metalness={glow ? 0.35 : 0.05}
           side={THREE.DoubleSide}
           transparent
         />
       </mesh>
       <mesh position={[0, beer.y, 0]} rotation={[-Math.PI / 2, 0, 0]}>
         <circleGeometry args={[beer.r, 20]} />
-        <meshStandardMaterial color="#ffc542" emissive="#c8791a" emissiveIntensity={0.5} roughness={0.25} />
+        <meshStandardMaterial
+          color={glow ? '#fff4c2' : '#ffc542'}
+          emissive={glow ? '#ffd23f' : '#c8791a'}
+          emissiveIntensity={glow ? 1.5 : 0.5}
+          roughness={0.25}
+        />
       </mesh>
       <ContactShadow radius={CUP_WIDTH * S * 0.62} />
+      {/* A ring on the felt. At the far end of the table a cup is the size of a
+          fingernail and a different shade of it is not enough — this is what
+          makes the golden one findable at a glance. */}
+      {glow ? <TargetRing colour={colour} /> : null}
     </group>
+  );
+}
+
+/** A ring on the felt that breathes, so the eye finds the cup, not the colour. */
+function TargetRing({ colour }: { colour: string }) {
+  const mesh = useRef<THREE.Mesh>(null);
+  const clock = useRef(0);
+
+  useFrame((_, delta) => {
+    clock.current += delta;
+    const m = mesh.current;
+    if (!m) return;
+    const pulse = 0.5 + Math.sin(clock.current * 2.4) * 0.5;
+    m.scale.setScalar(1 + pulse * 0.16);
+    (m.material as THREE.Material).opacity = 0.35 + pulse * 0.5;
+  });
+
+  return (
+    <mesh ref={mesh} position={[0, 0.006, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[CUP_WIDTH * S * 0.72, CUP_WIDTH * S * 0.95, 28]} />
+      <meshBasicMaterial color={colour} transparent opacity={0.85} side={THREE.DoubleSide} />
+    </mesh>
   );
 }
 

@@ -479,6 +479,36 @@ const STRINGS = {
     de: 'Letzte Chance — triff, solange du kannst. Ein Fehlwurf und es ist vorbei.',
     en: 'Redemption — keep sinking them. One miss and it is over.',
   },
+  // ------------------------------------------------------------ lucky shot
+  'lucky.title': { de: 'Lucky Shot', en: 'Lucky Shot' },
+  'lucky.hubTitle': { de: 'Lucky Shot', en: 'Lucky Shot' },
+  'lucky.hubReady': {
+    de: 'Ein Wurf, ein goldener Becher — heute noch frei',
+    en: 'One throw, one golden cup — still free today',
+  },
+  'lucky.hubDone': {
+    de: 'Heute schon geworfen. Morgen wieder.',
+    en: 'Today’s throw is gone. Back tomorrow.',
+  },
+  'lucky.prize': { de: 'Goldener Becher: {coins} Coins', en: 'Golden cup: {coins} coins' },
+  'lucky.streak': { de: '{days} Tage in Folge', en: '{days} days in a row' },
+  'lucky.hint': {
+    de: 'Ein Ball. Triff den goldenen Becher — jeder andere bringt ein Trostgeld.',
+    en: 'One ball. Sink the golden cup — any other one is a consolation.',
+  },
+  'lucky.wonTitle': { de: 'Goldener Becher!', en: 'Golden cup!' },
+  'lucky.cupTitle': { de: 'Getroffen — aber nicht der goldene', en: 'In — but not the gold one' },
+  'lucky.missTitle': { de: 'Daneben', en: 'Missed' },
+  'lucky.comeBack': { de: 'In {hours} Stunden gibt es den nächsten Wurf.', en: 'Your next throw is in {hours} hours.' },
+  'lucky.doneTitle': { de: 'Heute schon geworfen', en: 'Today’s throw is gone' },
+  'lucky.doneBody': {
+    de: 'Der nächste Lucky Shot kommt in {hours} h {minutes} min.',
+    en: 'The next Lucky Shot comes in {hours}h {minutes}m.',
+  },
+  'lucky.lastGolden': { de: 'Zuletzt: goldener Becher, +{coins}', en: 'Last time: golden cup, +{coins}' },
+  'lucky.lastCup': { de: 'Zuletzt: ein Becher, +{coins}', en: 'Last time: a cup, +{coins}' },
+  'lucky.lastMiss': { de: 'Zuletzt: daneben', en: 'Last time: a miss' },
+
   'match.overtimeNote': { de: 'VERLÄNGERUNG', en: 'OVERTIME' },
   'match.overtimeChip': {
     de: 'Verlängerung · {cups} Becher',

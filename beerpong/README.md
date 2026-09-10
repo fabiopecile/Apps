@@ -280,6 +280,53 @@ hinspielt.
 
 Oben bewusst steil: irgendetwas muss es wert sein, es zu haben.
 
+## Verlängerung statt Niederlage
+
+Gemeldeter Fehler, und ein echter: wer das gegnerische Rack zuerst leer räumt
+und dann zusieht, wie die andere Seite aus der letzten Chance zurückkommt, hat
+**verloren** — sagte die App. Das ist weder die Regel noch ein Unentschieden.
+
+Die letzte Chance ist ein Aufschub, kein Sieg. Wer sich da herauswirft, steht
+**gleichauf** — und gleichauf heißt Verlängerung: neue Racks mit drei Bechern
+pro Seite, Anwurf bei der Seite, die die letzte Chance genutzt hat. Das
+wiederholt sich, so oft es nötig ist. Genau eine Sache beendet ein Spiel: ein
+Fehlwurf in der letzten Chance. `npm run test:turns` prüft das nicht an vier
+Beispielen, sondern läuft den ganzen Möglichkeitsraum ab und behauptet danach
+genau diesen einen Satz — damit der Fehler nicht still zurückkommen kann.
+
+Die drei Becher sind ein richtiges Rack, keine sieben entfernten: der
+Rack-Bauer nimmt jetzt eine Becherzahl, und drei davon stehen als sauberes
+zweireihiges Dreieck an derselben Stelle. Die Anzeige zählt 3/3 statt 3/10 und
+ein goldener Streifen sagt, die wievielte Verlängerung läuft — sonst liest sich
+ein Tisch mit drei Bechern wie ein fast verlorenes Spiel.
+
+Nebenbei aufgefallen: Pass & Play hat das Handy per Umschalten weitergegeben —
+wer nicht geworfen hat, wirft jetzt. Das stimmt, bis eine Regel den Ball
+derselben Seite zurückgibt, und genau das tut die Verlängerung. Die
+Übergabe-Aufforderung nennt die Seite jetzt, statt sie zu erraten.
+
+## Lucky Shot: ein goldener Becher pro Tag
+
+Ein Wurf am Tag, auf ein Rack mit einem goldenen Becher darin. Kein Gegner,
+kein eigenes Rack, nichts zu verlieren — und danach ist der Tag vorbei, egal
+wie er ausgegangen ist. Genau das ist der Grund, morgen wieder aufzumachen.
+
+Drei Entscheidungen dahinter, alle mit Absicht:
+
+* **Der goldene Becher steht für den ganzen Tag fest.** Seine Position kommt
+  aus dem Datum, nicht aus einem Würfel beim Öffnen des Bildschirms. Sonst wäre
+  das Spiel „so lange neu laden, bis der goldene Becher der einfache ist".
+* **Ein Fehlwurf kostet den Tag trotzdem.** Alles andere wäre kein Wurf,
+  sondern ein Wurf, den man beliebig oft macht.
+* **Bezahlt wird die Serie, nicht das Glück.** Sieben Tage hintereinander sind
+  mehr wert als einmal Glück, weil das Wiederkommen die Sache ist, die belohnt
+  gehört: 500 Coins für den goldenen Becher, +100 pro Tag Serie bis 900, und
+  60 als Trostgeld für jeden anderen Becher.
+
+`npm run test:lucky` prüft die Wege, auf denen daraus stilles Gratisgeld würde:
+zweimal am selben Tag kassieren, eine Serie, die einen ausgelassenen Tag
+überlebt, ein goldener Becher, der beim Neuladen woanders steht.
+
 ## Online spielen
 
 Zwei Tische, ein Spiel. Eine Seite eröffnet einen Raum und bekommt einen Code
