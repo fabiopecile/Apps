@@ -437,6 +437,25 @@ export default function MatchScreen() {
    */
   const burst = () => particleRef.current?.burst(stageWidth / 2, stageHeight * 0.45);
 
+  /**
+   * Back out of a match, always to the Arcade hub.
+   *
+   * A plain `back()` returns to whichever menu opened the match — the offline
+   * list, the rivals ladder, the weekend league — which is almost never where
+   * you want to be once a game is over. `dismissTo` unwinds the stack to the
+   * hub in one step instead, so the menus in between do not flash past and
+   * pressing back again does not walk into them.
+   */
+  const leaveMatch = () => {
+    clearTimers();
+    if (router.canDismiss()) {
+      router.dismissTo('/(tabs)/arcade');
+      return;
+    }
+    // Opened straight into a match, so there is no hub to unwind to yet.
+    router.replace('/(tabs)/arcade');
+  };
+
   const startRedemption = (side: Turn) => {
     setTurnNote('redemption');
     feedback.streak();
@@ -613,7 +632,7 @@ export default function MatchScreen() {
       <GridBackground />
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} hitSlop={10} style={styles.backButton}>
+          <Pressable onPress={leaveMatch} hitSlop={10} style={styles.backButton}>
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </Pressable>
           <View style={styles.headerCenter}>
@@ -831,7 +850,7 @@ export default function MatchScreen() {
           <Text style={styles.rotateBody} selectable={false}>
             {t('match.rotateBody')}
           </Text>
-          <GlowButton label={t('common.back')} variant="outline" size="sm" onPress={() => router.back()} />
+          <GlowButton label={t('common.back')} variant="outline" size="sm" onPress={leaveMatch} />
         </View>
       ) : null}
 
@@ -880,7 +899,7 @@ export default function MatchScreen() {
                 label={t('common.back')}
                 variant="outline"
                 size="sm"
-                onPress={() => router.back()}
+                onPress={leaveMatch}
                 style={styles.resultButton}
               />
               <ShareResultButton

@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useRouter } from 'expo-router';
 import { Pressable, StyleSheet, Text, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import { runOnJS } from 'react-native-reanimated';
@@ -16,6 +17,8 @@ import {
 } from '@/lib/cupVision';
 import { createFrameSampler, FRAME_SAMPLING_SUPPORTED, type FrameSampler } from '@/lib/frameSampler';
 import { useT } from '@/lib/i18n';
+import { FREE_TRACKED_GAMES_PER_WEEK, trackedGamesLeft } from '@/lib/entitlement';
+import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
@@ -31,6 +34,14 @@ interface AutoDetectProps {
   /** Confirmed hit, against the team whose rack lost the cup. */
   onConfirmHit: (againstTeam: TeamIndex) => void;
   onClose: () => void;
+  /**
+   * Watch only the first team's rack.
+   *
+   * That is the online case: each phone stands at its own table and can only
+   * see its own ten cups. There is no second rack to line up, so asking for one
+   * would just be a step that has to be skipped every time.
+   */
+  singleRack?: boolean;
 }
 
 /**
@@ -47,7 +58,13 @@ interface AutoDetectProps {
  * to work out; the rest is noticing that a patch stopped looking like a cup,
  * and that is `lib/cupVision.ts`.
  */
-export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoDetectProps) {
+export function AutoDetect({
+  cupCount,
+  teamNames,
+  onConfirmHit,
+  onClose,
+  singleRack = false,
+}: AutoDetectProps) {
   // Measured rather than taken from the window: the preview sits above the
   // tab bar, so the window is taller than the video. Sharing one box is what
   // keeps the rings and the sampled patches over the same cups.
@@ -61,13 +78,18 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
   const feedback = useFeedback();
 
   const [mode, setMode] = useState<Mode>('aligning');
+  const beginTrackedGame = useBeerpongStore((s) => s.beginTrackedGame);
+  const pro = useBeerpongStore((s) => s.pro);
+  const trackerUse = useBeerpongStore((s) => s.trackerUse);
+  const gamesLeft = trackedGamesLeft(trackerUse, new Date(), pro);
+  const router = useRouter();
   /** Which rack is being lined up: 0 first, then 1. */
   const [aligning, setAligning] = useState<TeamIndex>(0);
   const [frames, setFrames] = useState<[RackFrame, RackFrame]>(() => defaultFrames(false));
   /** Reset the guides when the phone is turned — the old ones make no sense. */
   const wasLandscape = useRef<boolean | null>(null);
   /** Teams whose racks ended up being watched, in sampling order. */
-  const [racks, setRacks] = useState<TeamIndex[]>([0, 1]);
+  const [racks, setRacks] = useState<TeamIndex[]>(singleRack ? [0] : [0, 1]);
   const [detector, setDetector] = useState<DetectorState>(() => createDetector([cupCount]));
   const [pending, setPending] = useState<number | null>(null);
   const [distances, setDistances] = useState<number[]>([]);
@@ -137,13 +159,22 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
         flash(t('detect.noFrame'));
         return;
       }
+      // The free allowance is spent here rather than when the screen opens:
+      // lining the boxes up over the cups costs nothing, and a game that never
+      // starts should not cost a game. Keeping score by hand stays free either
+      // way — what is paid for is the camera doing the counting.
+      if (!beginTrackedGame()) {
+        feedback.tap();
+        router.push('/pro');
+        return;
+      }
       feedback.tap();
       setRacks(forRacks);
       racksRef.current = forRacks;
       setDetector(calibrate(createDetector(forRacks.map(() => cupCount)), samples));
       setMode('watching');
     },
-    [cupCount, feedback, flash, readFrame, t]
+    [beginTrackedGame, cupCount, feedback, flash, readFrame, router, t]
   );
 
   // The watch loop. Deliberately an interval rather than a render loop: five
@@ -269,7 +300,8 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
     );
   }
 
-  const watchedRacks = mode === 'aligning' ? ([0, 1] as TeamIndex[]) : racks;
+  const watchedRacks =
+    mode === 'aligning' ? ((singleRack ? [0] : [0, 1]) as TeamIndex[]) : racks;
   const overlay = watchedRacks.map((team, position) => {
     const offset = position * cupCount;
     // While aligning, the rack not being touched is drawn dim for context.
@@ -330,7 +362,9 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
           <>
             <View style={styles.stepRow}>
               <Text style={styles.title}>
-                {t('detect.alignStep', { step: aligning + 1, team: teamNames[aligning] })}
+                {singleRack
+                  ? t('detect.alignOwn')
+                  : t('detect.alignStep', { step: aligning + 1, team: teamNames[aligning] })}
               </Text>
               <Pressable onPress={turnQuarter} style={styles.turnButton} hitSlop={6}>
                 <Ionicons name="refresh" size={14} color={colors.neon} />
@@ -348,8 +382,36 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
                 </Text>
               </View>
             ) : null}
+            {/* Said before the start, not after: nobody should line up two
+                racks and only then find out the week's games are gone. */}
+            {gamesLeft === null ? null : (
+              <Text
+                style={[styles.tip, gamesLeft === 0 && { color: colors.textMuted }]}
+                selectable={false}
+              >
+                {gamesLeft > 0
+                  ? t('free.left', { left: gamesLeft, total: FREE_TRACKED_GAMES_PER_WEEK })
+                  : t('free.none', { total: FREE_TRACKED_GAMES_PER_WEEK })}
+              </Text>
+            )}
             <View style={styles.row}>
-              {aligning === 0 ? (
+              {singleRack ? (
+                <>
+                  <GlowButton
+                    label={t('common.cancel')}
+                    variant="ghost"
+                    size="sm"
+                    onPress={onClose}
+                    style={styles.flexButton}
+                  />
+                  <GlowButton
+                    label={t('detect.start')}
+                    size="sm"
+                    onPress={() => startWatching([0])}
+                    style={styles.flexButton}
+                  />
+                </>
+              ) : aligning === 0 ? (
                 <>
                   <GlowButton
                     label={t('common.cancel')}

@@ -262,6 +262,140 @@ zählen) und aus denen danach Becher verschwinden (müssen **genau einmal** und
 dem **richtigen Team** gemeldet werden). Chromium kann sie per
 `--use-file-for-fake-video-capture=t.y4m` als Kamera ausgeben.
 
+## Was ein Skin kostet
+
+Gemessen an dem, was ein Spieltag einbringt: die Tagesaufgaben sind 70 bis 220
+Münzen wert und es sind mehrere, also rund 400 am Tag. Zu den alten Preisen war
+der ganze Laden nach zwei Tagen leergekauft und es gab nichts mehr, worauf man
+hinspielt.
+
+| | vorher | jetzt | ≈ Spieltage |
+|---|---|---|---|
+| Neon Strike | 150 | **600** | 1,5 |
+| Inferno · Cryo | 300 | **1400** | 3,5 |
+| Neon Arena | 200 | **800** | 2 |
+| Midnight | 400 | **1800** | 4,5 |
+| Champion Gold | 750 | **4000** | 10 |
+| Champion's Court | 900 | **5000** | 12 |
+
+Oben bewusst steil: irgendetwas muss es wert sein, es zu haben.
+
+## Online spielen
+
+Zwei Tische, ein Spiel. Eine Seite eröffnet einen Raum und bekommt einen Code
+aus vier Zeichen, die andere tippt ihn ein. Ab da filmt jedes Handy **nur seine
+eigenen zehn Becher** — und genau darin steckt der Trick: ein Becher, der auf
+*deinem* Rack verschwindet, kann nur von der anderen Seite geworfen worden sein.
+Niemand muss seine eigenen Treffer melden, also kann sich auch niemand
+verzählen oder schummeln, und die beiden Meldungen können sich nicht
+widersprechen, weil sie von verschiedenen Tischen kommen.
+
+Nebeneffekt: der Zug korrigiert sich von selbst. „Bei uns ist ein Becher weg"
+heißt, die anderen werfen; „bei uns ging der Wurf daneben" heißt, wir sind dran.
+Was die Handys eine Minute vorher geglaubt haben, ist damit egal — bei einer
+Party tippt immer jemand daneben.
+
+Übertragen werden nur Treffer und Züge. Kein Videobild, keine Konten, keine
+Namen außer denen, die ihr selbst eintippt. Zwölf Stunden nach der letzten
+Nachricht löscht sich der Raum und der Code ist wieder frei.
+
+Zu finden über den **Globus** oben im Kamera-Modus.
+
+### Was das kostet: nichts
+
+Ein Beerpong-Spiel sind ein paar Dutzend Nachrichten von je ein paar hundert
+Byte. Der Server (`server/`) ist ein einzelner Cloudflare Worker mit einem
+Durable Object pro Raum. Der kostenlose Workers-Plan deckt 100.000 Anfragen und
+313.000 GB-Sekunden pro Tag ab, und ein Raum, in dem gerade niemand tippt,
+schläft und kostet gar keine Laufzeit. Selbst wenn jedes Wochenende hundert
+Partien laufen, bleibt das weit unter der Grenze. Eine Kreditkarte verlangt
+Cloudflare für den Free-Plan nicht.
+
+### Einrichten (geht komplett am Handy)
+
+1. Kostenloses Konto bei Cloudflare anlegen.
+2. Im Dashboard unter **Manage Account → Account API Tokens** ein Token mit der
+   Vorlage **Edit Cloudflare Workers** erstellen. Die **Account ID** steht
+   ebenfalls im Dashboard.
+3. Im GitHub-Repository unter **Settings → Secrets and variables → Actions →
+   Secrets** anlegen:
+   `CLOUDFLARE_API_TOKEN` und `CLOUDFLARE_ACCOUNT_ID`.
+4. Unter **Actions** den Workflow „Online-Server veröffentlichen" einmal von
+   Hand starten. Am Ende steht im Protokoll eine Adresse der Form
+   `https://beerpong-rooms.<name>.workers.dev`.
+5. Diese Adresse unter **Settings → Secrets and variables → Actions →
+   Variables** als `ONLINE_URL` eintragen und die Web-App neu veröffentlichen
+   (Actions → „Web-App veröffentlichen" → Run workflow).
+
+Solange nichts eingetragen ist, passiert nichts Schlimmes: der Online-Bildschirm
+sagt, dass noch keine Adresse hinterlegt ist, und der Rest der App läuft
+unverändert weiter.
+
+### Selbst ausprobieren
+
+```bash
+cd server && npm install && npx wrangler dev --port 8787   # Raum-Server lokal
+# und in einem zweiten Terminal, im App-Ordner:
+EXPO_PUBLIC_ONLINE_URL=http://127.0.0.1:8787 npx expo start --web
+npm run test:room     # zwei Spieler gegen den laufenden Server
+```
+
+`npm run test:online` prüft die Regeln ohne Netz — vor allem die Richtung jeder
+Meldung, denn eine vertauschte Richtung fällt beim Spielen erst am letzten
+Becher auf. `npm run test:room` prüft alles, was die Regeln nicht wissen können:
+dass derselbe Code beide Handys in denselben Raum bringt, dass ein dritter
+abgewiesen wird, dass ein Handy nach einem Verbindungsabbruch seinen Platz und
+den Spielstand zurückbekommt, und dass der Raum Unsinn ignoriert statt
+umzufallen.
+
+## Was frei ist, und wofür jemand später zahlen würde
+
+Das Arcade-Spiel ist ein Spiel, und es gibt hundert davon umsonst. Dafür zahlt
+niemand. Die Kamera, die an einem echten Tisch mitzählt, ist kein Spiel, sondern
+ein Werkzeug — und es gibt sonst nichts, was das tut. Deshalb liegt die Grenze
+genau dort und nirgends sonst:
+
+* **Umsonst und ohne Limit:** das ganze Arcade-Spiel, alle Modi, Pass & Play,
+  Turniere, Münzen, Skins, Liga und Saison. Auch das Mitzählen von Hand am
+  echten Tisch — antippen kostet nichts.
+* **Begrenzt:** drei Kamera-getrackte Spiele pro Woche. Die Woche beginnt
+  montags, in der Zeitzone des Handys (`lib/entitlement.ts`), damit ein Spiel um
+  halb eins in der Nacht noch zum Wochenende gehört, das man gerade hat.
+
+Drei ist mit Absicht keine Demo-Zahl. Wer einmal im Monat spielt, läuft nie
+dagegen und soll auch nie zahlen. Wer jedes Wochenende auflegt, ist am ersten
+Abend durch und weiß dann ganz genau, was er kaufen würde — nicht „irgendein
+Pro", sondern *das hier, das ich gerade benutzt habe*.
+
+Verbraucht wird ein Spiel erst beim Start des Trackings, nicht beim Öffnen des
+Bildschirms: die Racks auszurichten und wieder abzubrechen kostet nichts. Und
+bevor man ausrichtet, steht im Panel, wie viele Spiele noch übrig sind — es soll
+niemand zwei Racks einpassen und *danach* erfahren, dass die Woche leer ist.
+
+**Der Entwickler-Schalter.** Eine Grenze zu ziehen, während es keine Möglichkeit
+zu bezahlen gibt, macht die App schlechter, ohne dass jemand etwas davon hat.
+Unten auf dem Pro-Bildschirm sitzt deshalb ein klar benannter Schalter, der das
+Limit abschaltet. Er ist kein Trick und kein Easter Egg — er fliegt raus, sobald
+es einen echten Kauf gibt (App-Store-Abo oder Einmalkauf über
+`expo-in-app-purchases`; beides braucht ein Entwicklerkonto und einen Firmen-
+oder Privateintrag beim Store).
+
+Bevor irgendjemand dafür Geld verlangt, muss die Erkennung an einem echten Tisch
+bestehen. Der Prüfstand unten simuliert ein Wohnzimmer; ein Wohnzimmer ist er
+nicht.
+
+`npm run test:free` prüft die Regeln — drei Spiele, Wochenwechsel am Montag,
+kein Limit für Zahlende, und eine uralte gespeicherte Woche sperrt niemanden aus.
+
+## Zurück heißt zurück ins Hauptmenü
+
+Ein einfaches `back()` führte aus einem Match dorthin zurück, wo es gestartet
+wurde — in die Offline-Liste, die Rivalen-Leiter, die Weekend League. Das ist
+fast nie der Ort, an dem man nach einem Spiel sein will. `dismissTo` wickelt den
+Stapel stattdessen in einem Schritt bis zum Arcade-Hauptmenü ab, so dass die
+Zwischenschirme nicht vorbeiblitzen und ein weiteres Zurück nicht in sie
+hineinläuft.
+
 ## Die Kamera-Erkennung im Wohnzimmer
 
 Die Regeln der Erkennung waren getestet, ihr Verhalten in einem echten Raum
@@ -731,6 +865,9 @@ Wischgeschwindigkeiten — auf einem Handy nicht mehr zielbar.
 - **Halbautomatische Becher-Erkennung** (Web-Version) — beide Racks einmal
   ausrichten, danach meldet die App jeden verschwundenen Becher, ordnet ihn dem
   richtigen Team zu und fragt nach
+- **Online gegen einen anderen Tisch** — Code aus vier Zeichen, jede Seite
+  zählt nur ihr eigenes Rack, gemeinsamer Spielstand; kostenlos zu betreiben
+  (siehe „Online spielen")
 - **Aufgaben & Erfolge** — drei Tagesaufgaben, zehn Saison-Stufen und neun
   modusübergreifende Erfolge, alle mit Coin-Belohnung
 - **Profil** — Statistiken über beide Modi, Sound-, Haptik- und Sprachschalter
@@ -769,7 +906,7 @@ Wischgeschwindigkeiten — auf einem Handy nicht mehr zielbar.
 .github/workflows/       Web-Deploy und APK-Build (im Repo-Wurzelverzeichnis)
 app/                     Routen (expo-router)
   +html.tsx              HTML-Gerüst der Web-Version (PWA-Einstellungen)
-  (tabs)/camera/         Kamera-Tracker, Turnier
+  (tabs)/camera/         Kamera-Tracker, Turnier, Online (Lobby und Raum)
   (tabs)/arcade/         Hub, Offline, Pass & Play, Rivals, Weekend,
                          Match, Skins, Aufgaben
   onboarding.tsx         Intro beim ersten Start
@@ -778,6 +915,10 @@ app/                     Routen (expo-router)
 components/              UI-Bausteine, Arcade-Grafik (Becher, Ball, Würfe)
 lib/                     Store (zustand), Spiel-Logik, Layout, Sound, i18n
                          cupVision.ts = Becher-Erkennung, frameSampler* = Bildquelle
+                         entitlement.ts = freies Kamera-Kontingent
+                         onlineProtocol.ts = Regeln des Online-Spiels (App + Server)
+                         onlineRoom.ts = die Socket-Seite davon im Handy
+server/                  Cloudflare Worker: ein Raum pro Code (siehe „Online spielen")
 public/                  Wird 1:1 in die Web-Version kopiert (Manifest, Icons, sw.js)
 theme/                   Farben, Schriften, Glow-Effekt
 tools/                   Hilfsskripte (Logo/Icons und Sounds erzeugen)

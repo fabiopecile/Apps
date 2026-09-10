@@ -10,6 +10,7 @@ import { SectionLabel } from '@/components/ui/SectionLabel';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { useT, type TranslationKey } from '@/lib/i18n';
+import { FREE_TRACKED_GAMES_PER_WEEK, trackedGamesLeft } from '@/lib/entitlement';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 const FEATURES: {
@@ -17,8 +18,8 @@ const FEATURES: {
   titleKey: TranslationKey;
   bodyKey: TranslationKey;
 }[] = [
+  // Online play is not on this list any more: it is built, and it is free.
   { icon: 'scan', titleKey: 'pro.feature.detect.title', bodyKey: 'pro.feature.detect.body' },
-  { icon: 'globe', titleKey: 'pro.feature.online.title', bodyKey: 'pro.feature.online.body' },
   { icon: 'stats-chart', titleKey: 'pro.feature.stats.title', bodyKey: 'pro.feature.stats.body' },
   { icon: 'videocam', titleKey: 'pro.feature.replay.title', bodyKey: 'pro.feature.replay.body' },
   { icon: 'cloud-upload', titleKey: 'pro.feature.sync.title', bodyKey: 'pro.feature.sync.body' },
@@ -28,8 +29,13 @@ const FEATURES: {
 export default function ProScreen() {
   const notifyRequested = useBeerpongStore((s) => s.proNotifyRequested);
   const setNotifyRequested = useBeerpongStore((s) => s.setProNotifyRequested);
+  const pro = useBeerpongStore((s) => s.pro);
+  const setPro = useBeerpongStore((s) => s.setPro);
+  const trackerUse = useBeerpongStore((s) => s.trackerUse);
   const feedback = useFeedback();
   const t = useT();
+
+  const left = trackedGamesLeft(trackerUse, new Date(), pro);
 
   return (
     <View style={styles.container}>
@@ -54,6 +60,30 @@ export default function ProScreen() {
                 {t('pro.inDevelopment')}
               </Text>
             </View>
+          </View>
+
+          <SectionLabel>{t('free.label')}</SectionLabel>
+          <View style={styles.allowanceCard}>
+            <View style={styles.allowanceRow}>
+              <Ionicons
+                name={left === null || left > 0 ? 'videocam' : 'videocam-off'}
+                size={18}
+                color={left === 0 ? colors.textMuted : colors.neon}
+              />
+              <Text style={styles.allowanceTitle}>
+                {left === null
+                  ? t('free.unlimited')
+                  : left > 0
+                    ? t('free.left', { left, total: FREE_TRACKED_GAMES_PER_WEEK })
+                    : t('free.none', { total: FREE_TRACKED_GAMES_PER_WEEK })}
+              </Text>
+            </View>
+            {left === null ? null : (
+              <Text style={styles.explainBody}>
+                {t('free.resets', { total: FREE_TRACKED_GAMES_PER_WEEK })}
+              </Text>
+            )}
+            <Text style={styles.explainBody}>{t('free.arcadeFree')}</Text>
           </View>
 
           <SectionLabel>{t('pro.whatsInside')}</SectionLabel>
@@ -93,6 +123,23 @@ export default function ProScreen() {
             style={styles.notifyButton}
           />
           <Text style={styles.disclaimer}>{t('pro.disclaimer')}</Text>
+
+          {/* Stays until there is a real purchase. A limit with no way to pay
+              would only lock people out of a feature nobody can buy yet. */}
+          <View style={styles.devCard}>
+            <Text style={styles.devTitle}>{t('free.devTitle')}</Text>
+            <Text style={styles.explainBody}>{t('free.devBody')}</Text>
+            <GlowButton
+              label={pro ? t('free.devOn') : t('free.devOff')}
+              variant="outline"
+              accent={pro ? colors.neon : colors.textSecondary}
+              size="sm"
+              onPress={() => {
+                feedback.tap();
+                setPro(!pro);
+              }}
+            />
+          </View>
         </ScrollView>
       </SafeAreaView>
     </View>
@@ -205,6 +252,42 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: colors.textSecondary,
     marginTop: 2,
+  },
+  allowanceCard: {
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundCard,
+    padding: spacing.md,
+    marginBottom: spacing.sm,
+    gap: 8,
+  },
+  allowanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  allowanceTitle: {
+    flex: 1,
+    fontFamily: fonts.label,
+    fontSize: 14,
+    color: colors.textPrimary,
+  },
+  devCard: {
+    marginTop: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.borderFaint,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  devTitle: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.textMuted,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
   },
   explainCard: {
     borderRadius: radius.lg,
