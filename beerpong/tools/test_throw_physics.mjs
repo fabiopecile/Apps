@@ -381,6 +381,60 @@ check('spread grows with power and shrinks with skill', () => {
   assert.ok(spreadFor(0.55, 0.5, true) > spreadFor(0.55, 0.5, false));
 });
 
+check('a flick of nearly the right strength still lands', () => {
+  // Judging how hard to swipe is the hard part and there is nothing on screen
+  // that reports it, so the strength — and only the strength — is helped along.
+  // Without that, being 12% out is a guaranteed miss.
+  const nearlyRight = (share) => {
+    const mouth = cupMouth(apex);
+    const dx = mouth.x - START.x;
+    const dy = mouth.y - START.y;
+    const distance = Math.hypot(dx, dy);
+    const speed = speedForRange(distance) * (1 + share);
+    const random = seeded(7);
+    let hits = 0;
+    for (let i = 0; i < 4000; i++) {
+      const outcome = resolveThrow({
+        start: START,
+        velocityX: (dx / distance) * speed,
+        velocityY: (dy / distance) * speed,
+        direction: 'up',
+        skill: 0.55,
+        bounce: false,
+        cups,
+        aliveFlags: allAlive,
+        random,
+      });
+      if (outcome?.hit) hits += 1;
+    }
+    return hits / 4000;
+  };
+  for (const share of [-0.12, -0.06, 0.06, 0.12]) {
+    const rate = nearlyRight(share);
+    assert.ok(rate > 0.6, `${(share * 100).toFixed(0)}% out of strength lands only ${rate.toFixed(2)}`);
+  }
+});
+
+check('the help does not rescue a wild throw', () => {
+  // It pulls onto a cup that was nearly reached, never onto one that was not.
+  const start = { x: cups[0].x, y: START.y };
+  const far = { x: cups[0].x, y: START.y - 900 };
+  const speed = speedForRange(900);
+  const outcome = resolveThrow({
+    start,
+    velocityX: 0,
+    velocityY: -speed,
+    direction: 'up',
+    skill: 1,
+    bounce: false,
+    cups,
+    aliveFlags: allAlive,
+    random: () => 0.5,
+  });
+  assert.ok(outcome && !outcome.hit, 'a throw at twice the table must not be helped in');
+  assert.ok(far.y < 0);
+});
+
 check('a perfect swipe is not a certainty, and a bad one is not hopeless', () => {
   const best = hitRate(apex, 0.62);
   const worst = hitRate(backRow, 0.48);
