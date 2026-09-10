@@ -374,6 +374,30 @@ berechnet — 0,28 hinten bis 0,54 vorne. Daraus folgt der Rest von selbst: eine
 rundere Öffnung braucht mehr Platz, also bleibt weniger Körper sichtbar, und
 das ist echte Verkürzung statt derselben Grafik in zwei Größen.
 
+**Der Bogen musste mit der Kamera mitwachsen.** Von zwölf Grad über dem Filz
+zeigte sich ein Steigen fast in voller Höhe, während die Strecke den Tisch
+hinunter kaum sichtbar war — ein mäßiger Lob sah nach hohem Bogen aus. Von
+zweiunddreißig Grad ist die Tischlänge anderthalbmal so sichtbar und die Höhe
+etwas weniger, und derselbe Wurf wird zur flachen Linie. Durch die echte Kamera
+gerechnet, in Bildschirmpunkten auf einem iPhone 13:
+
+| | Scheitel | auf dem Schirm | Höhe : Länge |
+|---|---|---|---|
+| alte Kamera (12°) | 116 pt | 90 × 99 px | 0,91 |
+| neue Kamera (32°), altes Wurfmaß | 116 pt | 114 × 205 px | **0,55** |
+| neue Kamera, jetzt | 240 pt | 181 × 205 px | **0,88** |
+
+Deshalb steht der Scheitel auf 240 statt 116, und die Flugzeit auf 0,52 s statt
+0,40 — sie las sich gehetzt.
+
+**Ein Fehler, der beim 3D-Umbau mitgekommen ist:** Beim Treffer schob die
+Animation den Ball noch um `y + 16` weiter. In der alten flachen Zeichnung hieß
+das „sechzehn Punkte weiter unten auf dem Bildschirm" und las sich als
+Hineinfallen. In Bodenkoordinaten läuft `y` aber **den Tisch entlang** —
+dieselbe Zeile schob den Ball also sechzehn Punkte auf den Betrachter zu und
+vorne wieder aus dem Becher heraus. Von der Spielerseite aus: es ging kein Ball
+mehr rein.
+
 **Die Kamera steht hoch**, rund 32 Grad über dem Filz statt der 12, mit denen
 sie angefangen hat. Von unten ist das ferne Rack ein dünnes Band aus Rändern,
 das man nicht lesen kann; von oben schaut man in die Becher hinein. Ganz
