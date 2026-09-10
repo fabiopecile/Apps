@@ -80,8 +80,8 @@ const STRINGS = {
   },
   'onboarding.arcade.title': { de: 'Oder wirf selbst', en: 'Or throw yourself' },
   'onboarding.arcade.body': {
-    de: 'Im Arcade-Modus liegt der Ball unter deinem Finger und geht mit, solange du hältst. Beim Loslassen zählt der Schwung: Die Geschwindigkeit deiner Hand wird zur Geschwindigkeit des Balls, dann fliegt er im Bogen und fällt wieder herunter. Getroffen wird der Becher, in dem er aufkommt — Schwung und Richtung entscheiden, nicht der Zufall.',
-    en: 'In arcade mode the ball sits under your finger and moves with it while you hold. Letting go is what counts: the speed of your hand becomes the speed of the ball, which arcs up and drops back down. You sink whatever cup it lands in — your throw decides it, not chance.'
+    de: 'Im Arcade-Modus liegt der Ball unter deinem Finger und geht mit, solange du hältst. Wie weit du ziehst, entscheidet, wie weit er fliegt — je länger der Zug, desto weiter. Auf das Tempo kommt es nicht an, du kannst dir also Zeit lassen. Getroffen wird der Becher, in dem er aufkommt.',
+    en: 'In arcade mode the ball sits under your finger and moves with it while you hold. How far you drag decides how far it flies — the longer the drag, the further. Speed does not come into it, so take your time. You sink whatever cup it lands in.'
   },
   'onboarding.progress.title': { de: 'Alles zählt mit', en: 'Everything counts' },
   'onboarding.progress.body': {
@@ -347,8 +347,8 @@ const STRINGS = {
   // ----------------------------------------------------------- match screen
   'match.badge.ai': { de: 'KI · {difficulty}', en: 'AI · {difficulty}' },
   'match.yourTurn': {
-    de: 'Dein Wurf — Ball halten, zielen, schwungvoll loslassen',
-    en: 'Your throw — hold the ball, aim, let go with speed',
+    de: 'Dein Wurf — Ball ziehen: je weiter, desto weiter fliegt er',
+    en: 'Your throw — drag the ball: the further you drag, the further it flies',
   },
   'match.opponentAiming': { de: '{name} zielt …', en: '{name} is aiming …' },
   'match.weekendHeader': {
@@ -361,8 +361,8 @@ const STRINGS = {
     en: 'Bounce shot armed — harder, but takes two cups',
   },
   'match.reRack': { de: 'Re-Rack {left}', en: 'Re-rack {left}' },
-  'match.missShort': { de: 'Zu kurz — mehr Schwung', en: 'Short — swing harder' },
-  'match.missLong': { de: 'Zu weit — sanfter wischen', en: 'Long — ease off' },
+  'match.missShort': { de: 'Zu kurz — weiter ziehen', en: 'Short — drag further' },
+  'match.missLong': { de: 'Zu weit — kürzer ziehen', en: 'Long — drag less far' },
   'match.missWide': { de: 'Daneben — Richtung stimmt nicht', en: 'Wide — check your line' },
   'match.missRim': { de: 'Rand erwischt — ganz knapp', en: 'Caught the rim — so close' },
   'match.missClose': { de: 'Knapp vorbei', en: 'Just past it' },

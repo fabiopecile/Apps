@@ -274,15 +274,14 @@ Jetzt wirfst du wirklich — die Geste ist die von Pokémon GO:
    ziehst, sitzt er punktgenau unter deiner Fingerspitze: nach links, nach
    rechts, zurück für einen Anlauf, quer über den halben Tisch. Gemessen über
    einen 240-Punkte-Zug: 0 Punkte Abstand.
-2. **Beim Schwung rutscht er.** Ab etwa 300 pt/s Handgeschwindigkeit kommt er
+2. **Beim schnellen Ziehen rutscht er.** Ab etwa 300 pt/s Handgeschwindigkeit kommt er
    nur noch anteilig mit, bei 900 pt/s nur noch zu einem Drittel. Das muss so
    sein: ein harter Flick läuft zwei Drittel des Tisches hoch, und ein Ball,
    der daran kleben bliebe, wäre schon am Becher, bevor er überhaupt fliegt.
    Gemessen ohne diese Bremse: ein 160-Punkte-Flick trug 179 von 187 Punkten,
    es blieben 8 Punkte Flug übrig. Mit ihr sind es 60.
-3. **Beim Loslassen zählt der Schwung.** Die Geschwindigkeit deiner Hand in dem
-   Moment wird zur Geschwindigkeit des Balls — nicht die Länge der Bewegung.
-   Langsam ziehen und loslassen wirft gar nicht, der Ball rollt zurück auf
+3. **Beim Loslassen zählt die Länge des Zuges**, nicht sein Tempo. Ein zu
+   kurzer Zug (unter 38 Punkten) ist kein Wurf — der Ball rollt zurück auf
    seine Stelle und der Zug ist nicht verbraucht.
 4. **Wie weit du ihn schon getragen hast, wird abgezogen.** Die Gesamtstrecke ab
    der Ausgangsstelle hängt nur an deiner Wischgeschwindigkeit — egal, von wo du
@@ -368,6 +367,34 @@ Rack auf, behält 60 % seiner Aufwärtsgeschwindigkeit und springt flach in den
 Becher. Wo er aufsetzen muss, ergibt sich aus dieser Zahl: der zweite Hüpfer
 ist genau 60 % so lang wie der erste.
 
+### Die Kraft kommt aus der Länge des Zuges, nicht aus dem Tempo
+
+Das war der eigentliche Fehler, und er hat vier Runden gebraucht. Die Stärke
+hing an der **Geschwindigkeit** der Hand — und die kann man nicht sehen. Nichts
+auf dem Bildschirm sagt dir, wie schnell dein Daumen gerade war, korrigieren
+kannst du sie mitten in der Bewegung auch nicht, und du lernst aus einem Wurf
+pro Zug. Jede Zielhilfe obendrauf kuriert nur das Symptom.
+
+Jetzt entscheidet die **Länge**: 2,1 Punkte Flug pro Punkt Fingerweg. Der Ball
+liegt die ganze Zeit unter deinem Finger, du siehst also direkt, wie weit du
+gezogen hast, und kannst nachjustieren, bevor du loslässt.
+
+| Ziel | Entfernung | nötiger Zug |
+|---|---|---|
+| nächster Becher | 213 pt | 101 pt |
+| hintere Reihe | 361 pt | 172 pt |
+
+**Das Tempo spielt keine Rolle mehr.** Damit fällt auch die alte Regel weg, dass
+eine stehengebliebene Hand nicht wirft — du darfst ziehen, zielen, kurz
+überlegen und dann loslassen. Vorher wurde genau das verworfen.
+
+Im Browser gemessen, mit absichtlich schlampigem Zug (±7 %) und Zielen auf den
+jeweils nächsten übrigen Becher: **10 von 16 Würfen sitzen.** Mit dem
+Geschwindigkeitsmodell waren es 1 von 12, nach der ersten Zielhilfe 4 von 12.
+Die Entfernung stimmt inzwischen fast auf den Punkt (Landung 324 pt bei einem
+Loch auf 324 pt) — was noch danebengeht, geht seitlich daneben, und das ist der
+Teil, den man sehen und zielen kann.
+
 ### Die Stärke wird geführt, die Richtung nicht
 
 Wie hart man wischen muss, ist der schwerste Teil der Geste und der
@@ -384,6 +411,11 @@ Seite. Wie viel das ausmacht, gemessen über je 15 000 Würfe:
 | vorderster Becher weg | 0 % | 62 % | 69 % | 45 % | 41 % |
 | nur hintere Reihe | 0 % | 40 % | 52 % | 38 % | 23 % |
 
+Die Streuung der Hand geht zu 60 % in die Tiefe und voll zur Seite. Auch das
+ist gemessen und nicht geschätzt: die Hilfe *nach* der Streuung anzuwenden
+statt davor macht den vordersten Becher selbst bei 40 % Stärke zu 100 %, und
+der Test, der sagt, dass eine ruhige Hand mehr treffen muss, hat das gefangen.
+
 Das Fenster ist 95 pt breit, und das ist nicht geraten: im Browser gemessen
 springt das nächste Ziel von 212 pt auf 273 pt, sobald der vorderste Becher
 fällt. Mit dem alten 58-pt-Fenster bekam ein Wurf, der 114 pt zu kurz war,
@@ -393,23 +425,25 @@ Würfen. Danach 2 von 4.
 Ein wilder Überwurf wird trotzdem nicht gerettet: gezogen wird nur auf einen
 Becher, den der Wurf ohnehin fast erreicht hätte. Ein Test hält beides fest.
 
-Welche Wischgeschwindigkeit du brauchst (`npm run test:throw`):
+Die Zahlen dazu (`npm run test:throw`):
 
-| Ziel | Entfernung | nötige Handgeschwindigkeit |
+| Ziel | Entfernung | nötiger Zug |
 |---|---|---|
-| nächster Becher | 187 pt | ~790 pt/s |
-| hintere Reihe | 343 pt | ~1440 pt/s |
+| nächster Becher | 213 pt | 101 pt |
+| hintere Reihe | 361 pt | 172 pt |
 
 Trefferquoten bei perfektem Schwung, je 8 000 simulierte Würfe:
 
 | gezielt auf | wacklig | normal | ruhig |
 |---|---|---|---|
-| nächster Becher | 79 % | 87 % | 95 % |
-| hintere Reihe | 43 % | 51 % | 62 % |
+| nächster Becher | 95 % | 99 % | 100 % |
+| hintere Reihe | 57 % | 66 % | 78 % |
 
-Weiter herunter geht nicht: bei Streuung 42 erreicht eine ruhige Hand 98 % am
-vordersten Becher, und der Test verweigert das — ein Wurf, der nicht danebengehen
-kann, ist kein Wurf.
+Dass der vorderste Becher praktisch sicher ist, ist Absicht — am echten Tisch
+ist er das auch. Der Test verlangte früher, dass selbst er danebengehen kann;
+diese Forderung ist bewusst auf die hintere Reihe umgezogen, weil sie an der
+falschen Stelle stand und das ganze Spiel steif gemacht hat. Das Rack als
+Ganzes muss weiterhin Risiko haben: hintere Reihe unter 85 %, aber über 20 %.
 
 Das ist die entschärfte Fassung: die Trefferfläche ist großzügiger als das
 gezeichnete Loch (0,52 statt 0,37 der Becherbreite — ein Ball, der die
