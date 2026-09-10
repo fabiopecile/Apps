@@ -484,6 +484,56 @@ const STRINGS = {
     de: 'Letzte Chance — triff, solange du kannst. Ein Fehlwurf und es ist vorbei.',
     en: 'Redemption — keep sinking them. One miss and it is over.',
   },
+  // ---------------------------------------------------------------- stats
+  'stats.title': { de: 'Deine Zahlen', en: 'Your numbers' },
+  'stats.hubTitle': { de: 'Statistiken', en: 'Stats' },
+  'stats.hubSubtitle': {
+    de: 'Trefferbild, Form und wie lange du für einen Becher brauchst',
+    en: 'Where you hit, your form, and how long a cup takes you',
+  },
+  'stats.heatmapLabel': { de: 'Trefferbild', en: 'Where you hit' },
+  'stats.heatmapTitle': { de: 'Verteilung über das Rack', en: 'Spread across the rack' },
+  'stats.heatmapBody': {
+    de: 'Anteil deiner {cups} versenkten Becher, nach Position im Rack. Gleichmäßig heißt: du wirfst überallhin gleich gut.',
+    en: 'Share of your {cups} sunk cups by position in the rack. Even means you throw equally well everywhere.',
+  },
+  'stats.heatmapEmpty': {
+    de: 'Noch keine Treffer im Arcade aufgezeichnet. Nach ein paar Würfen steht hier, wo deine Bälle landen.',
+    en: 'No arcade hits recorded yet. After a few throws this shows where your balls land.',
+  },
+  'stats.formLabel': { de: 'Form', en: 'Form' },
+  'stats.formTitle': { de: 'Die letzten {count} Spiele', en: 'The last {count} games' },
+  'stats.formOrder': { de: 'Neueste links.', en: 'Newest on the left.' },
+  'stats.formEmpty': {
+    de: 'Noch kein Spiel zu Ende gespielt.',
+    en: 'No finished games yet.',
+  },
+  'stats.win': { de: 'S', en: 'W' },
+  'stats.loss': { de: 'N', en: 'L' },
+  'stats.net': { de: 'Siege minus Niederlagen', en: 'Wins minus losses' },
+  'stats.paceLabel': { de: 'Tempo', en: 'Pace' },
+  'stats.paceTitle': { de: 'Zeit pro Becher', en: 'Time per cup' },
+  'stats.paceBody': {
+    de: 'Gesamtdauer geteilt durch die Becher, die du selbst versenkt hast.',
+    en: 'Total time divided by the cups you sank yourself.',
+  },
+  'stats.perCup': { de: 'pro Becher', en: 'per cup' },
+  'stats.noData': { de: 'noch nichts', en: 'nothing yet' },
+  'stats.numbersLabel': { de: 'Kurz gefasst', en: 'In short' },
+  'stats.hitRate': { de: 'Trefferquote', en: 'Hit rate' },
+  'stats.bestRun': { de: 'Längste Siegesserie', en: 'Longest win run' },
+  'stats.recorded': { de: 'Aufgezeichnete Spiele', en: 'Games recorded' },
+  'stats.divisionLabel': { de: 'Aufstieg', en: 'Climb' },
+  'stats.divisionTitle': { de: 'Division nach jedem Rivalen-Spiel', en: 'Division after each rivals game' },
+  'stats.divisionBody': {
+    de: 'Höher heißt weiter oben: Division 1 ist die Spitze.',
+    en: 'Higher is better: Division 1 is the top.',
+  },
+  'stats.footnote': {
+    de: 'Aufgezeichnet werden die letzten 30 Spiele, nur auf diesem Gerät. Das Trefferbild zählt deine eigenen Arcade-Würfe — am echten Tisch weiß die App nur, dass ein Becher weg ist, nicht wer wohin gezielt hat.',
+    en: 'The last 30 games are kept, on this device only. The heatmap counts your own arcade throws — at a real table the app only knows a cup went, not who was aiming where.',
+  },
+
   // ------------------------------------------------------------ lucky shot
   'lucky.title': { de: 'Lucky Shot', en: 'Lucky Shot' },
   'lucky.hubTitle': { de: 'Lucky Shot', en: 'Lucky Shot' },

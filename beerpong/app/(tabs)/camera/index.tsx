@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Pressable, StyleSheet, Text, View, type GestureResponderEvent } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -36,6 +36,7 @@ export default function CameraTrackerScreen() {
   const trackerReRack = useBeerpongStore((s) => s.trackerReRack);
   const trackerNewGame = useBeerpongStore((s) => s.trackerNewGame);
   const trackDaily = useBeerpongStore((s) => s.trackDaily);
+  const statsRecordMatch = useBeerpongStore((s) => s.statsRecordMatch);
 
   const feedback = useFeedback();
   const t = useT();
@@ -43,6 +44,32 @@ export default function CameraTrackerScreen() {
   const particleRef = useRef<ParticleBurstHandle>(null);
 
   const finished = tracker.winner != null;
+
+  /**
+   * A finished real game goes into the record too, so form covers the table as
+   * well as the arcade.
+   *
+   * Keyed on when it finished rather than on `finished`, so a rematch writes a
+   * second record and a re-render does not write a duplicate. Positions are not
+   * recorded here: the heatmap is about where *your* throws land, and at a real
+   * table the app only knows a cup went, not who was aiming where.
+   */
+  const recordedAt = useRef<number | null>(null);
+  useEffect(() => {
+    const at = tracker.finishedAt;
+    if (at == null || recordedAt.current === at) return;
+    recordedAt.current = at;
+    const winner = tracker.winner;
+    if (winner == null) return;
+    statsRecordMatch({
+      at,
+      mode: 'tracker',
+      won: winner === 0,
+      cupsHit: tracker.teams[0].hits,
+      throws: tracker.teams[0].throws,
+      seconds: Math.max(0, Math.round((at - tracker.startedAt) / 1000)),
+    });
+  }, [tracker.finishedAt, tracker.winner, tracker.teams, tracker.startedAt, statsRecordMatch]);
   const shooter = tracker.teams[tracker.activeTeam];
   const targetIndex: TeamIndex = tracker.activeTeam === 0 ? 1 : 0;
   const target = tracker.teams[targetIndex];

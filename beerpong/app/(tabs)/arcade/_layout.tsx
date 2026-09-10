@@ -18,6 +18,7 @@ export default function ArcadeStackLayout() {
       <Stack.Screen name="skins" />
       <Stack.Screen name="challenges" />
       <Stack.Screen name="lucky" options={{ animation: 'fade' }} />
+      <Stack.Screen name="stats" />
       <Stack.Screen name="match" options={{ animation: 'fade' }} />
     </Stack>
   );

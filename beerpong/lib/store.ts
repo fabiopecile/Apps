@@ -16,6 +16,13 @@ import {
   type LuckyResult,
   type LuckyState,
 } from './luckyShot';
+import {
+  EMPTY_STATS,
+  recordCup,
+  recordMatch,
+  type MatchRecord,
+  type StatsState,
+} from './stats';
 import { todayKey, type DailyMetric } from './progression';
 import type { Language } from './languages';
 import type { TranslationKey } from './i18n';
@@ -173,6 +180,15 @@ interface BeerpongStore {
    */
   beginTrackedGame: () => boolean;
 
+  /**
+   * The record behind the stats screen: which cups go down and how the last
+   * thirty matches went. See `lib/stats.ts`.
+   */
+  stats: StatsState;
+  /** One sunk cup, at the rack position it fell at. */
+  statsRecordCup: (index: number) => void;
+  statsRecordMatch: (match: MatchRecord) => void;
+
   /** The daily golden-cup shot; see `lib/luckyShot.ts`. */
   lucky: LuckyState;
   /**
@@ -318,6 +334,10 @@ export const useBeerpongStore = create<BeerpongStore>()(
         set({ trackerUse: registerTrackedGame(trackerUse, now, pro) });
         return true;
       },
+
+      stats: EMPTY_STATS,
+      statsRecordCup: (index) => set((s) => ({ stats: recordCup(s.stats, index) })),
+      statsRecordMatch: (match) => set((s) => ({ stats: recordMatch(s.stats, match) })),
 
       lucky: EMPTY_LUCKY,
       playLuckyShot: (outcome) => {
@@ -729,6 +749,7 @@ export const useBeerpongStore = create<BeerpongStore>()(
         pro: state.pro,
         trackerUse: state.trackerUse,
         lucky: state.lucky,
+        stats: state.stats,
         houseRules: state.houseRules,
         camera: state.camera,
         tracker: state.tracker,
