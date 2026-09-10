@@ -357,6 +357,10 @@ const STRINGS = {
   },
   'match.bounce': { de: 'Bounce ×2', en: 'Bounce ×2' },
   'match.ballsBack': { de: 'BÄLLE ZURÜCK', en: 'BALLS BACK' },
+  'match.yourTurnBall': {
+    de: 'Ball {ball} von {of} — beide treffen und du bekommst sie zurück',
+    en: 'Ball {ball} of {of} — sink both and you get them back',
+  },
   'match.redemption': { de: 'LETZTE CHANCE', en: 'REDEMPTION' },
   'match.redemptionHint': {
     de: 'Letzte Chance — triff, solange du kannst. Ein Fehlwurf und es ist vorbei.',
