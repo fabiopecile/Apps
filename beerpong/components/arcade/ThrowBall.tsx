@@ -8,8 +8,6 @@ import { RESTITUTION, cupMouth, resolveThrow, type Point } from '@/lib/throwPhys
 import { BallArt } from './BallArt';
 import { BALL_SIZE, useBallFlight } from './useBallFlight';
 
-/** Let go later than this after the hand stopped and it is not a throw. */
-const STALE_HAND_MS = 120;
 /**
  * How much of a swinging hand's travel the ball still comes along for, and the
  * hand speeds between which its grip fades from full to that.
@@ -142,11 +140,11 @@ export function ThrowBall({
    * A real throw: the ball leaves from wherever your finger let go of it, at
    * the speed your hand was moving.
    */
-  const throwBall = (velocityX: number, velocityY: number, fromX: number, fromY: number) => {
+  const throwBall = (dragX: number, dragY: number, fromX: number, fromY: number) => {
     const outcome = resolveThrow({
       start: { x: fromX, y: fromY },
-      velocityX,
-      velocityY,
+      dragX,
+      dragY,
       direction,
       skill,
       bounce,
@@ -154,8 +152,8 @@ export function ThrowBall({
       aliveFlags,
       carry: carriedFrom(fromY),
     });
-    // Too slow to leave the hand — not a throw, so not a turn. The ball rolls
-    // back to its mark instead of staying wherever it was dropped.
+    // Too short to be a throw, so not a turn either. The ball rolls back to
+    // its mark instead of staying wherever it was dropped.
     if (!outcome) {
       flight.settle(startX, startY);
       return;
@@ -239,6 +237,16 @@ export function ThrowBall({
   /** The last finger position the ball was moved to follow. */
   const grabX = useSharedValue(0);
   const grabY = useSharedValue(0);
+  /**
+   * Where the finger first went down, kept for the whole gesture.
+   *
+   * The distance from here to where you let go *is* the throw's strength, so
+   * unlike `grab` above it never moves. Strength used to come from how fast the
+   * hand was going, which cannot be seen and cannot be corrected part-way; this
+   * is under your thumb the whole time.
+   */
+  const originX = useSharedValue(0);
+  const originY = useSharedValue(0);
   /** Screen points per table point; see `inputScale`. */
   const scale = useSharedValue(inputScale);
   scale.value = inputScale;
@@ -255,6 +263,8 @@ export function ThrowBall({
       lastY.value = e.absoluteY;
       grabX.value = e.absoluteX;
       grabY.value = e.absoluteY;
+      originX.value = e.absoluteX;
+      originY.value = e.absoluteY;
       lastAt.value = Date.now();
       velX.value = 0;
       velY.value = 0;
@@ -292,17 +302,19 @@ export function ThrowBall({
       grabY.value = e.absoluteY;
 
     })
-    .onEnd(() => {
+    .onEnd((e) => {
       if (busy.value) return;
-      // A hand that has stopped is not throwing. Without this, lining the ball
-      // up slowly, pausing and letting go would launch it with whatever speed
-      // the last movement happened to have — no movement means no new samples,
-      // so the average never decays on its own.
-      if (Date.now() - lastAt.value > STALE_HAND_MS) {
-        runOnJS(settleBack)();
-        return;
-      }
-      runOnJS(throwBall)(velX.value, velY.value, flight.groundX.value, flight.groundY.value);
+      // Pausing before you let go is allowed now, and that matters: with the
+      // strength coming from how far you dragged rather than how fast, there is
+      // nothing stale about a hand that has stopped. You can line the shot up,
+      // think, and release.
+      const factor = 1 / Math.max(0.05, scale.value);
+      runOnJS(throwBall)(
+        (e.absoluteX - originX.value) * factor,
+        (e.absoluteY - originY.value) * factor,
+        flight.groundX.value,
+        flight.groundY.value
+      );
     })
     .onFinalize((_e, success) => {
       if (busy.value) return;
