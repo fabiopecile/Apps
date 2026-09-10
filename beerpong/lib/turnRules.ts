@@ -10,8 +10,15 @@
  * - Sink **both** and you get them back — throw two more. That is a run, and it
  *   is where a game is won.
  * - Lose your **last cup** and you are not out yet: you shoot **redemption**,
- *   throwing until you miss. Clear what is left of their rack and you have
- *   pulled it back. Miss once and it is over.
+ *   throwing until you miss. Miss once and it is over. Clear what is left of
+ *   their rack and you have levelled it — which sends the game to
+ *   **overtime**, three cups a side.
+ *
+ * That last part used to be wrong here, and it cost somebody a game they had
+ * won: a successful redemption ended the match in favour of the side that had
+ * just been on the brink. It does not. Redemption gets you level, not ahead —
+ * both racks come back at three cups and it is decided over again, for as many
+ * overtimes as it takes.
  *
  * Kept away from the screen so the rules can be checked without a browser —
  * `tools/test_turn_rules.mjs` walks whole games through them.
@@ -38,7 +45,9 @@ export type TurnOutcome =
   | 'throwAgain'
   | 'ballsBack'
   | 'pass'
-  | 'redeemed'
+  /** Redemption cleared their rack: level again, so the game goes to overtime. */
+  | 'overtime'
+  /** Redemption missed: that is the match. */
   | 'eliminated';
 
 export function startTurn(redemption = false): TurnState {
@@ -60,7 +69,7 @@ export function afterThrow(
   if (state.redemption) {
     // No two-ball set here: you shoot until you miss, and every cup counts.
     if (!hit) return { next: state, outcome: 'eliminated' };
-    if (cupsLeftForOther === 0) return { next: state, outcome: 'redeemed' };
+    if (cupsLeftForOther === 0) return { next: state, outcome: 'overtime' };
     return { next: { ...state, hitsThisSet: state.hitsThisSet + 1 }, outcome: 'throwAgain' };
   }
 

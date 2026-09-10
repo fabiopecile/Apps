@@ -34,6 +34,11 @@ const STRINGS = {
   'tab.arcade': { de: 'Arcade', en: 'Arcade' },
 
   // ------------------------------------------------------------ difficulty
+  'ai.pro.label': { de: 'Profi', en: 'Pro' },
+  'ai.pro.description': {
+    de: 'Zielt auf die geschützte Mitte und wird ruhiger, je leerer dein Rack wird. Wer hier gewinnt, hat gut geworfen.',
+    en: 'Aims at the sheltered middle and steadies as your rack empties. Beating this one means you threw well.',
+  },
   'ai.easy.label': { de: 'Einfach', en: 'Easy' },
   'ai.easy.description': {
     de: 'Lockerer Gegner, viel Spielraum für deine Würfe.',
@@ -478,6 +483,133 @@ const STRINGS = {
   'match.redemptionHint': {
     de: 'Letzte Chance — triff, solange du kannst. Ein Fehlwurf und es ist vorbei.',
     en: 'Redemption — keep sinking them. One miss and it is over.',
+  },
+  // ----------------------------------------------------------- highlights
+  'highlights.title': { de: 'Highlights', en: 'Highlights' },
+  'highlights.toggle': { de: 'Highlights aufnehmen', en: 'Record highlights' },
+  'highlights.toggleHint': {
+    de: 'Die Sekunden vor jedem bestätigten Becher werden als kurzer Clip gespeichert — nur auf diesem Gerät.',
+    en: 'The seconds before each confirmed cup are kept as a short clip — on this device only.',
+  },
+  'highlights.saved': { de: 'Highlight gespeichert', en: 'Highlight saved' },
+  'highlights.empty': {
+    de: 'Noch keine Clips. Schalte im Kamera-Modus „Highlights aufnehmen" ein — danach wird bei jedem bestätigten Becher der Anlauf gespeichert.',
+    en: 'No clips yet. Turn on “Record highlights” in camera mode, and the run-up to every confirmed cup is kept.',
+  },
+  'highlights.unsupported': {
+    de: 'Dieses Gerät kann im Hintergrund nicht mitschneiden. In der Web-App auf dem Handy funktioniert es.',
+    en: 'This device cannot record in the background. It works in the web app on a phone.',
+  },
+  'highlights.count': { de: '{count} von {max} Clips', en: '{count} of {max} clips' },
+  'highlights.delete': { de: 'Löschen', en: 'Delete' },
+  'highlights.clearAll': { de: 'Alle löschen', en: 'Delete all' },
+  'highlights.clip': { de: '{seconds} s · {size}', en: '{seconds}s · {size}' },
+  'highlights.note': {
+    de: 'Clips liegen nur auf diesem Gerät und werden nirgendwohin hochgeladen. Ist die Liste voll, fällt der älteste heraus.',
+    en: 'Clips stay on this device and are uploaded nowhere. When the list is full the oldest drops off.',
+  },
+
+  // ---------------------------------------------------------------- stats
+  'stats.title': { de: 'Deine Zahlen', en: 'Your numbers' },
+  'stats.hubTitle': { de: 'Statistiken', en: 'Stats' },
+  'stats.hubSubtitle': {
+    de: 'Trefferbild, Form und wie lange du für einen Becher brauchst',
+    en: 'Where you hit, your form, and how long a cup takes you',
+  },
+  'stats.heatmapLabel': { de: 'Trefferbild', en: 'Where you hit' },
+  'stats.heatmapTitle': { de: 'Verteilung über das Rack', en: 'Spread across the rack' },
+  'stats.heatmapBody': {
+    de: 'Anteil deiner {cups} versenkten Becher, nach Position im Rack. Gleichmäßig heißt: du wirfst überallhin gleich gut.',
+    en: 'Share of your {cups} sunk cups by position in the rack. Even means you throw equally well everywhere.',
+  },
+  'stats.heatmapEmpty': {
+    de: 'Noch keine Treffer im Arcade aufgezeichnet. Nach ein paar Würfen steht hier, wo deine Bälle landen.',
+    en: 'No arcade hits recorded yet. After a few throws this shows where your balls land.',
+  },
+  'stats.formLabel': { de: 'Form', en: 'Form' },
+  'stats.formTitle': { de: 'Die letzten {count} Spiele', en: 'The last {count} games' },
+  'stats.formOrder': { de: 'Neueste links.', en: 'Newest on the left.' },
+  'stats.formEmpty': {
+    de: 'Noch kein Spiel zu Ende gespielt.',
+    en: 'No finished games yet.',
+  },
+  'stats.win': { de: 'S', en: 'W' },
+  'stats.loss': { de: 'N', en: 'L' },
+  'stats.net': { de: 'Siege minus Niederlagen', en: 'Wins minus losses' },
+  'stats.paceLabel': { de: 'Tempo', en: 'Pace' },
+  'stats.paceTitle': { de: 'Zeit pro Becher', en: 'Time per cup' },
+  'stats.paceBody': {
+    de: 'Gesamtdauer geteilt durch die Becher, die du selbst versenkt hast.',
+    en: 'Total time divided by the cups you sank yourself.',
+  },
+  'stats.perCup': { de: 'pro Becher', en: 'per cup' },
+  'stats.noData': { de: 'noch nichts', en: 'nothing yet' },
+  'stats.numbersLabel': { de: 'Kurz gefasst', en: 'In short' },
+  'stats.hitRate': { de: 'Trefferquote', en: 'Hit rate' },
+  'stats.bestRun': { de: 'Längste Siegesserie', en: 'Longest win run' },
+  'stats.recorded': { de: 'Aufgezeichnete Spiele', en: 'Games recorded' },
+  'stats.divisionLabel': { de: 'Aufstieg', en: 'Climb' },
+  'stats.divisionTitle': { de: 'Division nach jedem Rivalen-Spiel', en: 'Division after each rivals game' },
+  'stats.divisionBody': {
+    de: 'Höher heißt weiter oben: Division 1 ist die Spitze.',
+    en: 'Higher is better: Division 1 is the top.',
+  },
+  'stats.footnote': {
+    de: 'Aufgezeichnet werden die letzten 30 Spiele, nur auf diesem Gerät. Das Trefferbild zählt deine eigenen Arcade-Würfe — am echten Tisch weiß die App nur, dass ein Becher weg ist, nicht wer wohin gezielt hat.',
+    en: 'The last 30 games are kept, on this device only. The heatmap counts your own arcade throws — at a real table the app only knows a cup went, not who was aiming where.',
+  },
+
+  // ------------------------------------------------------------ lucky shot
+  'lucky.title': { de: 'Lucky Shot', en: 'Lucky Shot' },
+  'lucky.hubTitle': { de: 'Lucky Shot', en: 'Lucky Shot' },
+  'lucky.hubReady': {
+    de: 'Ein Wurf, ein goldener Becher — heute noch frei',
+    en: 'One throw, one golden cup — still free today',
+  },
+  'lucky.hubDone': {
+    de: 'Heute schon geworfen. Morgen wieder.',
+    en: 'Today’s throw is gone. Back tomorrow.',
+  },
+  'lucky.prize': { de: 'Goldener Becher: {coins} Coins', en: 'Golden cup: {coins} coins' },
+  'lucky.streak': { de: '{days} Tage in Folge', en: '{days} days in a row' },
+  'lucky.hint': {
+    de: 'Ein Ball. Triff den goldenen Becher — jeder andere bringt ein Trostgeld.',
+    en: 'One ball. Sink the golden cup — any other one is a consolation.',
+  },
+  'lucky.wonTitle': { de: 'GOLDENER BECHER', en: 'GOLDEN CUP' },
+  'lucky.wonSub': {
+    de: '{coins} Coins. In {hours} Stunden gibt es den nächsten Wurf.',
+    en: '{coins} coins. Your next throw is in {hours} hours.',
+  },
+  'lucky.cupTitle': { de: 'Getroffen — aber nicht der goldene', en: 'In — but not the gold one' },
+  'lucky.missTitle': { de: 'Daneben', en: 'Missed' },
+  'lucky.comeBack': { de: 'In {hours} Stunden gibt es den nächsten Wurf.', en: 'Your next throw is in {hours} hours.' },
+  'lucky.doneTitle': { de: 'Heute schon geworfen', en: 'Today’s throw is gone' },
+  'lucky.doneBody': {
+    de: 'Der nächste Lucky Shot kommt in {hours} h {minutes} min.',
+    en: 'The next Lucky Shot comes in {hours}h {minutes}m.',
+  },
+  'lucky.lastGolden': { de: 'Zuletzt: goldener Becher, +{coins}', en: 'Last time: golden cup, +{coins}' },
+  'lucky.lastCup': { de: 'Zuletzt: ein Becher, +{coins}', en: 'Last time: a cup, +{coins}' },
+  'lucky.lastMiss': { de: 'Zuletzt: daneben', en: 'Last time: a miss' },
+
+  'match.levelUp': { de: 'LEVEL {level}', en: 'LEVEL {level}' },
+  'match.levelUpSub': {
+    de: 'Karrierestufe {level} erreicht. Jeder Wurf bringt dich weiter — auch die daneben.',
+    en: 'Career level {level}. Every throw counts towards it, the misses included.',
+  },
+  'match.overtimeNote': { de: 'VERLÄNGERUNG', en: 'OVERTIME' },
+  'match.overtimeChip': {
+    de: 'Verlängerung · {cups} Becher',
+    en: 'Overtime · {cups} cups',
+  },
+  'match.overtimeRound': {
+    de: '{round}. Verlängerung · {cups} Becher',
+    en: 'Overtime {round} · {cups} cups',
+  },
+  'match.overtimeHint': {
+    de: 'Ausgeglichen! Neue Racks mit {cups} Bechern — jetzt entscheidet es sich.',
+    en: 'All square! Fresh racks of {cups} — this is where it is decided.',
   },
   'match.bounceArmed': {
     de: 'Bounce-Wurf scharf — schwerer, aber zwei Cups',

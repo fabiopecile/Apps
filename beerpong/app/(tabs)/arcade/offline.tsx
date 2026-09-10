@@ -15,7 +15,7 @@ import { useFeedback } from '@/lib/feedback';
 import { useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
-const ORDER: AiDifficulty[] = ['easy', 'medium', 'hard'];
+const ORDER: AiDifficulty[] = ['easy', 'medium', 'hard', 'pro'];
 
 export default function OfflineScreen() {
   const aiDifficulty = useBeerpongStore((s) => s.aiDifficulty);
