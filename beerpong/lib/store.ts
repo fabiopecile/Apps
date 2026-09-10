@@ -171,6 +171,15 @@ interface BeerpongStore {
    */
   pro: boolean;
   setPro: (value: boolean) => void;
+  /**
+   * The unlock code, when there is one.
+   *
+   * Kept rather than just a boolean so it can be read back and typed into a
+   * second phone — with no accounts, the code *is* the receipt.
+   */
+  licence: string | null;
+  /** Records a verified code and unlocks. */
+  redeemLicence: (code: string) => void;
   /** Tracked games used this week; see `lib/entitlement.ts`. */
   trackerUse: TrackerUse;
   /**
@@ -335,6 +344,10 @@ export const useBeerpongStore = create<BeerpongStore>()(
 
       pro: false,
       setPro: (value) => set({ pro: value }),
+      licence: null,
+      // Verification happens before this is called — see lib/shop.ts. The store
+      // does not talk to the network.
+      redeemLicence: (code) => set({ licence: code, pro: true }),
       trackerUse: EMPTY_TRACKER_USE,
       beginTrackedGame: () => {
         const now = new Date();
@@ -759,6 +772,7 @@ export const useBeerpongStore = create<BeerpongStore>()(
         onboardingDone: state.onboardingDone,
         proNotifyRequested: state.proNotifyRequested,
         pro: state.pro,
+        licence: state.licence,
         trackerUse: state.trackerUse,
         lucky: state.lucky,
         stats: state.stats,
