@@ -262,6 +262,37 @@ zählen) und aus denen danach Becher verschwinden (müssen **genau einmal** und
 dem **richtigen Team** gemeldet werden). Chromium kann sie per
 `--use-file-for-fake-video-capture=t.y4m` als Kamera ausgeben.
 
+## Der Tisch ist echtes 3D
+
+Seit dieser Fassung rendert der Arcade-Modus mit **WebGL** (three.js über
+react-three-fiber) statt mit gezeichneter Perspektive. Die Becher sind
+Rotationskörper aus einem Profil, der Tisch ist eine Platte, die Kamera macht
+die Perspektive.
+
+**Die Konsequenz, die man leicht übersieht:** Sobald eine echte Kamera da ist,
+sind **alle Becher gleich groß**. Die alte Layout-Datei machte ferne Becher
+schmaler (34 Punkte hinten, 68 vorne), damit sie *kleiner gezeichnet* wurden —
+zusammen mit einer Kamera hätte das sie doppelt schrumpfen lassen. Das Layout
+ist deshalb jetzt in **Bodenkoordinaten**: `x` quer über den Tisch, `y` den
+Tisch hinunter, beides flach auf der Platte. Damit fällt einiges weg, was vorher
+schiefgehen konnte — ein Bechermund ist wieder ein **Kreis** und liegt genau
+über dem Becher, statt eine Ellipse ein Drittel Becherhöhe darüber zu sein.
+
+**Und du wirfst von hinter deinem eigenen Rack.** Der Ball lag vorher in der
+Tischmitte. Mit einer echten Kamera war er damit unsichtbar: deine eigenen
+Becher stehen zwischen dir und der Tischmitte. Der Wurf fliegt jetzt über die
+eigenen Becher hinweg, wie im echten Leben.
+
+**Was die Leistung angeht, bin ich ehrlich:** In dieser Umgebung gibt es keine
+GPU, WebGL läuft dort im Software-Rasterisierer. Echte Bildraten auf einem
+iPhone kann ich hier **nicht** messen. Was messbar ist, ist die relative Last:
+Pixeldichte auf höchstens 2 begrenzt, Kantenglättung aus, zwei Punktlichter
+gestrichen und die Geometrie gröber gestuft haben aus 6 fps 18 fps gemacht — die
+gleiche Szene, dreimal billiger. Auf einer echten GPU ist das eine kleine Szene.
+
+**Was dabei verloren ging:** Der Funkenregen beim Treffer sitzt noch in
+2D-Koordinaten und wird deshalb nicht mehr an der richtigen Stelle gezündet.
+
 ## Der Wurf im Arcade-Modus
 
 Ursprünglich war der Wurf ein Würfelwurf: `Trefferchance = Können + Kraft`,
@@ -381,8 +412,8 @@ gezogen hast, und kannst nachjustieren, bevor du loslässt.
 
 | Ziel | Entfernung | nötiger Zug |
 |---|---|---|
-| nächster Becher | 213 pt | 101 pt |
-| hintere Reihe | 361 pt | 172 pt |
+| vorderster Becher | 525 pt | 114 pt |
+| hintere Reihe | 650 pt | 141 pt |
 
 **Das Tempo spielt keine Rolle mehr.** Damit fällt auch die alte Regel weg, dass
 eine stehengebliebene Hand nicht wirft — du darfst ziehen, zielen, kurz
@@ -429,8 +460,8 @@ Die Zahlen dazu (`npm run test:throw`):
 
 | Ziel | Entfernung | nötiger Zug |
 |---|---|---|
-| nächster Becher | 213 pt | 101 pt |
-| hintere Reihe | 361 pt | 172 pt |
+| vorderster Becher | 525 pt | 114 pt |
+| hintere Reihe | 650 pt | 141 pt |
 
 Trefferquoten bei perfektem Schwung, je 8 000 simulierte Würfe:
 

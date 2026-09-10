@@ -25,7 +25,6 @@
  */
 
 import type { CupSpec } from './arcadeLayout';
-import { cupOpenness, mouthAboveCentre } from './cupGeometry';
 
 export interface Point {
   x: number;
@@ -57,24 +56,34 @@ export const APEX = (LAUNCH_UP * LAUNCH_UP) / (2 * GRAVITY);
  * the ball is under your finger the whole time — and you can adjust it before
  * letting go. Every game that gets this right does it by length.
  *
- * At 2.1, the nearest cup wants a 101pt drag and the back row 172pt, both
+ * At 4.6, the nearest cup wants a 114pt drag and the back row 141pt, both
  * comfortable inside a thumb's reach on a phone.
+ *
+ * The two are close together on purpose, and that is not a fudge: on a real
+ * table every cup is roughly the same distance away, because the table is long
+ * compared with the rack. A throw at the back row is not a harder *push* than
+ * one at the front, it is a harder *aim* — which is the half of it you can see.
  */
-const DRAG_TO_RANGE = 2.1;
+const DRAG_TO_RANGE = 4.6;
 /** Shorter than this is a fumble, not a throw. */
 export const MIN_DRAG = 38;
 /** Past this the ball has left the table anyway. */
-export const MAX_RANGE = 520;
+export const MAX_RANGE = 900;
 
 /**
  * Wobble at zero steadiness, in points. Scaled down by steadiness and up by
  * how hard the ball was thrown. Tuned by simulation rather than by feel, and
- * re-tuned whenever the cup's shape moves: with this, a normal thrower aiming
- * well lands 99% at the nearest cup and 66% at the far row. The nearest cup
- * being close to automatic is deliberate — at a real table it is too, and the
- * game's difficulty is meant to live in the rows behind it.
+ * re-tuned whenever the table changes shape: with this, a normal thrower lands
+ * about 90% at the front cup and about 87% on the last cup standing.
+ *
+ * Note what is *not* a difficulty measure any more: hitting the back row of a
+ * full rack. On a real triangle a throw that misses its cup drops into the
+ * neighbour, so aiming at the middle of a full rack is easier than aiming at
+ * the lone cup in front. The honest hard case is the end of a game, one cup
+ * left with nothing around it to catch a miss, and that is what the test
+ * measures.
  */
-const SPREAD_AT_ZERO_SKILL = 52;
+const SPREAD_AT_ZERO_SKILL = 75;
 /** How much of that wobble goes into depth rather than sideways; see below. */
 const DEPTH_WOBBLE = 0.6;
 /** A bounce shot is thrown flatter and lands wilder. */
@@ -91,38 +100,22 @@ export const RESTITUTION = 0.6;
  * drawn openness, so the target is the shape you can see.
  */
 const MOUTH_RX = 0.52;
-/**
- * The shortest a mouth may be as a target, in points.
- *
- * A cup at the far end is seen almost edge-on, so its drawn opening is a slit —
- * but the ball comes down close to vertical, and what actually catches it is
- * the circle of the cup on the table, not the sliver the camera sees. Without
- * this the back row fell from 46% to 36% purely because the drawing became
- * honest about perspective. It only ever binds on the far cups: measured, the
- * nearest cup's rate does not move at all as this is raised from 6 to 12.
- */
-const MIN_MOUTH_RY = 8;
 /** Inside the first the ball drops in; out to the second it catches the rim. */
 const IN_THRESHOLD = 1;
 const RIM_THRESHOLD = 1.45;
 
 /**
- * The opening of a cup, in table points — what a throw is actually aimed at.
+ * The opening of a cup, on the table — what a throw is actually aimed at.
  *
- * Both the offset above the cup's stored position and how squashed the mouth
- * looks come from `lib/cupGeometry`, the same module the drawing uses. That is
- * not tidiness: when the two were separate the physics aimed at the middle of
- * the plastic while the hole was drawn a third of the cup's height higher, so
- * a ball scored without ever looking like it went in.
+ * A circle, and directly above where the cup stands. Both of those used to be
+ * false: the layout was in screen coordinates, so a mouth was an ellipse and
+ * sat a third of a cup's height above the point the cup was stored at, and
+ * getting either wrong meant balls scoring without looking like they went in.
+ * In ground coordinates there is nothing left to get wrong.
  */
 export function cupMouth(cup: CupSpec): Point & { rx: number; ry: number } {
-  const rx = cup.width * MOUTH_RX;
-  return {
-    x: cup.x,
-    y: cup.y - cup.height * mouthAboveCentre(cup.width),
-    rx,
-    ry: rx * cupOpenness(cup.width),
-  };
+  const r = cup.width * MOUTH_RX;
+  return { x: cup.x, y: cup.y, rx: r, ry: r };
 }
 
 /** How long the drag was, in table points. */
@@ -183,22 +176,24 @@ export function spreadFor(skill: number, power: number, bounce: boolean): number
  * That was not the rack being a big target: the opponent was aiming at each
  * cup's stored centre rather than its mouth, so every ball went a mouth-height
  * low and only the spread ever rescued it. A dead-steady opponent landed 2.7%.
- * Aimed properly, the table runs from 97% down to 11% and a weak opponent can
- * actually be weak.
+ *
+ * The last two rows are extrapolated rather than measured — on a tight triangle
+ * the rate falls off so slowly that measuring past 200pt of spread costs a lot
+ * of throws for very little, and no opponent in the league is that bad.
  */
 const ACCURACY_TO_SPREAD: [spread: number, rate: number][] = [
-  [14, 0.981],
-  [20, 0.909],
-  [26, 0.789],
-  [32, 0.668],
-  [38, 0.56],
-  [45, 0.46],
-  [54, 0.375],
-  [66, 0.312],
-  [82, 0.282],
-  [105, 0.257],
-  [135, 0.219],
-  [175, 0.181],
+  [25, 0.97],
+  [33, 0.859],
+  [42, 0.774],
+  [53, 0.709],
+  [66, 0.653],
+  [82, 0.588],
+  [102, 0.512],
+  [128, 0.429],
+  [160, 0.342],
+  [200, 0.26],
+  [280, 0.17],
+  [400, 0.1],
 ];
 
 export function spreadForAccuracy(accuracy: number): number {
@@ -355,7 +350,7 @@ export function resolveLanding(
     if (!aliveFlags[cup.index]) continue;
     const mouth = cupMouth(cup);
     const dx = (landing.x - mouth.x) / mouth.rx;
-    const dy = (landing.y - mouth.y) / Math.max(MIN_MOUTH_RY, mouth.ry);
+    const dy = (landing.y - mouth.y) / mouth.ry;
     const distance = Math.sqrt(dx * dx + dy * dy);
     if (distance < closestDistance) {
       closestDistance = distance;
@@ -384,15 +379,20 @@ export function resolveLanding(
  * sideways, and it never moves the ball to a different cup than the one it was
  * already heading for.
  *
- * The window is wide enough to cover the jump in required strength when a row
- * is cleared away — measured in the browser, sinking the front cup moves the
- * nearest target from 212pt to 273pt, and a throw 114pt short got no help at
- * all under the old 58pt window. Strength therefore picks roughly which row,
- * and the pull finishes the job; direction is still entirely yours. A wild
- * overthrow is still a wild overthrow: nothing is pulled onto a cup it was
- * never near.
+ * The window has to cover the whole depth of a rack *plus* the error in a
+ * drag, because the required strength moves as cups are cleared: the nearest
+ * cup starts 525pt away and the last one standing can be 650pt away. Measured
+ * in the browser under narrower windows, a run stalled at 6 of 10 cups — once
+ * the front rows were gone, every throw fell short of everything left and got
+ * no help at all, throw after throw, with the game telling the player "drag
+ * further" and the player having no way to know how much further. At 220 any
+ * drag between roughly 66 and 189 points lands somewhere on the rack, and
+ * which cup it finds is down to your line. Strength therefore picks the table, and the pull finds the cup;
+ * direction is still entirely yours. A wild overthrow is still a wild
+ * overthrow — nothing is pulled onto a cup it was never near, and a test says
+ * so.
  */
-const ASSIST_WINDOW = 95;
+const ASSIST_WINDOW = 220;
 const ASSIST_STRENGTH = 0.85;
 
 /**
