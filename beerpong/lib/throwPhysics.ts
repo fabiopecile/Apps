@@ -481,12 +481,26 @@ export function resolveThrow(params: {
   // caught it.
   const landing = { x: aim.x + offset.x, y: aim.y + offset.y * DEPTH_WOBBLE };
 
+  const outcome = resolveLanding(landing, cups, aliveFlags);
+
+  // What you watch has to be what gets counted.
+  //
+  // The wobble decides *whether* the throw goes in and *which* cup catches it.
+  // Once that is settled, the ball is flown into that cup rather than to the
+  // scattered point beside it — otherwise the ball lands next to one cup while
+  // a different one goes over, which from the player's side is the game
+  // scoring a cup they did not hit.
+  const sunk = outcome.hit && outcome.cupIndex != null
+    ? cups.find((cup) => cup.index === outcome.cupIndex)
+    : null;
+  const shown = sunk ? cupMouth(sunk) : landing;
+
   return {
-    ...resolveLanding(landing, cups, aliveFlags),
+    ...outcome,
     power,
     aim,
-    landing,
-    flight: buildFlight(start, landing, bounce),
+    landing: shown,
+    flight: buildFlight(start, shown, bounce),
   };
 }
 

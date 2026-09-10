@@ -510,6 +510,32 @@ Rack auf, behält 60 % seiner Aufwärtsgeschwindigkeit und springt flach in den
 Becher. Wo er aufsetzen muss, ergibt sich aus dieser Zahl: der zweite Hüpfer
 ist genau 60 % so lang wie der erste.
 
+### Was du siehst, ist was gezählt wird
+
+Zwei Sachen liefen auseinander, und beide fühlten sich für den Spieler wie
+derselbe Fehler an: „der Ball fliegt richtig, zählt aber nicht — und wenn er
+zählt, war es ein Becher, den ich nicht getroffen habe."
+
+**Ein Fehlwurf hatte gar keine Landung.** Der Ball kam an, und sechzig
+Millisekunden später stand er wieder auf seiner Marke. Aus der neuen
+Kameraperspektive ist ein Ball, der neben einem Becher liegen bleibt, halb
+hinter ihm versteckt — der Wurf las sich also als „ging rein und wurde nicht
+gezählt". Jetzt hüpft ein Fehlwurf zweimal auf und rollt weg, sichtbar am Rack
+vorbei.
+
+**Und der gezeichnete Flug endet jetzt in dem Becher, der fällt.** Die Streuung
+entscheidet weiterhin *ob* der Wurf sitzt und *welcher* Becher ihn fängt — aber
+sobald das feststeht, fliegt der Ball dorthin, statt daneben zu landen und der
+Becher daneben umzukippen. Gemessen: bei jedem Treffer liegen Landung und
+gezählter Becher jetzt 0 pt auseinander, vorher bis zu 24.
+
+**Ein Zielmagnet wäre der bequeme Weg gewesen, und der Test hat ihn abgelehnt.**
+Naheliegend war, jeden knappen Fehlwurf seitlich auf den Becher zu ziehen. Selbst
+in der zahmsten Fassung (34 pt Radius, 30 % Anteil) traf der letzte Becher damit
+in **99 %** der Fälle, und die Prüfung „Abschließen muss etwas kosten" ist genau
+dafür da. Das Problem war ohnehin nicht die Schwierigkeit, sondern die
+Lesbarkeit.
+
 ### Die Kraft kommt aus der Länge des Zuges, nicht aus dem Tempo
 
 Das war der eigentliche Fehler, und er hat vier Runden gebraucht. Die Stärke
