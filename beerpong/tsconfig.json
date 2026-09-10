@@ -6,5 +6,8 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"]
+  "include": ["**/*.ts", "**/*.tsx", ".expo/types/**/*.ts", "expo-env.d.ts"],
+  // `server/` is a Cloudflare Worker: it runs against workers-types, not the
+  // React Native types, and has its own tsconfig. `dist/` is build output.
+  "exclude": ["node_modules", "dist", "server"]
 }

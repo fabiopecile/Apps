@@ -227,6 +227,13 @@ interface BeerpongStore {
 export const DEFAULT_START_CUPS = 10;
 const MAX_HISTORY = 30;
 
+/**
+ * The names a match starts with. Exported because "did they actually name
+ * themselves?" is a real question elsewhere — an online lobby that helpfully
+ * prefills "Team 1" gets two teams both called Team 1.
+ */
+export const DEFAULT_TEAM_NAMES: [string, string] = ['Team 1', 'Team 2'];
+
 function makeTeam(name: string, cups: number): TrackerTeam {
   return {
     name,
@@ -242,8 +249,8 @@ function makeTeam(name: string, cups: number): TrackerTeam {
 function makeTracker(startCups: number, names?: [string, string]): TrackerState {
   return {
     teams: [
-      makeTeam(names?.[0] || 'Team 1', startCups),
-      makeTeam(names?.[1] || 'Team 2', startCups),
+      makeTeam(names?.[0] || DEFAULT_TEAM_NAMES[0], startCups),
+      makeTeam(names?.[1] || DEFAULT_TEAM_NAMES[1], startCups),
     ],
     activeTeam: 0,
     startCups,

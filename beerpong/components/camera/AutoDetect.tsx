@@ -34,6 +34,14 @@ interface AutoDetectProps {
   /** Confirmed hit, against the team whose rack lost the cup. */
   onConfirmHit: (againstTeam: TeamIndex) => void;
   onClose: () => void;
+  /**
+   * Watch only the first team's rack.
+   *
+   * That is the online case: each phone stands at its own table and can only
+   * see its own ten cups. There is no second rack to line up, so asking for one
+   * would just be a step that has to be skipped every time.
+   */
+  singleRack?: boolean;
 }
 
 /**
@@ -50,7 +58,13 @@ interface AutoDetectProps {
  * to work out; the rest is noticing that a patch stopped looking like a cup,
  * and that is `lib/cupVision.ts`.
  */
-export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoDetectProps) {
+export function AutoDetect({
+  cupCount,
+  teamNames,
+  onConfirmHit,
+  onClose,
+  singleRack = false,
+}: AutoDetectProps) {
   // Measured rather than taken from the window: the preview sits above the
   // tab bar, so the window is taller than the video. Sharing one box is what
   // keeps the rings and the sampled patches over the same cups.
@@ -75,7 +89,7 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
   /** Reset the guides when the phone is turned — the old ones make no sense. */
   const wasLandscape = useRef<boolean | null>(null);
   /** Teams whose racks ended up being watched, in sampling order. */
-  const [racks, setRacks] = useState<TeamIndex[]>([0, 1]);
+  const [racks, setRacks] = useState<TeamIndex[]>(singleRack ? [0] : [0, 1]);
   const [detector, setDetector] = useState<DetectorState>(() => createDetector([cupCount]));
   const [pending, setPending] = useState<number | null>(null);
   const [distances, setDistances] = useState<number[]>([]);
@@ -286,7 +300,8 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
     );
   }
 
-  const watchedRacks = mode === 'aligning' ? ([0, 1] as TeamIndex[]) : racks;
+  const watchedRacks =
+    mode === 'aligning' ? ((singleRack ? [0] : [0, 1]) as TeamIndex[]) : racks;
   const overlay = watchedRacks.map((team, position) => {
     const offset = position * cupCount;
     // While aligning, the rack not being touched is drawn dim for context.
@@ -347,7 +362,9 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
           <>
             <View style={styles.stepRow}>
               <Text style={styles.title}>
-                {t('detect.alignStep', { step: aligning + 1, team: teamNames[aligning] })}
+                {singleRack
+                  ? t('detect.alignOwn')
+                  : t('detect.alignStep', { step: aligning + 1, team: teamNames[aligning] })}
               </Text>
               <Pressable onPress={turnQuarter} style={styles.turnButton} hitSlop={6}>
                 <Ionicons name="refresh" size={14} color={colors.neon} />
@@ -378,7 +395,23 @@ export function AutoDetect({ cupCount, teamNames, onConfirmHit, onClose }: AutoD
               </Text>
             )}
             <View style={styles.row}>
-              {aligning === 0 ? (
+              {singleRack ? (
+                <>
+                  <GlowButton
+                    label={t('common.cancel')}
+                    variant="ghost"
+                    size="sm"
+                    onPress={onClose}
+                    style={styles.flexButton}
+                  />
+                  <GlowButton
+                    label={t('detect.start')}
+                    size="sm"
+                    onPress={() => startWatching([0])}
+                    style={styles.flexButton}
+                  />
+                </>
+              ) : aligning === 0 ? (
                 <>
                   <GlowButton
                     label={t('common.cancel')}

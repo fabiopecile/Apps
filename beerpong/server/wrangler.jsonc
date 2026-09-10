@@ -1,0 +1,18 @@
+{
+  // Der Server für den Online-Modus. Eine einzige Datei, kostenlos zu
+  // betreiben: der Workers-Free-Plan deckt 100.000 Anfragen pro Tag ab, und
+  // ein Beerpong-Spiel sind ein paar Dutzend Nachrichten.
+  //
+  // Veröffentlichen:  npx wrangler deploy
+  // (Im Repository macht das der Workflow .github/workflows/deploy-server.yml.)
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "beerpong-rooms",
+  "main": "worker.ts",
+  "compatibility_date": "2025-04-01",
+  "observability": { "enabled": true },
+  "durable_objects": {
+    "bindings": [{ "name": "ROOMS", "class_name": "Room" }]
+  },
+  // SQLite-Backend: das ist die Variante, die im kostenlosen Plan enthalten ist.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["Room"] }]
+}
