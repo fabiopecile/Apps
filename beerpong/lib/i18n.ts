@@ -92,8 +92,8 @@ const STRINGS = {
   // ------------------------------------------------------------ pro paywall
   'pro.title': { de: 'Beerpong Pro', en: 'Beerpong Pro' },
   'pro.teaser': {
-    de: 'Cup-Erkennung, online gegen andere Tische — in Arbeit',
-    en: 'Cup detection, online against other tables — in the works',
+    de: 'Kamera-Kontingent, Cup-Erkennung ohne Nachfragen — in Arbeit',
+    en: 'Your camera allowance, and cup detection without the questions',
   },
   'pro.heroTitle': { de: 'Die Kamera zählt mit', en: 'Let the camera keep score' },
   'pro.heroBody': {
@@ -106,14 +106,6 @@ const STRINGS = {
   'pro.feature.detect.body': {
     de: 'Cups und Ball werden im Kamerabild erkannt, Treffer zählen sich selbst.',
     en: 'Cups and ball recognised in the camera feed, so hits count themselves.',
-  },
-  'pro.feature.online.title': {
-    de: 'Kamera-Modus gegen Online-Gegner',
-    en: 'Camera mode against online opponents',
-  },
-  'pro.feature.online.body': {
-    de: 'Ihr steht an eurem Tisch, die anderen an ihrem — jede Seite trackt ihr eigenes Rack, die App führt einen gemeinsamen Spielstand.',
-    en: 'You stand at your table, they stand at theirs — each side tracks its own rack while the app keeps one shared score.',
   },
   'pro.feature.stats.title': { de: 'Tiefe Statistiken', en: 'Deep stats' },
   'pro.feature.stats.body': {
@@ -137,10 +129,13 @@ const STRINGS = {
   },
   'pro.howItWorks': { de: 'Wie das funktionieren soll', en: 'How it is meant to work' },
   'pro.explainDetectTitle': { de: 'Cups automatisch zählen', en: 'Counting cups automatically' },
-  'pro.explainOnlineTitle': { de: 'Zwei Tische, ein Spiel', en: 'Two tables, one game' },
+  'pro.explainOnlineTitle': {
+    de: 'Zwei Tische, ein Spiel — und kostenlos',
+    en: 'Two tables, one game — and free',
+  },
   'pro.explainOnlineBody': {
-    de: 'Einer eröffnet eine Partie und teilt den Code, die andere Seite tritt bei. Ab da zählt jedes Team nur sein eigenes Rack — der Spielstand wird zwischen den Handys abgeglichen, und wer dran ist, steht auf beiden Bildschirmen. Übertragen werden nur Treffer und Züge, kein Videobild.',
-    en: 'One side opens a game and shares the code, the other joins. From then on each team only counts its own rack — the score syncs between the phones and both screens show whose turn it is. Only hits and turns travel over the network, never video.',
+    de: 'Der Online-Modus ist fertig und kostet nichts: Einer eröffnet eine Partie und teilt den Code, die andere Seite tritt bei. Ab da zählt jedes Team nur sein eigenes Rack — der Spielstand läuft zusammen, und wer dran ist, steht auf beiden Bildschirmen. Übertragen werden nur Treffer und Züge, kein Videobild. Zu finden über den Globus oben im Kamera-Modus.',
+    en: 'Online play is built, and free: one side opens a game and shares the code, the other joins. From then on each team only counts its own rack — the score comes together and both screens show whose turn it is. Only hits and turns travel over the network, never video. It is behind the globe at the top of the camera screen.',
   },
   'pro.explainBody': {
     de: 'Heute musst du das Rack einmal von Hand ausrichten, und bei jedem erkannten Becher fragt die App nach. Mit Pro soll ein kleines Bilderkennungsmodell direkt auf dem Handy die Becher selbst finden — dann fallen Ausrichten und Nachfragen weg. Alles bleibt auf dem Gerät, es werden keine Videos hochgeladen.',
@@ -182,6 +177,89 @@ const STRINGS = {
   },
   'free.devOn': { de: 'Limit abgeschaltet ✓', en: 'Limit switched off ✓' },
   'free.devOff': { de: 'Limit abschalten', en: 'Switch the limit off' },
+
+  // ----------------------------------------------------------- online play
+  'online.title': { de: 'Online-Spiel', en: 'Online game' },
+  'online.intro': {
+    de: 'Ihr steht an eurem Tisch, die anderen an ihrem. Jede Seite filmt nur ihre eigenen Becher — der Spielstand läuft zusammen. Übertragen werden nur Treffer und Züge, niemals ein Videobild.',
+    en: 'You stand at your table, they stand at theirs. Each side films only its own cups — the score comes together. Only hits and turns travel; never a video frame.',
+  },
+  'online.createTitle': { de: 'Raum eröffnen', en: 'Open a room' },
+  'online.createBody': {
+    de: 'Ihr bekommt einen Code aus vier Zeichen und gebt ihn weiter.',
+    en: 'You get a four-character code and pass it on.',
+  },
+  'online.joinTitle': { de: 'Beitreten', en: 'Join' },
+  'online.joinBody': {
+    de: 'Code eintippen, den die andere Seite euch geschickt hat.',
+    en: 'Type in the code the other side sent you.',
+  },
+  'online.codePlaceholder': { de: 'CODE', en: 'CODE' },
+  'online.teamName': { de: 'Wie heißt euer Team?', en: 'What is your team called?' },
+  'online.namePlaceholder': {
+    de: 'Frei lassen geht auch',
+    en: 'Leaving it empty is fine',
+  },
+  'online.cupsLabel': { de: 'Becher pro Seite', en: 'Cups per side' },
+  'online.start': { de: 'Raum eröffnen', en: 'Open the room' },
+  'online.join': { de: 'Beitreten', en: 'Join' },
+  'online.codeTitle': { de: 'Euer Code', en: 'Your code' },
+  'online.codeHint': {
+    de: 'Sagt oder schickt den Code der anderen Seite. Er gilt, bis das Spiel vorbei ist.',
+    en: 'Say or send the code to the other side. It lasts until the game is over.',
+  },
+  'online.shareCode': { de: 'Code teilen', en: 'Share the code' },
+  'online.connecting': { de: 'Verbinde …', en: 'Connecting…' },
+  'online.reconnecting': {
+    de: 'Verbindung weg — es wird weiter versucht',
+    en: 'Connection lost — still trying',
+  },
+  'online.waitingForOther': {
+    de: 'Warten auf die andere Seite …',
+    en: 'Waiting for the other side…',
+  },
+  'online.otherLeft': {
+    de: 'Die andere Seite ist gerade weg. Der Spielstand bleibt.',
+    en: 'The other side is away right now. The score stays.',
+  },
+  'online.refused.full': {
+    de: 'In diesem Raum spielen schon zwei.',
+    en: 'There are already two phones in this room.',
+  },
+  'online.refused.missing': {
+    de: 'Diesen Code gibt es nicht. Vertippt, oder das Spiel ist vorbei.',
+    en: 'No such code. Either a typo, or the game is over.',
+  },
+  'online.refused.taken': {
+    de: 'Der Code ist gerade belegt — probiert es noch einmal.',
+    en: 'That code is in use — try once more.',
+  },
+  'online.refused.badCode': { de: 'Der Code passt nicht.', en: 'That is not a code.' },
+  'online.tryAgain': { de: 'Noch einmal', en: 'Try again' },
+  'online.yourRack': { de: 'Eure Becher', en: 'Your cups' },
+  'online.theirRack': { de: 'Ihre Becher', en: 'Their cups' },
+  'online.yourTurn': { de: 'Ihr seid dran', en: 'Your throw' },
+  'online.theirTurn': { de: 'Die andere Seite wirft', en: 'They are throwing' },
+  'online.reportTitle': { de: 'Was ist an eurem Tisch passiert?', en: 'What happened at your table?' },
+  'online.cupDown': { de: 'Becher weg', en: 'Cup gone' },
+  'online.missed': { de: 'Daneben', en: 'Missed' },
+  'online.reportHint': {
+    de: 'Ihr meldet nur, was mit euren eigenen Bechern passiert — den Rest meldet die andere Seite.',
+    en: 'You only report what happens to your own cups — the other side reports the rest.',
+  },
+  'online.leave': { de: 'Spiel verlassen', en: 'Leave the game' },
+  'online.youWon': { de: 'Ihr habt gewonnen', en: 'You won' },
+  'online.theyWon': { de: 'Die andere Seite gewinnt', en: 'The other side wins' },
+  'online.rematch': { de: 'Revanche', en: 'Rematch' },
+  'online.notSetUpTitle': { de: 'Noch kein Server eingetragen', en: 'No server set up yet' },
+  'online.notSetUpBody': {
+    de: 'Der Online-Modus braucht eine Adresse, unter der die Spiel-Räume laufen. Wie das kostenlos geht, steht in der README unter „Online spielen". Danach erscheint dieser Bildschirm von selbst.',
+    en: 'Online play needs an address where the rooms run. The README explains how to get one for free under “Playing online”. This screen then works by itself.',
+  },
+  'online.cameraHint': {
+    de: 'Kamera einschalten und eure eigenen Becher mitzählen lassen',
+    en: 'Turn the camera on and let it count your own cups',
+  },
 
   // -------------------------------------------------------------- not found
   'notFound.title': { de: 'Nicht gefunden', en: 'Not found' },
@@ -235,6 +313,7 @@ const STRINGS = {
     de: 'Handy quer halten zeigt fast dreimal so viel vom Tisch — dann von der Längsseite filmen.',
     en: 'Turning the phone sideways shows nearly three times as much table — then film from the long side.',
   },
+  'detect.alignOwn': { de: 'Euer eigenes Rack', en: 'Your own rack' },
   'detect.nextRack': { de: 'Weiter zum 2. Rack', en: 'On to rack 2' },
   'detect.onlyOne': { de: 'Nur ein Rack', en: 'Just one rack' },
   'detect.start': { de: 'Passt — los', en: 'Looks right — go' },

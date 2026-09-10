@@ -18,8 +18,8 @@ const FEATURES: {
   titleKey: TranslationKey;
   bodyKey: TranslationKey;
 }[] = [
+  // Online play is not on this list any more: it is built, and it is free.
   { icon: 'scan', titleKey: 'pro.feature.detect.title', bodyKey: 'pro.feature.detect.body' },
-  { icon: 'globe', titleKey: 'pro.feature.online.title', bodyKey: 'pro.feature.online.body' },
   { icon: 'stats-chart', titleKey: 'pro.feature.stats.title', bodyKey: 'pro.feature.stats.body' },
   { icon: 'videocam', titleKey: 'pro.feature.replay.title', bodyKey: 'pro.feature.replay.body' },
   { icon: 'cloud-upload', titleKey: 'pro.feature.sync.title', bodyKey: 'pro.feature.sync.body' },
