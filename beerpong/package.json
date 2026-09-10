@@ -58,7 +58,8 @@
     "test:online": "node tools/test_online_protocol.mjs",
     "test:lucky": "node tools/test_lucky_shot.mjs",
     "test:room": "node tools/test_room_server.mjs",
-    "bench:vision": "node tools/bench_cup_vision.mjs"
+    "bench:vision": "node tools/bench_cup_vision.mjs",
+    "bench:ai": "node tools/bench_opponent.mjs"
   },
   "private": true
 }
