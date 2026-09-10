@@ -52,15 +52,18 @@
     "web": "expo start --web",
     "test:vision": "node tools/test_cup_vision.mjs",
     "test:throw": "node tools/test_throw_physics.mjs",
-    "test": "npm run test:vision && npm run test:throw && npm run test:turns && npm run test:free && npm run test:online && npm run test:lucky && npm run test:stats && npm run test:room",
+    "test": "npm run test:vision && npm run test:throw && npm run test:turns && npm run test:free && npm run test:online && npm run test:lucky && npm run test:stats && npm run test:licence && npm run test:room && npm run test:shop",
     "test:turns": "node tools/test_turn_rules.mjs",
     "test:free": "node tools/test_entitlement.mjs",
     "test:online": "node tools/test_online_protocol.mjs",
     "test:lucky": "node tools/test_lucky_shot.mjs",
     "test:stats": "node tools/test_stats.mjs",
+    "test:licence": "node tools/test_licence.mjs",
+    "test:shop": "node tools/test_shop.mjs",
     "test:room": "node tools/test_room_server.mjs",
     "bench:vision": "node tools/bench_cup_vision.mjs",
-    "bench:ai": "node tools/bench_opponent.mjs"
+    "bench:ai": "node tools/bench_opponent.mjs",
+    "fake:stripe": "node tools/fake_stripe.mjs"
   },
   "private": true
 }

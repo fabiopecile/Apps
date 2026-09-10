@@ -509,6 +509,87 @@ abgewiesen wird, dass ein Handy nach einem Verbindungsabbruch seinen Platz und
 den Spielstand zurückbekommt, und dass der Raum Unsinn ignoriert statt
 umzufallen.
 
+## 4,99 € einmalig, über Stripe
+
+Verkauft wird genau eine Sache: **Kamera-Tracking ohne Wochenlimit.** Kein Abo,
+keine Folgekosten, und über Stripe statt über einen App Store — das spart 15 %
+Provision und die 99 € Entwicklergebühr pro Jahr, denn die Web-App auf dem
+iPhone braucht keinen Store.
+
+### Wie der Kauf abläuft
+
+1. Die App fragt den Server `GET /shop`, *was* überhaupt verkauft wird. Sind
+   keine Stripe-Schlüssel hinterlegt, sagt der Pro-Bildschirm ehrlich „noch
+   nicht kaufbar" statt einen Knopf zu zeigen, der scheitert.
+2. „Freischalten" lässt den Server eine Stripe-Checkout-Sitzung anlegen und
+   leitet den Browser dorthin. Kartendaten sieht die App nie.
+3. Stripe leitet zurück auf `/pro?paid=<Sitzung>`. Diese Sitzungs-ID ist eine
+   **Behauptung** — die Adresszeile kann jeder tippen. Der Server fragt
+   deshalb bei Stripe nach, ob wirklich bezahlt wurde, und gibt erst dann
+   einen Code heraus.
+
+### Der Code ist die Quittung
+
+Es gibt keine Konten in dieser App, und für einen Einmalkauf soll es auch
+keine geben. Also *ist* der Code die Lizenz: `BP-XXXX-XXXX-XXXX`, vom Server
+signiert, prüft sich selbst. Aufschreiben — damit schaltest du ein zweites
+oder ein neues Handy frei, ohne dich irgendwo anzumelden.
+
+Das heißt auch: Der Code lässt sich weitergeben und nicht zurückziehen. Das
+ist eine bewusste Abwägung, kein Versehen — einen 4,99-€-Kauf ans Gerät zu
+binden bestraft weit öfter den, dem das Handy runterfällt, als es den bremst,
+der seinen Code einem Freund gibt. Der einzige echte Gegenentwurf sind Konten,
+und die kosten mehr als das, was sie schützen sollen.
+
+Der Server speichert nichts davon: Der Code wird aus der Stripe-Sitzung
+abgeleitet, also ergibt dieselbe Zahlung immer denselben Code — zweimal
+einlösen geht, zweimal kassieren nicht.
+
+### Einrichten (zusätzlich zum Online-Server oben)
+
+Beides läuft auf demselben Worker. Im Ordner `server/`:
+
+```bash
+npx wrangler secret put STRIPE_SECRET_KEY   # sk_live_… aus dem Stripe-Dashboard
+npx wrangler secret put LICENCE_SECRET      # irgendeine lange zufällige Zeile
+npx wrangler deploy
+```
+
+Optional als Variablen: `SHOP_PRICE_CENTS` (Standard 499), `SHOP_CURRENCY`
+(`eur`), `APP_URL` (sonst nimmt der Server die Herkunft des Browsers).
+
+Fehlt einer der beiden Schlüssel, ist der Laden zu — und der
+Entwickler-Schalter aus dem Abschnitt unten kommt zurück. Beide gleichzeitig
+gibt es nie.
+
+### Was geprüft ist, und was nicht
+
+`npm run test:shop` spielt den ganzen Ablauf gegen einen wirklich laufenden
+Worker durch — gegen `tools/fake_stripe.mjs`, einen Stripe-Nachbau, der
+dieselben zwei Endpunkte im selben Format spricht. Grund: Aus der
+Entwicklungsumgebung ist `api.stripe.com` gesperrt.
+
+**Das beweist** — dass eine unbezahlte Sitzung keinen Code hergibt, eine
+erfundene auch nicht, dass ein nicht signierter Code abgelehnt wird, dass
+zweimal Einlösen denselben Code ergibt und nicht zwei, dass zwei verschiedene
+Käufe verschiedene Codes bekommen, und dass die App auf jede dieser Antworten
+richtig reagiert. Dazu der Durchlauf durch die echte Oberfläche: kaufen,
+zurückkommen, freigeschaltet, Code auf einem zweiten Gerät eingelöst, falscher
+Code abgelehnt.
+
+**Das beweist es nicht** — dass Stripe die Anfrage annimmt, dass eine echte
+Karte durchgeht oder dass Geld ankommt. Das zeigt nur ein Testkauf gegen die
+echte API. Mit den Test-Schlüsseln (`sk_test_…`) und der Testkarte
+`4242 4242 4242 4242` sind das fünf Minuten — **mach das, bevor du den
+Live-Schlüssel einträgst.**
+
+### Und das Rechtliche
+
+Ein Verkauf an Verbraucher bringt Pflichten mit, die keine Codezeile löst:
+Impressum, Widerrufsbelehrung (bei digitalen Inhalten mit Verzicht auf das
+Widerrufsrecht), Umsatzsteuer und ihre Schwellenwerte, AGB. Das ist eine Frage
+für einen Steuerberater und ggf. einen Anwalt, nicht für diese README.
+
 ## Was frei ist, und wofür jemand später zahlen würde
 
 Das Arcade-Spiel ist ein Spiel, und es gibt hundert davon umsonst. Dafür zahlt
@@ -536,10 +617,9 @@ niemand zwei Racks einpassen und *danach* erfahren, dass die Woche leer ist.
 **Der Entwickler-Schalter.** Eine Grenze zu ziehen, während es keine Möglichkeit
 zu bezahlen gibt, macht die App schlechter, ohne dass jemand etwas davon hat.
 Unten auf dem Pro-Bildschirm sitzt deshalb ein klar benannter Schalter, der das
-Limit abschaltet. Er ist kein Trick und kein Easter Egg — er fliegt raus, sobald
-es einen echten Kauf gibt (App-Store-Abo oder Einmalkauf über
-`expo-in-app-purchases`; beides braucht ein Entwicklerkonto und einen Firmen-
-oder Privateintrag beim Store).
+Limit abschaltet — aber **nur, solange der Laden zu ist**. Sobald auf dem Worker
+Stripe-Schlüssel liegen, verschwindet er und an seiner Stelle steht der Kauf
+für 4,99 € (siehe oben). Beides gleichzeitig gibt es nie.
 
 Bevor irgendjemand dafür Geld verlangt, muss die Erkennung an einem echten Tisch
 bestehen. Der Prüfstand unten simuliert ein Wohnzimmer; ein Wohnzimmer ist er
@@ -1026,6 +1106,8 @@ Wischgeschwindigkeiten — auf einem Handy nicht mehr zielbar.
 - **Halbautomatische Becher-Erkennung** (Web-Version) — beide Racks einmal
   ausrichten, danach meldet die App jeden verschwundenen Becher, ordnet ihn dem
   richtigen Team zu und fragt nach
+- **Kamera ohne Wochenlimit für 4,99 €** — einmalig über Stripe, kein Abo;
+  der Freischalt-Code gilt auch auf einem zweiten Handy
 - **Online gegen einen anderen Tisch** — Code aus vier Zeichen, jede Seite
   zählt nur ihr eigenes Rack, gemeinsamer Spielstand; kostenlos zu betreiben
   (siehe „Online spielen")
@@ -1077,9 +1159,11 @@ components/              UI-Bausteine, Arcade-Grafik (Becher, Ball, Würfe)
 lib/                     Store (zustand), Spiel-Logik, Layout, Sound, i18n
                          cupVision.ts = Becher-Erkennung, frameSampler* = Bildquelle
                          entitlement.ts = freies Kamera-Kontingent
+                         licence.ts / shop.ts = Kauf und Freischalt-Code
                          onlineProtocol.ts = Regeln des Online-Spiels (App + Server)
                          onlineRoom.ts = die Socket-Seite davon im Handy
-server/                  Cloudflare Worker: ein Raum pro Code (siehe „Online spielen")
+server/                  Cloudflare Worker: Räume für den Online-Modus und
+                         der Kauf über Stripe (siehe die beiden Abschnitte oben)
 public/                  Wird 1:1 in die Web-Version kopiert (Manifest, Icons, sw.js)
 theme/                   Farben, Schriften, Glow-Effekt
 tools/                   Hilfsskripte (Logo/Icons und Sounds erzeugen)

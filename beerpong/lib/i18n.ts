@@ -117,11 +117,6 @@ const STRINGS = {
     de: 'Trefferzonen, Formkurve über die Saison und Vergleich mit deinen Freunden.',
     en: 'Hit zones, form over the season and a comparison with your friends.',
   },
-  'pro.feature.replay.title': { de: 'Highlight-Clips', en: 'Highlight clips' },
-  'pro.feature.replay.body': {
-    de: 'Die letzten Sekunden vor einem Treffer automatisch als kurzes Video.',
-    en: 'The last few seconds before a hit, saved automatically as a short clip.',
-  },
   'pro.feature.sync.title': { de: 'Cloud-Sync', en: 'Cloud sync' },
   'pro.feature.sync.body': {
     de: 'Fortschritt auf mehreren Geräten und echtes Matchmaking im Arcade-Modus.',
@@ -151,6 +146,52 @@ const STRINGS = {
   'pro.disclaimer': {
     de: 'Pro ist noch nicht kaufbar. Die Vormerkung wird nur lokal auf diesem Gerät gespeichert.',
     en: 'Pro is not purchasable yet. Your reminder is stored locally on this device only.',
+  },
+
+  // ----------------------------------------------------------------- shop
+  'shop.buy': { de: 'Freischalten · {price}', en: 'Unlock · {price}' },
+  'shop.buySub': {
+    de: 'Einmalig. Kein Abo, keine Folgekosten.',
+    en: 'One time. No subscription, nothing recurring.',
+  },
+  'shop.owned': { de: 'Freigeschaltet ✓', en: 'Unlocked ✓' },
+  'shop.ownedBody': {
+    de: 'Kamera-Tracking ohne Wochenlimit. Danke — im Ernst.',
+    en: 'Camera tracking with no weekly limit. Thank you — genuinely.',
+  },
+  'shop.yourCode': { de: 'Dein Code', en: 'Your code' },
+  'shop.codeHint': {
+    de: 'Schreib ihn dir auf. Damit schaltest du auch ein zweites oder neues Handy frei — ohne Konto, ohne Anmeldung.',
+    en: 'Write it down. It unlocks a second or replacement phone too — no account, no sign-in.',
+  },
+  'shop.restore': { de: 'Ich habe schon einen Code', en: 'I already have a code' },
+  'shop.restoreAction': { de: 'Code einlösen', en: 'Redeem code' },
+  'shop.codePlaceholder': { de: 'BP-XXXX-XXXX-XXXX', en: 'BP-XXXX-XXXX-XXXX' },
+  'shop.badCode': {
+    de: 'Diesen Code kennt der Server nicht. Vertippt?',
+    en: 'The server does not know that code. A typo?',
+  },
+  'shop.notPaid': {
+    de: 'Zu dieser Zahlung findet der Server nichts. Wurde sie abgebrochen?',
+    en: 'The server finds no payment for that. Was it cancelled?',
+  },
+  'shop.cancelled': { de: 'Kauf abgebrochen. Alles unverändert.', en: 'Purchase cancelled. Nothing changed.' },
+  'shop.startFailed': {
+    de: 'Der Kauf ließ sich nicht öffnen. Internet weg?',
+    en: 'Could not open the checkout. Connection gone?',
+  },
+  'shop.checking': { de: 'Zahlung wird geprüft …', en: 'Checking the payment…' },
+  'shop.nativeHint': {
+    de: 'Der Kauf läuft im Browser. Danach steht dort dein Code — den hier eintragen, dann ist auch diese App frei.',
+    en: 'The purchase happens in the browser. Your code is shown there — type it in here and this app unlocks too.',
+  },
+  'shop.plannedNote': {
+    de: 'Achtung: Das hier ist noch nicht gebaut und im Kauf nicht enthalten. Bezahlt wird allein das Kamera-Tracking ohne Wochenlimit.',
+    en: 'Note: none of this is built yet and none of it is included. What the money buys is camera tracking without the weekly limit — that is all.',
+  },
+  'shop.stripeNote': {
+    de: 'Bezahlt wird über Stripe. Die App sieht deine Kartendaten nie.',
+    en: 'Payment goes through Stripe. The app never sees your card details.',
   },
 
   // ------------------------------------------------------------- free tier
