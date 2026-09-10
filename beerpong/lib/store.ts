@@ -189,6 +189,15 @@ interface BeerpongStore {
   statsRecordCup: (index: number) => void;
   statsRecordMatch: (match: MatchRecord) => void;
 
+  /**
+   * Record the seconds around a confirmed cup as a clip.
+   *
+   * Off by default: it is a camera recording continuously, and that is
+   * somebody's decision to make rather than a default to discover.
+   */
+  highlightsEnabled: boolean;
+  setHighlightsEnabled: (value: boolean) => void;
+
   /** The daily golden-cup shot; see `lib/luckyShot.ts`. */
   lucky: LuckyState;
   /**
@@ -338,6 +347,9 @@ export const useBeerpongStore = create<BeerpongStore>()(
       stats: EMPTY_STATS,
       statsRecordCup: (index) => set((s) => ({ stats: recordCup(s.stats, index) })),
       statsRecordMatch: (match) => set((s) => ({ stats: recordMatch(s.stats, match) })),
+
+      highlightsEnabled: false,
+      setHighlightsEnabled: (value) => set({ highlightsEnabled: value }),
 
       lucky: EMPTY_LUCKY,
       playLuckyShot: (outcome) => {
@@ -750,6 +762,7 @@ export const useBeerpongStore = create<BeerpongStore>()(
         trackerUse: state.trackerUse,
         lucky: state.lucky,
         stats: state.stats,
+        highlightsEnabled: state.highlightsEnabled,
         houseRules: state.houseRules,
         camera: state.camera,
         tracker: state.tracker,
