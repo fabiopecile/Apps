@@ -153,6 +153,36 @@ const STRINGS = {
     en: 'Pro is not purchasable yet. Your reminder is stored locally on this device only.',
   },
 
+  // ------------------------------------------------------------- free tier
+  'free.label': { de: 'Dein Kontingent', en: 'Your allowance' },
+  'free.left': {
+    de: 'Noch {left} von {total} Kamera-Spielen diese Woche',
+    en: '{left} of {total} camera games left this week',
+  },
+  'free.none': {
+    de: 'Die {total} freien Kamera-Spiele dieser Woche sind aufgebraucht',
+    en: "This week's {total} free camera games are used up",
+  },
+  'free.resets': {
+    de: 'Am Montag gibt es wieder {total}. Ohne Kamera weiterzählen geht immer — tippt die Becher einfach von Hand ab.',
+    en: 'You get {total} more on Monday. Counting by hand always works — just tap the cups yourself.',
+  },
+  'free.unlimited': {
+    de: 'Kamera-Tracking ohne Limit',
+    en: 'Camera tracking with no limit',
+  },
+  'free.arcadeFree': {
+    de: 'Das Arcade-Spiel, alle Modi, Coins, Skins und Turniere bleiben vollständig kostenlos. Bezahlt wird nur, wenn die Kamera an einem echten Tisch für euch mitzählt.',
+    en: 'The arcade game, every mode, coins, skins and tournaments stay completely free. The only thing money buys is the camera keeping score at a real table.',
+  },
+  'free.devTitle': { de: 'Entwickler-Schalter', en: 'Developer switch' },
+  'free.devBody': {
+    de: 'Solange es nichts zu kaufen gibt, schaltet dieser Schalter das Limit ab. Er verschwindet, sobald es einen echten Kauf gibt.',
+    en: 'While there is nothing to buy, this switch turns the limit off. It disappears once a real purchase exists.',
+  },
+  'free.devOn': { de: 'Limit abgeschaltet ✓', en: 'Limit switched off ✓' },
+  'free.devOff': { de: 'Limit abschalten', en: 'Switch the limit off' },
+
   // -------------------------------------------------------------- not found
   'notFound.title': { de: 'Nicht gefunden', en: 'Not found' },
   'notFound.body': { de: 'Diese Seite existiert nicht.', en: 'This page does not exist.' },
