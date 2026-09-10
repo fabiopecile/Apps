@@ -356,6 +356,12 @@ const STRINGS = {
     en: 'Game {played}/{matches} · {wins} wins',
   },
   'match.bounce': { de: 'Bounce ×2', en: 'Bounce ×2' },
+  'match.ballsBack': { de: 'BÄLLE ZURÜCK', en: 'BALLS BACK' },
+  'match.redemption': { de: 'LETZTE CHANCE', en: 'REDEMPTION' },
+  'match.redemptionHint': {
+    de: 'Letzte Chance — triff, solange du kannst. Ein Fehlwurf und es ist vorbei.',
+    en: 'Redemption — keep sinking them. One miss and it is over.',
+  },
   'match.bounceArmed': {
     de: 'Bounce-Wurf scharf — schwerer, aber zwei Cups',
     en: 'Bounce shot armed — harder, but takes two cups',

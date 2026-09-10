@@ -32,6 +32,13 @@ import {
   TABLE_WIDTH_REFERENCE,
 } from '@/lib/arcadeLayout';
 import { cupMouth } from '@/lib/throwPhysics';
+import {
+  BALLS_PER_TURN,
+  afterThrow,
+  keepsThrowing,
+  startTurn,
+  type TurnState,
+} from '@/lib/turnRules';
 import { useBallFlight } from '@/components/arcade/useBallFlight';
 import {
   AI_PRESETS,
@@ -123,6 +130,14 @@ export default function MatchScreen() {
   const playerFlight = useBallFlight(tableWidth / 2, PLAYER_BALL_Y);
   const opponentFlight = useBallFlight(tableWidth / 2, OPPONENT_BALL_Y);
   const [turn, setTurn] = useState<Turn>('player');
+  /**
+   * Two balls a turn, kept per side. The game used to hand over after every
+   * single throw, which meant nobody could ever go on a run.
+   */
+  const [playerTurnState, setPlayerTurnState] = useState<TurnState>(() => startTurn());
+  const [opponentTurnState, setOpponentTurnState] = useState<TurnState>(() => startTurn());
+  /** The one thing on screen worth shouting about, briefly. */
+  const [turnNote, setTurnNote] = useState<'ballsBack' | 'redemption' | null>(null);
   const [roundResult, setRoundResult] = useState<RoundResult>(null);
   const [opponentTurnToken, setOpponentTurnToken] = useState(0);
   const [matchSeed, setMatchSeed] = useState(0);
@@ -246,6 +261,9 @@ export default function MatchScreen() {
     setHandOver(false);
     setBounceArmed(false);
     setReRacksLeft([1, 1]);
+    setPlayerTurnState(startTurn());
+    setOpponentTurnState(startTurn());
+    setTurnNote(null);
   };
 
   const nextMatch = () => {
@@ -405,6 +423,46 @@ export default function MatchScreen() {
     return next;
   };
 
+  /**
+   * The side that just lost its last cup shoots to survive: throw until you
+   * miss, and clear everything they have left to pull it back.
+   */
+  /**
+   * Sparks over the middle of the table.
+   *
+   * They used to be thrown at the cup's own coordinates, which stopped meaning
+   * anything the moment the table became a 3D scene — the burst is a flat
+   * overlay and the cup is somewhere in a perspective projection. Over the
+   * table is honest and reads the same.
+   */
+  const burst = () => particleRef.current?.burst(stageWidth / 2, stageHeight * 0.45);
+
+  const startRedemption = (side: Turn) => {
+    setTurnNote('redemption');
+    feedback.streak();
+    if (side === 'player') {
+      setPlayerTurnState(startTurn(true));
+      returnTurnToPlayer(760);
+    } else {
+      setOpponentTurnState(startTurn(true));
+      clearTimers();
+      turnTimer.current = setTimeout(() => {
+        setTurn('opponent');
+        setOpponentTurnToken((token) => token + 1);
+      }, 760);
+    }
+  };
+
+  /**
+   * Their turn continues: another ball, without handing the phone over. In
+   * Pass & Play there is no AI to prod — the phone simply stays where it is.
+   */
+  const opponentThrowsAgain = (delay: number) => {
+    if (isPassPlay) return;
+    clearTimers();
+    turnTimer.current = setTimeout(() => setOpponentTurnToken((token) => token + 1), delay);
+  };
+
   const handlePlayerResult = (result: {
     cupIndex: number | null;
     hit: boolean;
@@ -423,23 +481,43 @@ export default function MatchScreen() {
       // A rim-out already clacked when the ball caught the lip.
       if (!result.rimOut) feedback.miss();
       setMissNote(missAdvice(result, t));
-      scheduleOpponentTurn();
+      resolvePlayerTurn(false, opponentAlive.filter(Boolean).length);
       return;
     }
     setMissNote(null);
-    const cup = cupMouth(opponentCups[result.cupIndex]);
     feedback.cupHit();
     if (result.bounce) feedback.streak();
     flashRef.current?.flash(ballSkin.accent, 0.18);
-    particleRef.current?.burst(cup.x, cup.y);
+    burst();
     const next = removeCups(opponentAlive, result.cupIndex, result.bounce, opponentCups);
     setOpponentAlive(next);
     setBounceArmed(false);
-    if (next.every((alive) => !alive)) {
-      endRound('win');
-    } else {
-      scheduleOpponentTurn();
+    resolvePlayerTurn(true, next.filter((alive) => alive).length);
+  };
+
+  /** What your throw means for whose turn it is. */
+  const resolvePlayerTurn = (hit: boolean, theirCupsLeft: number) => {
+    // Clearing their rack does not end it — they get their redemption first.
+    if (!playerTurnState.redemption && theirCupsLeft === 0) {
+      startRedemption('opponent');
+      return;
     }
+    const { next, outcome } = afterThrow(playerTurnState, hit, theirCupsLeft);
+    setPlayerTurnState(next);
+    if (outcome === 'redeemed') return endRound('win');
+    if (outcome === 'eliminated') return endRound('lose');
+    if (outcome === 'ballsBack') {
+      setTurnNote('ballsBack');
+      feedback.streak();
+    }
+    if (keepsThrowing(outcome)) {
+      if (isPassPlay) return;
+      returnTurnToPlayer(outcome === 'ballsBack' ? 620 : 260);
+      return;
+    }
+    setTurnNote(null);
+    setPlayerTurnState(startTurn());
+    scheduleOpponentTurn();
   };
 
   /** Pass & Play only: player two throws down at your rack. */
@@ -452,41 +530,51 @@ export default function MatchScreen() {
     arcadeRecordThrow(result.hit);
     if (result.cupIndex == null || !result.hit) {
       if (!result.rimOut) feedback.miss();
-      returnTurnToPlayer(220);
+      resolveOpponentTurn(false, playerAlive.filter(Boolean).length);
       return;
     }
-    const cup = cupMouth(playerCups[result.cupIndex]);
     feedback.cupHit();
     flashRef.current?.flash(colors.gold, 0.18);
-    particleRef.current?.burst(cup.x, cup.y);
+    burst();
     const next = removeCups(playerAlive, result.cupIndex, result.bounce, playerCups);
     setPlayerAlive(next);
     setBounceArmed(false);
-    if (next.every((alive) => !alive)) {
-      endRound('lose');
-    } else {
-      returnTurnToPlayer(320);
-    }
+    resolveOpponentTurn(true, next.filter((alive) => alive).length);
   };
 
   const handleOpponentResult = (result: { cupIndex: number; hit: boolean }) => {
     if (!result.hit) {
       feedback.miss();
-      returnTurnToPlayer(250);
+      resolveOpponentTurn(false, playerAlive.filter(Boolean).length);
       return;
     }
-    const cup = playerCups[result.cupIndex];
     // Their ball goes in: the cup sound, but the warning colour and haptic.
     feedback.cupHit();
     flashRef.current?.flash(colors.danger, 0.18);
-    particleRef.current?.burst(cup.x, cup.y);
+    burst();
     const next = playerAlive.map((alive, i) => (i === result.cupIndex ? false : alive));
     setPlayerAlive(next);
-    if (next.every((alive) => !alive)) {
-      endRound('lose');
-    } else {
-      returnTurnToPlayer(360);
+    resolveOpponentTurn(true, next.filter((alive) => alive).length);
+  };
+
+  /** The same rules on their side of the table. */
+  const resolveOpponentTurn = (hit: boolean, yourCupsLeft: number) => {
+    if (!opponentTurnState.redemption && yourCupsLeft === 0) {
+      startRedemption('player');
+      return;
     }
+    const { next, outcome } = afterThrow(opponentTurnState, hit, yourCupsLeft);
+    setOpponentTurnState(next);
+    if (outcome === 'redeemed') return endRound('lose');
+    if (outcome === 'eliminated') return endRound('win');
+    if (outcome === 'ballsBack') setTurnNote('ballsBack');
+    if (keepsThrowing(outcome)) {
+      opponentThrowsAgain(outcome === 'ballsBack' ? 620 : 300);
+      return;
+    }
+    setTurnNote(null);
+    setOpponentTurnState(startTurn());
+    returnTurnToPlayer(300);
   };
 
   const playerTurn = turn === 'player' && roundResult == null;
@@ -508,9 +596,13 @@ export default function MatchScreen() {
     roundResult != null
       ? ''
       : playerTurn
-        ? t('match.yourTurn')
+        ? playerTurnState.redemption
+          ? t('match.redemptionHint')
+          : t('match.yourTurn')
         : t('match.opponentAiming', { name: setup.name });
 
+  /** Whichever side is holding the balls right now. */
+  const activeTurnState = playerTurn ? playerTurnState : opponentTurnState;
   const showResultCard = roundResult != null && celebration == null;
 
   return (
@@ -679,6 +771,43 @@ export default function MatchScreen() {
             </Text>
           </Pressable>
         </View>
+
+        {/* Two balls a turn, and which of them you are on. Without this the
+            rule is invisible: you would just find yourself throwing twice. */}
+        {roundResult == null ? (
+          <View style={styles.ballRow}>
+            {activeTurnState.redemption ? (
+              <Text style={[styles.turnNote, { color: colors.danger }]} selectable={false}>
+                {t('match.redemption')}
+              </Text>
+            ) : (
+              <>
+                {Array.from({ length: BALLS_PER_TURN }).map((_, i) => (
+                  <View
+                    key={i}
+                    style={[
+                      styles.ballPip,
+                      {
+                        borderColor: playerTurn ? colors.neon : colors.danger,
+                        backgroundColor:
+                          i < activeTurnState.ballsLeft
+                            ? playerTurn
+                              ? colors.neon
+                              : colors.danger
+                            : 'transparent',
+                      },
+                    ]}
+                  />
+                ))}
+                {turnNote === 'ballsBack' ? (
+                  <Text style={[styles.turnNote, { color: colors.gold }]} selectable={false}>
+                    {t('match.ballsBack')}
+                  </Text>
+                ) : null}
+              </>
+            )}
+          </View>
+        ) : null}
 
         <Animated.Text
           style={[styles.hint, { color: playerTurn ? colors.neon : colors.danger }, hintStyle]}
@@ -961,6 +1090,26 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+  },
+  ballRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+    marginTop: spacing.sm,
+    minHeight: 18,
+  },
+  ballPip: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    borderWidth: 1.5,
+  },
+  turnNote: {
+    fontFamily: fonts.displayBlack,
+    fontSize: 13,
+    letterSpacing: 2,
+    marginLeft: spacing.xs,
   },
   hint: {
     textAlign: 'center',

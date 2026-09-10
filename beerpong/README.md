@@ -262,6 +262,35 @@ zählen) und aus denen danach Becher verschwinden (müssen **genau einmal** und
 dem **richtigen Team** gemeldet werden). Chromium kann sie per
 `--use-file-for-fake-video-capture=t.y4m` als Kamera ausgeben.
 
+## Zwei Bälle, Bälle zurück, letzte Chance
+
+Das Spiel gab den Zug vorher nach **jedem** Wurf ab, Treffer wie Fehlwurf. Das
+ist nicht Beer Pong, und vor allem hat es keine Dramaturgie: Wer sich streng
+abwechselt, kann nie einen Lauf haben, nie etwas zurückholen und nie spüren, wie
+ein Spiel kippt. Jetzt gelten die echten Regeln:
+
+- Du wirfst **zwei Bälle** pro Zug.
+- Triffst du **beide**, bekommst du sie **zurück** und wirfst nochmal. Das ist
+  ein Lauf, und dort werden Spiele gewonnen. Nichts begrenzt ihn.
+- Fällt dein **letzter Becher**, bist du noch nicht raus: du bekommst die
+  **letzte Chance** und wirfst, bis du danebengehst. Räumst du ab, was vom
+  gegnerischen Rack übrig ist, hast du es zurückgeholt. Ein Fehlwurf und es ist
+  vorbei.
+
+Die Regeln liegen in `lib/turnRules.ts`, absichtlich getrennt vom Bildschirm,
+damit ganze Spiele ohne Browser durchgerechnet werden können
+(`npm run test:turns`, 10 Prüfungen). Im laufenden Spiel nachgewiesen: „BÄLLE
+ZURÜCK" nach einem Doppel, „LETZTE CHANCE" als das erste Rack leer war, 52 Würfe
+ohne Fehler.
+
+Der Ball-Zähler unter dem Tisch zeigt, bei welchem der beiden Bälle du bist —
+ohne ihn wäre die Regel unsichtbar, man würde sich nur wundern, dass man zweimal
+werfen darf.
+
+**Nebenbei repariert:** Der Funkenregen beim Treffer wurde noch an den
+2D-Koordinaten des Bechers gezündet, was seit dem 3D-Umbau nichts mehr bedeutet.
+Er sitzt jetzt über der Tischmitte.
+
 ## Der Tisch ist echtes 3D
 
 Seit dieser Fassung rendert der Arcade-Modus mit **WebGL** (three.js über
