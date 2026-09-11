@@ -60,6 +60,10 @@ const server = createServer(async (request, response) => {
       cancelUrl: form.get('cancel_url') ?? '',
       amount: Number(form.get('line_items[0][price_data][unit_amount]') ?? 0),
       currency: form.get('line_items[0][price_data][currency]') ?? '',
+      // Kept verbatim so the test can check what was actually asked for —
+      // the metadata and the statement descriptor matter when one Stripe
+      // account sells more than one thing.
+      form: Object.fromEntries(form.entries()),
     });
     return send(response, 200, {
       id,
@@ -79,6 +83,14 @@ const server = createServer(async (request, response) => {
       amount_total: session.amount,
       currency: session.currency,
     });
+  }
+
+  // Not a Stripe endpoint: lets the test read back the request the Worker made.
+  const sent = url.pathname.match(/^\/sent\/(cs_[A-Za-z0-9_]+)$/);
+  if (request.method === 'GET' && sent) {
+    const session = sessions.get(sent[1]);
+    if (!session) return send(response, 404, { error: { message: 'no such session' } });
+    return send(response, 200, session.form);
   }
 
   // Stands in for the hosted page and the card. The test calls this instead of

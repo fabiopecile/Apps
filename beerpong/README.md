@@ -627,7 +627,33 @@ npx wrangler deploy
 ```
 
 Optional als Variablen: `SHOP_PRICE_CENTS` (Standard 499), `SHOP_CURRENCY`
-(`eur`), `APP_URL` (sonst nimmt der Server die Herkunft des Browsers).
+(`eur`), `APP_URL` (sonst nimmt der Server die Herkunft des Browsers) und
+`SHOP_STATEMENT_SUFFIX` (siehe gleich).
+
+### Ein Stripe-Konto, mehrere Apps
+
+Geht, und ist der Normalfall — ein Konto verkauft beliebig viele Dinge. Zwei
+Sachen sind dabei zu erledigen, und beide sind eingebaut:
+
+* **Auf dem Kontoauszug des Käufers** steht sonst der Name der *anderen* App.
+  Eine Abbuchung von etwas Unbekanntem ist eine Abbuchung, die Leute
+  reklamieren — und eine Reklamation kostet dich die Gebühr obendrauf. Deshalb
+  setzt der Worker `statement_descriptor_suffix`. Eintragen mit:
+  `npx wrangler deploy --var SHOP_STATEMENT_SUFFIX:BEERPONG` oder als Variable
+  in der `wrangler.jsonc`. Stripe erlaubt für den ganzen Text 22 Zeichen
+  inklusive des Konto-Präfixes und keine von `< > ' " *`; der Worker schneidet
+  und filtert selbst, damit eine zu lange Zeile nicht den Verkauf abbricht.
+* **Im Dashboard** liegen sonst beide Produkte ununterscheidbar nebeneinander.
+  Jede Zahlung bekommt deshalb `metadata[app]=beerpong` und
+  `metadata[product]=pro-camera` — danach lässt sich filtern und exportieren.
+
+Empfehlenswert außerdem: für diesen Worker einen **eingeschränkten Schlüssel**
+anlegen (Stripe-Dashboard → API-Schlüssel → „Restricted key") mit Schreib- und
+Leserecht nur für Checkout-Sitzungen. Dann kann dieser Schlüssel, falls er je
+abhandenkommt, nichts von der anderen App anfassen.
+
+Ein eigenes zweites Stripe-Konto brauchst du nur, wenn dahinter eine andere
+juristische Person, ein anderes Land oder ein anderes Bankkonto steht.
 
 Fehlt einer der beiden Schlüssel, ist der Laden zu — und der
 Entwickler-Schalter aus dem Abschnitt unten kommt zurück. Beide gleichzeitig
@@ -643,7 +669,8 @@ Entwicklungsumgebung ist `api.stripe.com` gesperrt.
 **Das beweist** — dass eine unbezahlte Sitzung keinen Code hergibt, eine
 erfundene auch nicht, dass ein nicht signierter Code abgelehnt wird, dass
 zweimal Einlösen denselben Code ergibt und nicht zwei, dass zwei verschiedene
-Käufe verschiedene Codes bekommen, und dass die App auf jede dieser Antworten
+Käufe verschiedene Codes bekommen, dass Kennzeichnung und Kontoauszug-Text
+wirklich mitgeschickt werden, und dass die App auf jede dieser Antworten
 richtig reagiert. Dazu der Durchlauf durch die echte Oberfläche: kaufen,
 zurückkommen, freigeschaltet, Code auf einem zweiten Gerät eingelöst, falscher
 Code abgelehnt.
