@@ -39,12 +39,11 @@ const FEATURES: {
   titleKey: TranslationKey;
   bodyKey: TranslationKey;
 }[] = [
-  // Things that do not exist yet. Online play and highlight clips came off this
-  // list when they were built — both are free — and nothing goes back on it
-  // just because it would look good above a price.
+  // Things that do not exist yet. Online play, highlight clips and the save
+  // backup all came off this list when they were built — all three are free —
+  // and nothing goes back on it just because it would look good above a price.
   { icon: 'scan', titleKey: 'pro.feature.detect.title', bodyKey: 'pro.feature.detect.body' },
   { icon: 'stats-chart', titleKey: 'pro.feature.stats.title', bodyKey: 'pro.feature.stats.body' },
-  { icon: 'cloud-upload', titleKey: 'pro.feature.sync.title', bodyKey: 'pro.feature.sync.body' },
   { icon: 'color-palette', titleKey: 'pro.feature.skins.title', bodyKey: 'pro.feature.skins.body' },
 ];
 

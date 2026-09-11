@@ -117,11 +117,6 @@ const STRINGS = {
     de: 'Trefferzonen, Formkurve über die Saison und Vergleich mit deinen Freunden.',
     en: 'Hit zones, form over the season and a comparison with your friends.',
   },
-  'pro.feature.sync.title': { de: 'Cloud-Sync', en: 'Cloud sync' },
-  'pro.feature.sync.body': {
-    de: 'Fortschritt auf mehreren Geräten und echtes Matchmaking im Arcade-Modus.',
-    en: 'Progress across devices, plus real matchmaking in arcade mode.',
-  },
   'pro.feature.skins.title': { de: 'Pro-Skins', en: 'Pro skins' },
   'pro.feature.skins.body': {
     de: 'Exklusive Bälle und Tische, die es nicht für Coins gibt.',
@@ -146,6 +141,64 @@ const STRINGS = {
   'pro.disclaimer': {
     de: 'Pro ist noch nicht kaufbar. Die Vormerkung wird nur lokal auf diesem Gerät gespeichert.',
     en: 'Pro is not purchasable yet. Your reminder is stored locally on this device only.',
+  },
+
+  // --------------------------------------------------------------- backup
+  'backup.title': { de: 'Spielstand sichern', en: 'Back up your save' },
+  'backup.offBody': {
+    de: 'Alles — Coins, Level, Division, Skins, Statistiken und dein Kauf — liegt nur auf diesem Gerät. Neues Handy oder gelöschte Browserdaten heißt: weg. Mit der Sicherung liegt eine Kopie auf dem Server, und ein Code holt sie zurück.',
+    en: 'Everything — coins, level, division, skins, stats and your purchase — lives on this device only. A new phone or cleared browser data means it is gone. With backup on, a copy sits on the server and one code brings it back.',
+  },
+  'backup.onBody': {
+    de: 'Läuft. Nach jeder Änderung geht eine Kopie an den Server — ohne Konto, ohne E-Mail.',
+    en: 'Running. A copy goes to the server after every change — no account, no email.',
+  },
+  'backup.turnOn': { de: 'Sicherung einschalten', en: 'Turn backup on' },
+  'backup.turnOff': { de: 'Sicherung ausschalten und Kopie löschen', en: 'Turn backup off and delete the copy' },
+  'backup.yourCode': { de: 'Dein Spielstand-Code', en: 'Your save code' },
+  'backup.private': {
+    de: 'Schreib ihn dir auf, am besten woanders als auf diesem Handy. Wer diesen Code hat, hat deinen Spielstand — gib ihn niemandem.',
+    en: 'Write it down, ideally somewhere other than this phone. Whoever has this code has your save — do not give it to anyone.',
+  },
+  'backup.share': { de: 'Code an mich selbst schicken', en: 'Send the code to myself' },
+  'backup.shareText': {
+    de: 'Mein Beerpong-Spielstand-Code. Damit hole ich meinen Fortschritt auf ein neues Handy:',
+    en: 'My Beerpong save code. This is how I get my progress onto a new phone:',
+  },
+  'backup.lastSync': { de: 'Zuletzt gesichert: {when}', en: 'Last backed up: {when}' },
+  'backup.syncing': { de: 'Wird gesichert …', en: 'Backing up…' },
+  'backup.today': { de: 'heute', en: 'today' },
+  'backup.haveCode': { de: 'Ich habe einen Spielstand-Code', en: 'I have a save code' },
+  'backup.enterBody': {
+    de: 'Code von deinem alten Gerät eintippen. Der Spielstand von dort ersetzt dann alles, was auf diesem Gerät steht.',
+    en: 'Type in the code from your old device. That save then replaces everything on this one.',
+  },
+  'backup.fetch': { de: 'Spielstand holen', en: 'Fetch the save' },
+  'backup.notFound': {
+    de: 'Zu diesem Code liegt nichts auf dem Server. Vertippt?',
+    en: 'Nothing on the server under that code. A typo?',
+  },
+  'backup.thatIsTheUnlockCode': {
+    de: 'Das ist dein Freischalt-Code (BP-…). Der Spielstand-Code fängt mit SV- an.',
+    en: 'That is your unlock code (BP-…). A save code starts with SV-.',
+  },
+  'backup.failed': {
+    de: 'Hat nicht geklappt. Internet weg?',
+    en: 'That did not work. Connection gone?',
+  },
+  'backup.confirmTitle': { de: 'Alles hier überschreiben?', en: 'Overwrite everything here?' },
+  'backup.confirmBody': {
+    de: 'Gefunden: Stand von {when}. Der ersetzt Coins, Level, Division, Skins und Statistiken auf diesem Gerät vollständig. Was du hier seit der letzten Sicherung gespielt hast, ist danach weg — das lässt sich nicht rückgängig machen.',
+    en: 'Found a save from {when}. It fully replaces the coins, level, division, skins and stats on this device. Anything played here since your last backup is gone afterwards — this cannot be undone.',
+  },
+  'backup.confirmAction': { de: 'Ja, überschreiben', en: 'Yes, overwrite' },
+  'backup.noServer': {
+    de: 'Dafür braucht die App die Server-Adresse aus dem Abschnitt „Online spielen" in der README. Ohne die gibt es keinen Ort für die Kopie.',
+    en: 'This needs the server address from the “Playing online” section of the README. Without one there is nowhere to put the copy.',
+  },
+  'backup.oneDevice': {
+    de: 'Gedacht für deine eigenen Geräte, eines nach dem anderen. Spielst du gleichzeitig auf zweien, gewinnt das, das zuletzt gesichert hat.',
+    en: 'Meant for your own devices, one at a time. Play on two at once and the one that backed up last wins.',
   },
 
   // ----------------------------------------------------------------- shop

@@ -509,6 +509,77 @@ abgewiesen wird, dass ein Handy nach einem Verbindungsabbruch seinen Platz und
 den Spielstand zurückbekommt, und dass der Raum Unsinn ignoriert statt
 umzufallen.
 
+## Damit nicht alles verloren geht
+
+Vorher lag der ganze Spielstand — Coins, Level, Division, Skins, Statistiken,
+der Kauf — **nur im Speicher des Browsers auf einem Gerät**, ohne Kopie
+irgendwo. Neues Handy, gelöschte Website-Daten, anderer Browser: weg.
+
+(Die viel zitierte iOS-Regel, dass Safari Website-Daten nach 7 Tagen ohne
+Benutzung löscht, trifft Apps auf dem Homescreen nach Aussage der
+WebKit-Entwickler nicht — sie haben einen eigenen Zähler. „Nach Aussage".
+Darauf verlassen würde ich mich nicht, und die anderen Fälle bleiben ohnehin.)
+
+Jetzt gibt es unter **Profil → Spielstand sichern** einen Schalter. Einmal
+einschalten, fertig: Nach jeder Änderung geht eine Kopie an denselben Worker,
+der die Online-Räume und den Kauf bedient. Kein Konto, keine E-Mail, kein
+Passwort — auf dem Server liegt ein Block Zahlen unter einem zufälligen Code.
+
+### Warum ein Code und kein Login
+
+Weil ein Login für ein Beerpong-Spiel mehr kostet, als es einbringt: Konten
+heißen E-Mail-Versand, Passwort-Zurücksetzen, personenbezogene Daten und eine
+Datenschutzerklärung dafür. Ein Code heißt: nichts davon, und nichts, was
+leaken könnte.
+
+Der Preis dafür steht auch auf dem Bildschirm: **Wer den Code hat, hat den
+Spielstand.** Er muss einmal aus dem Handy raus — deshalb wird er groß
+angezeigt und ein Knopf schickt ihn dir per Teilen-Menü an dich selbst.
+
+### Wie es arbeitet
+
+* Gesichert wird **das, was die App ohnehin speichert** — derselbe Block, Zeichen
+  für Zeichen. Ein handverlesener Auszug wäre eine zweite Definition davon, was
+  ein Spielstand *ist*, und die beiden laufen beim ersten neuen Feld
+  auseinander.
+* Damit wandert auch der Freischalt-Code mit. Das ist richtig so: eine
+  Wiederherstellung, die die Coins zurückbringt, aber den Kauf nicht, ist keine.
+* **Zwei Timer statt einem.** Der kurze wartet vier Sekunden Ruhe ab — ein Match
+  schreibt bei jedem Wurf in den Speicher, und dreißig Sicherungen in drei
+  Minuten sind sinnlos. Der lange ist die Obergrenze: Auch eine Sitzung, die nie
+  ruhig wird, wird einmal pro Minute weggeschrieben.
+* **Wiederherstellen fragt vorher.** Es ersetzt alles auf dem Gerät und lässt
+  sich nicht rückgängig machen, also steht genau das in der Nachfrage.
+* Gedacht für deine eigenen Geräte, eines nach dem anderen. Auf zwei
+  gleichzeitig gewinnt das, das zuletzt gesichert hat — kein Zusammenführen. Für
+  einen Münzstand ist Konfliktauflösung sehr viel Maschinerie für ein Problem,
+  das niemand hat.
+
+### Geprüft
+
+`npm run test:savecode` prüft die Codes selbst: zwölf Zeichen echter
+Zufall (tausend Stück ohne eine Wiederholung), lesbares Alphabet, und dass ein
+versehentlich eingefügter **Freischalt**-Code als solcher erkannt wird statt als
+„das ist kein Code" abgetan.
+
+`npm run test:save` läuft gegen einen echten Worker und deckt die Fälle ab, in
+denen ein Spielstand verloren ginge oder beim Falschen landete: unbekannter
+Code liefert nichts, zwei Codes sehen einander nicht, ein verspätet
+eintreffender Schreibvorgang überschreibt keinen neueren, Unsinn wird
+abgewiesen, und Ausschalten löscht die Kopie wirklich.
+
+Dazu der Durchlauf durch die echte Oberfläche: einschalten, Code bekommen,
+auf einem zweiten Browser eintippen, Nachfrage, wiederherstellen — Coins,
+Division, Skins und der Kauf waren drüben. Abbrechen ließ alles unverändert,
+ein falscher Code brachte eine Meldung. Und die automatische Sicherung wurde
+einzeln nachgemessen: Sprache umgestellt, vier Sekunden später stand die
+Änderung auf dem Server, ohne dass irgendwo ein Knopf gedrückt wurde.
+
+Dabei ist ein echter Fehler aufgefallen, den man nur beim Ausprobieren findet:
+Der Preflight des Browsers erlaubte `PUT` und `DELETE` nicht, also lehnte er
+den Schreibvorgang ab, bevor er je gesendet wurde. Das sah aus wie
+„Einschalten tut nichts" und nicht wie ein Fehler.
+
 ## 4,99 € einmalig, über Stripe
 
 Verkauft wird genau eine Sache: **Kamera-Tracking ohne Wochenlimit.** Kein Abo,
@@ -1106,6 +1177,8 @@ Wischgeschwindigkeiten — auf einem Handy nicht mehr zielbar.
 - **Halbautomatische Becher-Erkennung** (Web-Version) — beide Racks einmal
   ausrichten, danach meldet die App jeden verschwundenen Becher, ordnet ihn dem
   richtigen Team zu und fragt nach
+- **Spielstand-Sicherung** — ein Schalter im Profil, ein Code, und der
+  Fortschritt übersteht ein neues Handy; ohne Konto und ohne E-Mail
 - **Kamera ohne Wochenlimit für 4,99 €** — einmalig über Stripe, kein Abo;
   der Freischalt-Code gilt auch auf einem zweiten Handy
 - **Online gegen einen anderen Tisch** — Code aus vier Zeichen, jede Seite
@@ -1160,10 +1233,11 @@ lib/                     Store (zustand), Spiel-Logik, Layout, Sound, i18n
                          cupVision.ts = Becher-Erkennung, frameSampler* = Bildquelle
                          entitlement.ts = freies Kamera-Kontingent
                          licence.ts / shop.ts = Kauf und Freischalt-Code
+                         saveCode.ts / cloudSave.ts = Spielstand-Sicherung
                          onlineProtocol.ts = Regeln des Online-Spiels (App + Server)
                          onlineRoom.ts = die Socket-Seite davon im Handy
-server/                  Cloudflare Worker: Räume für den Online-Modus und
-                         der Kauf über Stripe (siehe die beiden Abschnitte oben)
+server/                  Cloudflare Worker: Räume für den Online-Modus, der Kauf
+                         über Stripe und die Spielstand-Sicherung
 public/                  Wird 1:1 in die Web-Version kopiert (Manifest, Icons, sw.js)
 theme/                   Farben, Schriften, Glow-Effekt
 tools/                   Hilfsskripte (Logo/Icons und Sounds erzeugen)
