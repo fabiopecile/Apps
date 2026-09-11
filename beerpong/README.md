@@ -618,17 +618,64 @@ einlösen geht, zweimal kassieren nicht.
 
 ### Einrichten (zusätzlich zum Online-Server oben)
 
+#### Wo der Schlüssel liegt
+
+Im Stripe-Dashboard ganz unten links steht **Entwickler** (englisch
+*Developers*), dahinter der Reiter **API-Schlüssel**. Dort stehen zwei
+Sorten:
+
+* **Veröffentlichbarer Schlüssel** (`pk_…`) — der gehört in Apps, die selbst
+  mit Stripe reden. Diese App tut das nicht; du brauchst ihn nicht.
+* **Geheimer Schlüssel** (`sk_…`) — den braucht der Worker. Er ist einmal
+  sichtbar, danach nur noch neu erzeugbar. Er darf **nirgends** in den Code,
+  ins Repository oder in eine Nachricht; er geht ausschließlich per
+  `wrangler secret put` auf den Server.
+
+Testest du in einer **Sandbox**, fangen die Schlüssel mit `sk_test_` an und
+bewegen kein Geld. Für echten Verkauf oben rechts aus der Sandbox
+herausschalten und den `sk_live_…` nehmen — Sandbox-Schlüssel und
+Live-Schlüssel haben *getrennte* Produkte und Preise.
+
+Besser als der geheime Schlüssel ist ein **eingeschränkter** (auf derselben
+Seite, „Eingeschränkten Schlüssel erstellen"): Schreib- und Leserecht nur für
+**Checkout-Sitzungen**, alles andere auf „Keine". Er beginnt mit `rk_…` und
+funktioniert hier genauso — kommt er abhanden, kann damit niemand an dein
+Konto oder an eine andere App.
+
+#### Eintragen
+
 Beides läuft auf demselben Worker. Im Ordner `server/`:
 
 ```bash
-npx wrangler secret put STRIPE_SECRET_KEY   # sk_live_… aus dem Stripe-Dashboard
+npx wrangler secret put STRIPE_SECRET_KEY   # sk_live_… / rk_live_… (oder sk_test_… zum Testen)
 npx wrangler secret put LICENCE_SECRET      # irgendeine lange zufällige Zeile
 npx wrangler deploy
 ```
 
-Optional als Variablen: `SHOP_PRICE_CENTS` (Standard 499), `SHOP_CURRENCY`
-(`eur`), `APP_URL` (sonst nimmt der Server die Herkunft des Browsers) und
+Optional als Variablen: `STRIPE_PRICE_ID` (siehe gleich), `SHOP_PRICE_CENTS`
+(Standard 499, gilt nur ohne `STRIPE_PRICE_ID`), `SHOP_CURRENCY` (`eur`),
+`APP_URL` (sonst nimmt der Server die Herkunft des Browsers) und
 `SHOP_STATEMENT_SUFFIX` (siehe gleich).
+
+#### Preis im Dashboard statt im Code
+
+Ohne weiteres Zutun baut der Worker den Preis selbst in jede Zahlung ein —
+4,99 €, Name und Beschreibung stehen im Code. Das braucht im Dashboard gar
+keine Vorbereitung.
+
+Hast du dort aber ein **Produkt** angelegt, ist die andere Variante die
+schönere: Im Produkt steht bei jedem Preis eine ID der Form `price_…`
+(anklicken, kopieren). Trag sie ein:
+
+```bash
+npx wrangler deploy --var STRIPE_PRICE_ID:price_1ABC…
+```
+
+Dann gehören Preis, Name und Beschreibung Stripe. Du kannst sie im Dashboard
+ändern, ohne irgendetwas neu zu veröffentlichen — der Pro-Bildschirm fragt den
+Server, was es kostet, und der fragt Stripe (und merkt sich die Antwort fünf
+Minuten). Antwortet Stripe nicht, zeigt die App den eingebauten Preis, statt
+gar nichts sagen zu können.
 
 ### Ein Stripe-Konto, mehrere Apps
 
@@ -646,11 +693,14 @@ Sachen sind dabei zu erledigen, und beide sind eingebaut:
 * **Im Dashboard** liegen sonst beide Produkte ununterscheidbar nebeneinander.
   Jede Zahlung bekommt deshalb `metadata[app]=beerpong` und
   `metadata[product]=pro-camera` — danach lässt sich filtern und exportieren.
+* **Die Preis-ID**, falls du `STRIPE_PRICE_ID` benutzt, muss die aus dem
+  *richtigen* Produkt sein. Zwei Produkte in einem Konto heißen leicht ähnlich,
+  und eine vertauschte ID verkauft still das andere — womöglich als Abo. Nach
+  dem Eintragen einmal `https://dein-worker…/shop` im Browser aufrufen: dort
+  steht der Betrag, den die Käufer sehen werden.
 
-Empfehlenswert außerdem: für diesen Worker einen **eingeschränkten Schlüssel**
-anlegen (Stripe-Dashboard → API-Schlüssel → „Restricted key") mit Schreib- und
-Leserecht nur für Checkout-Sitzungen. Dann kann dieser Schlüssel, falls er je
-abhandenkommt, nichts von der anderen App anfassen.
+Empfehlenswert außerdem der **eingeschränkte Schlüssel** von oben: Er kann
+dann, falls er je abhandenkommt, nichts von der anderen App anfassen.
 
 Ein eigenes zweites Stripe-Konto brauchst du nur, wenn dahinter eine andere
 juristische Person, ein anderes Land oder ein anderes Bankkonto steht.
@@ -663,15 +713,16 @@ gibt es nie.
 
 `npm run test:shop` spielt den ganzen Ablauf gegen einen wirklich laufenden
 Worker durch — gegen `tools/fake_stripe.mjs`, einen Stripe-Nachbau, der
-dieselben zwei Endpunkte im selben Format spricht. Grund: Aus der
+dieselben Endpunkte im selben Format spricht. Grund: Aus der
 Entwicklungsumgebung ist `api.stripe.com` gesperrt.
 
 **Das beweist** — dass eine unbezahlte Sitzung keinen Code hergibt, eine
 erfundene auch nicht, dass ein nicht signierter Code abgelehnt wird, dass
 zweimal Einlösen denselben Code ergibt und nicht zwei, dass zwei verschiedene
 Käufe verschiedene Codes bekommen, dass Kennzeichnung und Kontoauszug-Text
-wirklich mitgeschickt werden, und dass die App auf jede dieser Antworten
-richtig reagiert. Dazu der Durchlauf durch die echte Oberfläche: kaufen,
+wirklich mitgeschickt werden, dass mit `STRIPE_PRICE_ID` wirklich der Preis aus
+dem Katalog gilt und nicht der eingebaute, und dass die App auf jede dieser
+Antworten richtig reagiert. Dazu der Durchlauf durch die echte Oberfläche: kaufen,
 zurückkommen, freigeschaltet, Code auf einem zweiten Gerät eingelöst, falscher
 Code abgelehnt.
 

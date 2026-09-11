@@ -29,6 +29,19 @@ const port = Number(process.argv[2] ?? 8799);
 /** id -> { paid, successUrl, cancelUrl, amount, currency } */
 const sessions = new Map();
 
+/**
+ * A catalogue, for the other way of pricing: the Worker can either build the
+ * price into each session or point at a price that lives in the Stripe
+ * dashboard. Any `price_…` id answers here; an id ending in digits costs that
+ * many cents, which is how the test tells a price that really came from the
+ * catalogue apart from the Worker's own built-in 4,99 €.
+ */
+const priceOf = (id) => {
+  if (!/^price_/.test(id)) return null;
+  const digits = id.match(/_(\d+)$/);
+  return { id, unit_amount: digits ? Number(digits[1]) : 499, currency: 'eur' };
+};
+
 const send = (response, status, body) => {
   const text = JSON.stringify(body);
   response.writeHead(status, { 'content-type': 'application/json' });
@@ -54,12 +67,23 @@ const server = createServer(async (request, response) => {
     const form = new URLSearchParams(await readBody(request));
     const id = `cs_test_${Math.random().toString(36).slice(2, 12)}`;
     const success = (form.get('success_url') ?? '').replace('{CHECKOUT_SESSION_ID}', id);
+    // Either an id from the catalogue or a price built into the request. Stripe
+    // refuses both at once, and so does this: a session that silently picked
+    // one of two prices would be the worst kind of bug to find later.
+    const catalogue = form.get('line_items[0][price]');
+    if (catalogue && form.get('line_items[0][price_data][unit_amount]')) {
+      return send(response, 400, { error: { message: 'price and price_data are mutually exclusive' } });
+    }
+    const listed = catalogue ? priceOf(catalogue) : null;
+    if (catalogue && !listed) {
+      return send(response, 400, { error: { message: `no such price: ${catalogue}` } });
+    }
     sessions.set(id, {
       paid: false,
       successUrl: success,
       cancelUrl: form.get('cancel_url') ?? '',
-      amount: Number(form.get('line_items[0][price_data][unit_amount]') ?? 0),
-      currency: form.get('line_items[0][price_data][currency]') ?? '',
+      amount: listed ? listed.unit_amount : Number(form.get('line_items[0][price_data][unit_amount]') ?? 0),
+      currency: listed ? listed.currency : (form.get('line_items[0][price_data][currency]') ?? ''),
       // Kept verbatim so the test can check what was actually asked for —
       // the metadata and the statement descriptor matter when one Stripe
       // account sells more than one thing.
@@ -70,6 +94,18 @@ const server = createServer(async (request, response) => {
       url: `http://127.0.0.1:${port}/checkout/${id}`,
       payment_status: 'unpaid',
     });
+  }
+
+  // Read a price from the catalogue, so the shop can show what the dashboard
+  // says rather than what the Worker was configured with.
+  const price = url.pathname.match(/^\/v1\/prices\/([A-Za-z0-9_]+)$/);
+  if (request.method === 'GET' && price) {
+    if (!(request.headers.authorization ?? '').startsWith('Bearer sk_')) {
+      return send(response, 401, { error: { message: 'no api key' } });
+    }
+    const listed = priceOf(price[1]);
+    if (!listed) return send(response, 404, { error: { message: 'no such price' } });
+    return send(response, 200, { object: 'price', active: true, ...listed });
   }
 
   // Read a session back.
@@ -126,5 +162,6 @@ server.listen(port, '127.0.0.1', () => {
   console.log(`Stripe-Attrappe auf http://127.0.0.1:${port}`);
   console.log('  POST /v1/checkout/sessions      Sitzung anlegen');
   console.log('  GET  /v1/checkout/sessions/:id  Sitzung lesen');
+  console.log('  GET  /v1/prices/:id             Preis aus dem Katalog (immer 4,99 €)');
   console.log('  GET  /pay/:id?redirect=1        "bezahlen" und zurückleiten');
 });
