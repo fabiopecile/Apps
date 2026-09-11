@@ -10,6 +10,20 @@
   "main": "worker.ts",
   "compatibility_date": "2025-04-01",
   "observability": { "enabled": true },
+  // Nicht geheim, deshalb hier und nicht im Dashboard: Was hier steht, ersetzt
+  // beim Veröffentlichen die Variablen im Cloudflare-Dashboard. Geheimnisse
+  // (STRIPE_SECRET_KEY, LICENCE_SECRET) sind davon nicht betroffen — die
+  // bleiben stehen und gehören auch nirgendwo anders hin.
+  "vars": {
+    // Was auf dem Kontoauszug des Käufers nach dem Konto-Namen steht. Wichtig,
+    // wenn dasselbe Stripe-Konto noch etwas anderes verkauft: Eine Abbuchung
+    // von einem unbekannten Namen wird reklamiert.
+    "SHOP_STATEMENT_SUFFIX": "BEERPONG"
+    // Preis aus dem Stripe-Katalog statt aus dem Code. Die ID steht im
+    // Dashboard beim Produkt („Beerpong PRO") am Preis. Zeile einkommentieren
+    // und die eigene ID eintragen:
+    // , "STRIPE_PRICE_ID": "price_1ABC..."
+  },
   "durable_objects": {
     "bindings": [
       { "name": "ROOMS", "class_name": "Room" },

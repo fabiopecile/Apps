@@ -657,6 +657,20 @@ Optional als Variablen: `STRIPE_PRICE_ID` (siehe gleich), `SHOP_PRICE_CENTS`
 `APP_URL` (sonst nimmt der Server die Herkunft des Browsers) und
 `SHOP_STATEMENT_SUFFIX` (siehe gleich).
 
+#### Eintragen ohne Computer
+
+Geht genauso, nur im Browser. Der Worker selbst kommt über
+`.github/workflows/deploy-server.yml` auf Cloudflare — dafür reicht das Handy.
+Die beiden Geheimnisse dann im **Cloudflare-Dashboard**: Workers & Pages →
+`beerpong-rooms` → Settings → *Variables and Secrets* → Add → Typ **Secret**,
+Name `STRIPE_SECRET_KEY` beziehungsweise `LICENCE_SECRET`, Wert einsetzen,
+speichern. Das ist dasselbe wie `wrangler secret put`.
+
+Nicht geheime Variablen gehören dagegen in `server/wrangler.jsonc` und nicht
+ins Dashboard: Beim nächsten Veröffentlichen ersetzt die Datei, was im
+Dashboard steht, und eine dort eingetippte Variable wäre wieder weg.
+Geheimnisse überlebt das.
+
 #### Preis im Dashboard statt im Code
 
 Ohne weiteres Zutun baut der Worker den Preis selbst in jede Zahlung ein —
