@@ -112,6 +112,18 @@ for (const forged of [
   check(`a forged code is refused: ${JSON.stringify(forged)}`, result.d.ok === false);
 }
 
+// --- one Stripe account, more than one product -----------------------------
+// Somebody selling two things from one account needs each payment to be
+// findable afterwards and recognisable on the buyer's bank statement.
+const sentForm = await fetch(`${STRIPE}/sent/${session}`).then((r) => r.json());
+check('the payment is tagged as this app', sentForm['metadata[app]'] === 'beerpong', JSON.stringify(sentForm['metadata[app]']));
+check('and as which product', sentForm['metadata[product]'] === 'pro-camera');
+check(
+  'the bank statement says something recognisable',
+  sentForm['payment_intent_data[statement_descriptor_suffix]'] === 'BEERPONG',
+  JSON.stringify(sentForm['payment_intent_data[statement_descriptor_suffix]'])
+);
+
 // --- the redirect ----------------------------------------------------------
 // The checkout url belongs to Stripe and is only opened, never parsed — a
 // first attempt asserted it does *not* contain the session id, which is simply

@@ -56,6 +56,15 @@ export interface Env {
   SHOP_CURRENCY?: string;
   /** Where to send people back to. Defaults to the browser's own origin. */
   APP_URL?: string;
+  /**
+   * What the buyer sees on their bank statement, after the account's own
+   * prefix. Matters when one Stripe account sells more than one thing: a
+   * charge from an unfamiliar name is a charge people dispute.
+   *
+   * Stripe allows 22 characters for the whole descriptor including the prefix
+   * and its separator, and none of < > ' " *.
+   */
+  SHOP_STATEMENT_SUFFIX?: string;
   /** Pointed elsewhere only by the test stub; see tools/fake_stripe.mjs. */
   STRIPE_API_BASE?: string;
 }
@@ -206,6 +215,21 @@ async function licenceValid(secret: string, code: string): Promise<boolean> {
   return same === 0;
 }
 
+/**
+ * The line on the buyer's bank statement.
+ *
+ * Left out entirely when nothing is configured, so Stripe falls back to the
+ * account's own descriptor — which is right for an account that sells only
+ * this. Set it when the account sells something else too.
+ */
+function statementDescriptor(env: Env): Record<string, string> {
+  const suffix = (env.SHOP_STATEMENT_SUFFIX ?? '').trim();
+  if (!suffix) return {};
+  // Stripe rejects these outright, and a rejected session is a failed sale.
+  const clean = suffix.replace(/[<>'"*]/g, '').slice(0, 22);
+  return clean ? { 'payment_intent_data[statement_descriptor_suffix]': clean } : {};
+}
+
 /** Where Stripe sends the browser back to. */
 function appOrigin(request: Request, env: Env): string {
   if (env.APP_URL) return env.APP_URL.replace(/\/+$/, '');
@@ -239,6 +263,10 @@ async function startCheckout(request: Request, env: Env): Promise<Response> {
         'Kamera-Tracking ohne Wochenlimit. Einmalig, kein Abo.',
       success_url: `${origin}${back}?paid={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}${back}?paid=cancelled`,
+      // So this is findable in a dashboard shared with another product.
+      'metadata[app]': 'beerpong',
+      'metadata[product]': 'pro-camera',
+      ...statementDescriptor(env),
     },
   });
 
