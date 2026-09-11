@@ -16,6 +16,7 @@ import 'react-native-reanimated';
 
 import { AnimatedSplash } from '@/components/ui/AnimatedSplash';
 import { useBeerpongStore } from '@/lib/store';
+import { useCloudBackup } from '@/lib/useCloudBackup';
 import { preloadSounds } from '@/lib/sound';
 import { colors } from '@/theme';
 
@@ -33,6 +34,9 @@ export default function RootLayout() {
     BarlowCondensed_900Black,
   });
   const hasHydrated = useBeerpongStore((s) => s.hasHydrated);
+  // Runs for the life of the app: once a save code exists, every change finds
+  // its way to the server without anybody asking it to.
+  useCloudBackup();
   const [bootDone, setBootDone] = useState(false);
   // On web, useFonts() can resolve before the browser has actually finished
   // parsing the font file, which briefly shows fallback "tofu" glyphs for
