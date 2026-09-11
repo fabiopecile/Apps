@@ -19,9 +19,18 @@
  *     --var STRIPE_SECRET_KEY:sk_test_x --var LICENCE_SECRET:test-secret \
  *     --var STRIPE_API_BASE:http://127.0.0.1:8799 --var APP_URL:http://localhost:8081
  * then: npm run test:shop
+ *
+ * The price can also live in the Stripe dashboard instead of in the Worker.
+ * That path is checked too, against a second Worker if one is running:
+ *   cd server && npx wrangler dev --port 8788 \
+ *     --var STRIPE_SECRET_KEY:sk_test_x --var LICENCE_SECRET:test-secret \
+ *     --var STRIPE_API_BASE:http://127.0.0.1:8799 --var APP_URL:http://localhost:8081 \
+ *     --var STRIPE_PRICE_ID:price_test_799
+ * Without it those cases say so rather than passing quietly.
  */
 const WORKER = process.env.WORKER_URL ?? 'http://127.0.0.1:8787';
 const STRIPE = process.env.FAKE_STRIPE_URL ?? 'http://127.0.0.1:8799';
+const CATALOG_WORKER = process.env.WORKER_CATALOG_URL ?? 'http://127.0.0.1:8788';
 
 async function reachable(url) {
   try {
@@ -141,6 +150,56 @@ check(
   page.redirect.startsWith('http://localhost:8081/pro?paid=cs_'),
   page.redirect
 );
+
+// --- the price living in the Stripe dashboard ------------------------------
+// The other way round: STRIPE_PRICE_ID set, so the Worker must ask Stripe what
+// it costs and hand Stripe the id instead of a price of its own. Getting this
+// wrong charges the wrong amount, which is the one bug nobody forgives.
+if (await reachable(`${CATALOG_WORKER}/health`)) {
+  const cat = (path) =>
+    fetch(`${CATALOG_WORKER}${path}`).then((r) => r.json().then((d) => ({ status: r.status, d })));
+  const catPost = (path, body) =>
+    fetch(`${CATALOG_WORKER}${path}`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: 'http://localhost:8081' },
+      body: JSON.stringify(body ?? {}),
+    }).then((r) => r.json().then((d) => ({ status: r.status, d })));
+
+  // 7,99 € is what the stand-in's catalogue says for this id, and deliberately
+  // not the Worker's own 4,99 €: reading 799 here can only mean it asked.
+  const catShop = await cat('/shop');
+  check(
+    'with a price id, the shop reports the catalogue price, not the built-in one',
+    catShop.d.enabled === true && catShop.d.amount === 799 && catShop.d.currency === 'eur',
+    JSON.stringify(catShop.d)
+  );
+
+  const catStarted = await catPost('/checkout', { path: '/pro' });
+  const catSession = catStarted.d.sessionId;
+  check('and a checkout still starts', typeof catSession === 'string', JSON.stringify(catStarted.d));
+
+  const catForm = await fetch(`${STRIPE}/sent/${catSession}`).then((r) => r.json());
+  check(
+    'the session points at the price, not at a price of its own',
+    catForm['line_items[0][price]'] === 'price_test_799' &&
+      !catForm['line_items[0][price_data][unit_amount]'],
+    JSON.stringify(catForm['line_items[0][price]'])
+  );
+
+  await fetch(`${STRIPE}/pay/${catSession}`, { method: 'POST' });
+  const catClaimed = await cat(`/licence?session=${catSession}`);
+  check(
+    'and paying it still yields a code',
+    catClaimed.d.paid === true && /^BP-[A-Z0-9]{4}-[A-Z0-9]{4}-[A-Z0-9]{4}$/.test(catClaimed.d.licence ?? ''),
+    JSON.stringify(catClaimed.d)
+  );
+  check(
+    'which verifies',
+    (await catPost('/licence/verify', { licence: catClaimed.d.licence })).d.ok === true
+  );
+} else {
+  console.log('  --   Katalogpreis (STRIPE_PRICE_ID) — zweiter Worker läuft nicht, übersprungen');
+}
 
 console.log(`\n${ok} ok, ${bad} failed`);
 process.exit(bad > 0 ? 1 : 0);

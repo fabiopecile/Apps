@@ -51,7 +51,16 @@ export interface Env {
   STRIPE_SECRET_KEY?: string;
   /** Set with `wrangler secret put LICENCE_SECRET`. Absent = shop closed. */
   LICENCE_SECRET?: string;
-  /** Price in cents. Defaults to 499. */
+  /**
+   * A price from the Stripe product catalogue (`price_...`).
+   *
+   * Set it and Stripe owns the price: it can be changed in the dashboard
+   * without touching this code, and the product's own name and description
+   * appear on the checkout page. Leave it unset and the price below is used
+   * and built into each session, which needs no dashboard setup at all.
+   */
+  STRIPE_PRICE_ID?: string;
+  /** Price in cents, used only when there is no STRIPE_PRICE_ID. */
   SHOP_PRICE_CENTS?: string;
   SHOP_CURRENCY?: string;
   /** Where to send people back to. Defaults to the browser's own origin. */
@@ -167,14 +176,43 @@ function priceOf(env: Env): { amount: number; currency: string } {
 }
 
 /**
+ * The catalogue price, looked up once and remembered for a while.
+ *
+ * The Pro screen asks what things cost every time it opens, and a Stripe call
+ * per screen open would be silly for a number that changes about never. Five
+ * minutes is short enough that a price change in the dashboard shows up while
+ * somebody is still looking at the dashboard.
+ */
+let priceCache: { at: number; amount: number; currency: string } | null = null;
+const PRICE_CACHE_MS = 5 * 60 * 1000;
+
+async function catalogPrice(env: Env): Promise<{ amount: number; currency: string } | null> {
+  if (!env.STRIPE_PRICE_ID) return null;
+  if (priceCache && Date.now() - priceCache.at < PRICE_CACHE_MS) {
+    return { amount: priceCache.amount, currency: priceCache.currency };
+  }
+  const result = await stripe(env, `/v1/prices/${env.STRIPE_PRICE_ID}`);
+  const amount = result.data.unit_amount;
+  const currency = result.data.currency;
+  if (!result.ok || typeof amount !== 'number' || typeof currency !== 'string') return null;
+  priceCache = { at: Date.now(), amount, currency };
+  return { amount, currency };
+}
+
+/**
  * What is for sale, if anything.
  *
  * The app asks rather than assumes, so a Worker without Stripe keys says "not
  * purchasable" on the Pro screen instead of showing a button that fails.
  */
-function shopInfo(env: Env): Response {
-  const { amount, currency } = priceOf(env);
-  return json({ enabled: shopOpen(env), amount, currency });
+async function shopInfo(env: Env): Promise<Response> {
+  const open = shopOpen(env);
+  // A price id that Stripe will not confirm falls back to the configured one
+  // rather than showing nothing: a wrong number on the button is better than a
+  // screen that cannot say what it costs.
+  const fromCatalog = open ? await catalogPrice(env) : null;
+  const { amount, currency } = fromCatalog ?? priceOf(env);
+  return json({ enabled: open, amount, currency });
 }
 
 async function hmac(secret: string, message: string): Promise<Uint8Array> {
@@ -216,6 +254,26 @@ async function licenceValid(secret: string, code: string): Promise<boolean> {
 }
 
 /**
+ * What is being bought: either a price from the catalogue, or one built here.
+ *
+ * The catalogue version is the better one to grow into — the price lives where
+ * somebody can change it without a deploy — but making it *required* would
+ * mean nobody can sell anything until they have set up a product, so the
+ * built-in price stays as the path of least setup.
+ */
+function lineItem(env: Env): Record<string, string> {
+  if (env.STRIPE_PRICE_ID) return { 'line_items[0][price]': env.STRIPE_PRICE_ID };
+  const { amount, currency } = priceOf(env);
+  return {
+    'line_items[0][price_data][currency]': currency,
+    'line_items[0][price_data][unit_amount]': String(amount),
+    'line_items[0][price_data][product_data][name]': 'Beerpong Pro',
+    'line_items[0][price_data][product_data][description]':
+      'Kamera-Tracking ohne Wochenlimit. Einmalig, kein Abo.',
+  };
+}
+
+/**
  * The line on the buyer's bank statement.
  *
  * Left out entirely when nothing is configured, so Stripe falls back to the
@@ -245,7 +303,6 @@ async function startCheckout(request: Request, env: Env): Promise<Response> {
   const origin = appOrigin(request, env);
   if (!origin) return json({ error: 'origin' }, 400);
 
-  const { amount, currency } = priceOf(env);
   const body = await request.json<{ path?: string }>().catch(() => ({}) as { path?: string });
   // The app says which of its routes to come back to, because the web build
   // can live under a sub-path on Pages.
@@ -256,11 +313,7 @@ async function startCheckout(request: Request, env: Env): Promise<Response> {
     body: {
       mode: 'payment',
       'line_items[0][quantity]': '1',
-      'line_items[0][price_data][currency]': currency,
-      'line_items[0][price_data][unit_amount]': String(amount),
-      'line_items[0][price_data][product_data][name]': 'Beerpong Pro',
-      'line_items[0][price_data][product_data][description]':
-        'Kamera-Tracking ohne Wochenlimit. Einmalig, kein Abo.',
+      ...lineItem(env),
       success_url: `${origin}${back}?paid={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}${back}?paid=cancelled`,
       // So this is findable in a dashboard shared with another product.
