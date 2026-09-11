@@ -171,6 +171,15 @@ interface BeerpongStore {
    */
   pro: boolean;
   setPro: (value: boolean) => void;
+  /**
+   * The unlock code, when there is one.
+   *
+   * Kept rather than just a boolean so it can be read back and typed into a
+   * second phone — with no accounts, the code *is* the receipt.
+   */
+  licence: string | null;
+  /** Records a verified code and unlocks. */
+  redeemLicence: (code: string) => void;
   /** Tracked games used this week; see `lib/entitlement.ts`. */
   trackerUse: TrackerUse;
   /**
@@ -197,6 +206,18 @@ interface BeerpongStore {
    */
   highlightsEnabled: boolean;
   setHighlightsEnabled: (value: boolean) => void;
+
+  /**
+   * The code this device's save is backed up under, once backup is on.
+   *
+   * Null means the save exists only here, which is where everybody starts and
+   * where everything is lost from.
+   */
+  saveCode: string | null;
+  /** When the backup last went through, so the screen can say so. */
+  lastSyncAt: number | null;
+  setSaveCode: (code: string | null) => void;
+  setLastSyncAt: (at: number | null) => void;
 
   /** The daily golden-cup shot; see `lib/luckyShot.ts`. */
   lucky: LuckyState;
@@ -263,6 +284,14 @@ interface BeerpongStore {
   recordWeekendMatch: (won: boolean) => WeekendOutcome;
   resetWeekendRun: () => void;
 }
+
+/**
+ * Where the whole save lives, under one key.
+ *
+ * Exported because the cloud backup copies this exact blob rather than
+ * rebuilding one — see lib/cloudSave.ts for why that matters.
+ */
+export const STORAGE_KEY = 'beerpong-storage';
 
 export const DEFAULT_START_CUPS = 10;
 const MAX_HISTORY = 30;
@@ -335,6 +364,10 @@ export const useBeerpongStore = create<BeerpongStore>()(
 
       pro: false,
       setPro: (value) => set({ pro: value }),
+      licence: null,
+      // Verification happens before this is called — see lib/shop.ts. The store
+      // does not talk to the network.
+      redeemLicence: (code) => set({ licence: code, pro: true }),
       trackerUse: EMPTY_TRACKER_USE,
       beginTrackedGame: () => {
         const now = new Date();
@@ -350,6 +383,11 @@ export const useBeerpongStore = create<BeerpongStore>()(
 
       highlightsEnabled: false,
       setHighlightsEnabled: (value) => set({ highlightsEnabled: value }),
+
+      saveCode: null,
+      lastSyncAt: null,
+      setSaveCode: (code) => set({ saveCode: code, lastSyncAt: code ? get().lastSyncAt : null }),
+      setLastSyncAt: (at) => set({ lastSyncAt: at }),
 
       lucky: EMPTY_LUCKY,
       playLuckyShot: (outcome) => {
@@ -747,7 +785,7 @@ export const useBeerpongStore = create<BeerpongStore>()(
         set((s) => ({ weekend: { ...s.weekend, active: false, played: 0, wins: 0 } })),
     }),
     {
-      name: 'beerpong-storage',
+      name: STORAGE_KEY,
       storage: createJSONStorage(() => AsyncStorage),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
@@ -759,9 +797,13 @@ export const useBeerpongStore = create<BeerpongStore>()(
         onboardingDone: state.onboardingDone,
         proNotifyRequested: state.proNotifyRequested,
         pro: state.pro,
+        licence: state.licence,
         trackerUse: state.trackerUse,
         lucky: state.lucky,
         stats: state.stats,
+        saveCode: state.saveCode,
+        // lastSyncAt is deliberately NOT persisted: it would make recording a
+        // backup a change that needs backing up, forever.
         highlightsEnabled: state.highlightsEnabled,
         houseRules: state.houseRules,
         camera: state.camera,

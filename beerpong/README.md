@@ -509,6 +509,250 @@ abgewiesen wird, dass ein Handy nach einem Verbindungsabbruch seinen Platz und
 den Spielstand zurückbekommt, und dass der Raum Unsinn ignoriert statt
 umzufallen.
 
+## Damit nicht alles verloren geht
+
+Vorher lag der ganze Spielstand — Coins, Level, Division, Skins, Statistiken,
+der Kauf — **nur im Speicher des Browsers auf einem Gerät**, ohne Kopie
+irgendwo. Neues Handy, gelöschte Website-Daten, anderer Browser: weg.
+
+(Die viel zitierte iOS-Regel, dass Safari Website-Daten nach 7 Tagen ohne
+Benutzung löscht, trifft Apps auf dem Homescreen nach Aussage der
+WebKit-Entwickler nicht — sie haben einen eigenen Zähler. „Nach Aussage".
+Darauf verlassen würde ich mich nicht, und die anderen Fälle bleiben ohnehin.)
+
+Jetzt gibt es unter **Profil → Spielstand sichern** einen Schalter. Einmal
+einschalten, fertig: Nach jeder Änderung geht eine Kopie an denselben Worker,
+der die Online-Räume und den Kauf bedient. Kein Konto, keine E-Mail, kein
+Passwort — auf dem Server liegt ein Block Zahlen unter einem zufälligen Code.
+
+### Warum ein Code und kein Login
+
+Weil ein Login für ein Beerpong-Spiel mehr kostet, als es einbringt: Konten
+heißen E-Mail-Versand, Passwort-Zurücksetzen, personenbezogene Daten und eine
+Datenschutzerklärung dafür. Ein Code heißt: nichts davon, und nichts, was
+leaken könnte.
+
+Der Preis dafür steht auch auf dem Bildschirm: **Wer den Code hat, hat den
+Spielstand.** Er muss einmal aus dem Handy raus — deshalb wird er groß
+angezeigt und ein Knopf schickt ihn dir per Teilen-Menü an dich selbst.
+
+### Wie es arbeitet
+
+* Gesichert wird **das, was die App ohnehin speichert** — derselbe Block, Zeichen
+  für Zeichen. Ein handverlesener Auszug wäre eine zweite Definition davon, was
+  ein Spielstand *ist*, und die beiden laufen beim ersten neuen Feld
+  auseinander.
+* Damit wandert auch der Freischalt-Code mit. Das ist richtig so: eine
+  Wiederherstellung, die die Coins zurückbringt, aber den Kauf nicht, ist keine.
+* **Zwei Timer statt einem.** Der kurze wartet vier Sekunden Ruhe ab — ein Match
+  schreibt bei jedem Wurf in den Speicher, und dreißig Sicherungen in drei
+  Minuten sind sinnlos. Der lange ist die Obergrenze: Auch eine Sitzung, die nie
+  ruhig wird, wird einmal pro Minute weggeschrieben.
+* **Wiederherstellen fragt vorher.** Es ersetzt alles auf dem Gerät und lässt
+  sich nicht rückgängig machen, also steht genau das in der Nachfrage.
+* Gedacht für deine eigenen Geräte, eines nach dem anderen. Auf zwei
+  gleichzeitig gewinnt das, das zuletzt gesichert hat — kein Zusammenführen. Für
+  einen Münzstand ist Konfliktauflösung sehr viel Maschinerie für ein Problem,
+  das niemand hat.
+
+### Geprüft
+
+`npm run test:savecode` prüft die Codes selbst: zwölf Zeichen echter
+Zufall (tausend Stück ohne eine Wiederholung), lesbares Alphabet, und dass ein
+versehentlich eingefügter **Freischalt**-Code als solcher erkannt wird statt als
+„das ist kein Code" abgetan.
+
+`npm run test:save` läuft gegen einen echten Worker und deckt die Fälle ab, in
+denen ein Spielstand verloren ginge oder beim Falschen landete: unbekannter
+Code liefert nichts, zwei Codes sehen einander nicht, ein verspätet
+eintreffender Schreibvorgang überschreibt keinen neueren, Unsinn wird
+abgewiesen, und Ausschalten löscht die Kopie wirklich.
+
+Dazu der Durchlauf durch die echte Oberfläche: einschalten, Code bekommen,
+auf einem zweiten Browser eintippen, Nachfrage, wiederherstellen — Coins,
+Division, Skins und der Kauf waren drüben. Abbrechen ließ alles unverändert,
+ein falscher Code brachte eine Meldung. Und die automatische Sicherung wurde
+einzeln nachgemessen: Sprache umgestellt, vier Sekunden später stand die
+Änderung auf dem Server, ohne dass irgendwo ein Knopf gedrückt wurde.
+
+Dabei ist ein echter Fehler aufgefallen, den man nur beim Ausprobieren findet:
+Der Preflight des Browsers erlaubte `PUT` und `DELETE` nicht, also lehnte er
+den Schreibvorgang ab, bevor er je gesendet wurde. Das sah aus wie
+„Einschalten tut nichts" und nicht wie ein Fehler.
+
+## 4,99 € einmalig, über Stripe
+
+Verkauft wird genau eine Sache: **Kamera-Tracking ohne Wochenlimit.** Kein Abo,
+keine Folgekosten, und über Stripe statt über einen App Store — das spart 15 %
+Provision und die 99 € Entwicklergebühr pro Jahr, denn die Web-App auf dem
+iPhone braucht keinen Store.
+
+### Wie der Kauf abläuft
+
+1. Die App fragt den Server `GET /shop`, *was* überhaupt verkauft wird. Sind
+   keine Stripe-Schlüssel hinterlegt, sagt der Pro-Bildschirm ehrlich „noch
+   nicht kaufbar" statt einen Knopf zu zeigen, der scheitert.
+2. „Freischalten" lässt den Server eine Stripe-Checkout-Sitzung anlegen und
+   leitet den Browser dorthin. Kartendaten sieht die App nie.
+3. Stripe leitet zurück auf `/pro?paid=<Sitzung>`. Diese Sitzungs-ID ist eine
+   **Behauptung** — die Adresszeile kann jeder tippen. Der Server fragt
+   deshalb bei Stripe nach, ob wirklich bezahlt wurde, und gibt erst dann
+   einen Code heraus.
+
+### Der Code ist die Quittung
+
+Es gibt keine Konten in dieser App, und für einen Einmalkauf soll es auch
+keine geben. Also *ist* der Code die Lizenz: `BP-XXXX-XXXX-XXXX`, vom Server
+signiert, prüft sich selbst. Aufschreiben — damit schaltest du ein zweites
+oder ein neues Handy frei, ohne dich irgendwo anzumelden.
+
+Das heißt auch: Der Code lässt sich weitergeben und nicht zurückziehen. Das
+ist eine bewusste Abwägung, kein Versehen — einen 4,99-€-Kauf ans Gerät zu
+binden bestraft weit öfter den, dem das Handy runterfällt, als es den bremst,
+der seinen Code einem Freund gibt. Der einzige echte Gegenentwurf sind Konten,
+und die kosten mehr als das, was sie schützen sollen.
+
+Der Server speichert nichts davon: Der Code wird aus der Stripe-Sitzung
+abgeleitet, also ergibt dieselbe Zahlung immer denselben Code — zweimal
+einlösen geht, zweimal kassieren nicht.
+
+### Einrichten (zusätzlich zum Online-Server oben)
+
+#### Wo der Schlüssel liegt
+
+Im Stripe-Dashboard ganz unten links steht **Entwickler** (englisch
+*Developers*), dahinter der Reiter **API-Schlüssel**. Dort stehen zwei
+Sorten:
+
+* **Veröffentlichbarer Schlüssel** (`pk_…`) — der gehört in Apps, die selbst
+  mit Stripe reden. Diese App tut das nicht; du brauchst ihn nicht.
+* **Geheimer Schlüssel** (`sk_…`) — den braucht der Worker. Er ist einmal
+  sichtbar, danach nur noch neu erzeugbar. Er darf **nirgends** in den Code,
+  ins Repository oder in eine Nachricht; er geht ausschließlich per
+  `wrangler secret put` auf den Server.
+
+Testest du in einer **Sandbox**, fangen die Schlüssel mit `sk_test_` an und
+bewegen kein Geld. Für echten Verkauf oben rechts aus der Sandbox
+herausschalten und den `sk_live_…` nehmen — Sandbox-Schlüssel und
+Live-Schlüssel haben *getrennte* Produkte und Preise.
+
+Besser als der geheime Schlüssel ist ein **eingeschränkter** (auf derselben
+Seite, „Eingeschränkten Schlüssel erstellen"): Schreib- und Leserecht nur für
+**Checkout-Sitzungen**, alles andere auf „Keine". Er beginnt mit `rk_…` und
+funktioniert hier genauso — kommt er abhanden, kann damit niemand an dein
+Konto oder an eine andere App.
+
+#### Eintragen
+
+Beides läuft auf demselben Worker. Im Ordner `server/`:
+
+```bash
+npx wrangler secret put STRIPE_SECRET_KEY   # sk_live_… / rk_live_… (oder sk_test_… zum Testen)
+npx wrangler secret put LICENCE_SECRET      # irgendeine lange zufällige Zeile
+npx wrangler deploy
+```
+
+Optional als Variablen: `STRIPE_PRICE_ID` (siehe gleich), `SHOP_PRICE_CENTS`
+(Standard 499, gilt nur ohne `STRIPE_PRICE_ID`), `SHOP_CURRENCY` (`eur`),
+`APP_URL` (sonst nimmt der Server die Herkunft des Browsers) und
+`SHOP_STATEMENT_SUFFIX` (siehe gleich).
+
+#### Eintragen ohne Computer
+
+Geht genauso, nur im Browser. Der Worker selbst kommt über
+`.github/workflows/deploy-server.yml` auf Cloudflare — dafür reicht das Handy.
+Die beiden Geheimnisse dann im **Cloudflare-Dashboard**: Workers & Pages →
+`beerpong-rooms` → Settings → *Variables and Secrets* → Add → Typ **Secret**,
+Name `STRIPE_SECRET_KEY` beziehungsweise `LICENCE_SECRET`, Wert einsetzen,
+speichern. Das ist dasselbe wie `wrangler secret put`.
+
+Nicht geheime Variablen gehören dagegen in `server/wrangler.jsonc` und nicht
+ins Dashboard: Beim nächsten Veröffentlichen ersetzt die Datei, was im
+Dashboard steht, und eine dort eingetippte Variable wäre wieder weg.
+Geheimnisse überlebt das.
+
+#### Preis im Dashboard statt im Code
+
+Ohne weiteres Zutun baut der Worker den Preis selbst in jede Zahlung ein —
+4,99 €, Name und Beschreibung stehen im Code. Das braucht im Dashboard gar
+keine Vorbereitung.
+
+Hast du dort aber ein **Produkt** angelegt, ist die andere Variante die
+schönere: Im Produkt steht bei jedem Preis eine ID der Form `price_…`
+(anklicken, kopieren). Trag sie ein:
+
+```bash
+npx wrangler deploy --var STRIPE_PRICE_ID:price_1ABC…
+```
+
+Dann gehören Preis, Name und Beschreibung Stripe. Du kannst sie im Dashboard
+ändern, ohne irgendetwas neu zu veröffentlichen — der Pro-Bildschirm fragt den
+Server, was es kostet, und der fragt Stripe (und merkt sich die Antwort fünf
+Minuten). Antwortet Stripe nicht, zeigt die App den eingebauten Preis, statt
+gar nichts sagen zu können.
+
+### Ein Stripe-Konto, mehrere Apps
+
+Geht, und ist der Normalfall — ein Konto verkauft beliebig viele Dinge. Zwei
+Sachen sind dabei zu erledigen, und beide sind eingebaut:
+
+* **Auf dem Kontoauszug des Käufers** steht sonst der Name der *anderen* App.
+  Eine Abbuchung von etwas Unbekanntem ist eine Abbuchung, die Leute
+  reklamieren — und eine Reklamation kostet dich die Gebühr obendrauf. Deshalb
+  setzt der Worker `statement_descriptor_suffix`. Eintragen mit:
+  `npx wrangler deploy --var SHOP_STATEMENT_SUFFIX:BEERPONG` oder als Variable
+  in der `wrangler.jsonc`. Stripe erlaubt für den ganzen Text 22 Zeichen
+  inklusive des Konto-Präfixes und keine von `< > ' " *`; der Worker schneidet
+  und filtert selbst, damit eine zu lange Zeile nicht den Verkauf abbricht.
+* **Im Dashboard** liegen sonst beide Produkte ununterscheidbar nebeneinander.
+  Jede Zahlung bekommt deshalb `metadata[app]=beerpong` und
+  `metadata[product]=pro-camera` — danach lässt sich filtern und exportieren.
+* **Die Preis-ID**, falls du `STRIPE_PRICE_ID` benutzt, muss die aus dem
+  *richtigen* Produkt sein. Zwei Produkte in einem Konto heißen leicht ähnlich,
+  und eine vertauschte ID verkauft still das andere — womöglich als Abo. Nach
+  dem Eintragen einmal `https://dein-worker…/shop` im Browser aufrufen: dort
+  steht der Betrag, den die Käufer sehen werden.
+
+Empfehlenswert außerdem der **eingeschränkte Schlüssel** von oben: Er kann
+dann, falls er je abhandenkommt, nichts von der anderen App anfassen.
+
+Ein eigenes zweites Stripe-Konto brauchst du nur, wenn dahinter eine andere
+juristische Person, ein anderes Land oder ein anderes Bankkonto steht.
+
+Fehlt einer der beiden Schlüssel, ist der Laden zu — und der
+Entwickler-Schalter aus dem Abschnitt unten kommt zurück. Beide gleichzeitig
+gibt es nie.
+
+### Was geprüft ist, und was nicht
+
+`npm run test:shop` spielt den ganzen Ablauf gegen einen wirklich laufenden
+Worker durch — gegen `tools/fake_stripe.mjs`, einen Stripe-Nachbau, der
+dieselben Endpunkte im selben Format spricht. Grund: Aus der
+Entwicklungsumgebung ist `api.stripe.com` gesperrt.
+
+**Das beweist** — dass eine unbezahlte Sitzung keinen Code hergibt, eine
+erfundene auch nicht, dass ein nicht signierter Code abgelehnt wird, dass
+zweimal Einlösen denselben Code ergibt und nicht zwei, dass zwei verschiedene
+Käufe verschiedene Codes bekommen, dass Kennzeichnung und Kontoauszug-Text
+wirklich mitgeschickt werden, dass mit `STRIPE_PRICE_ID` wirklich der Preis aus
+dem Katalog gilt und nicht der eingebaute, und dass die App auf jede dieser
+Antworten richtig reagiert. Dazu der Durchlauf durch die echte Oberfläche: kaufen,
+zurückkommen, freigeschaltet, Code auf einem zweiten Gerät eingelöst, falscher
+Code abgelehnt.
+
+**Das beweist es nicht** — dass Stripe die Anfrage annimmt, dass eine echte
+Karte durchgeht oder dass Geld ankommt. Das zeigt nur ein Testkauf gegen die
+echte API. Mit den Test-Schlüsseln (`sk_test_…`) und der Testkarte
+`4242 4242 4242 4242` sind das fünf Minuten — **mach das, bevor du den
+Live-Schlüssel einträgst.**
+
+### Und das Rechtliche
+
+Ein Verkauf an Verbraucher bringt Pflichten mit, die keine Codezeile löst:
+Impressum, Widerrufsbelehrung (bei digitalen Inhalten mit Verzicht auf das
+Widerrufsrecht), Umsatzsteuer und ihre Schwellenwerte, AGB. Das ist eine Frage
+für einen Steuerberater und ggf. einen Anwalt, nicht für diese README.
+
 ## Was frei ist, und wofür jemand später zahlen würde
 
 Das Arcade-Spiel ist ein Spiel, und es gibt hundert davon umsonst. Dafür zahlt
@@ -536,10 +780,9 @@ niemand zwei Racks einpassen und *danach* erfahren, dass die Woche leer ist.
 **Der Entwickler-Schalter.** Eine Grenze zu ziehen, während es keine Möglichkeit
 zu bezahlen gibt, macht die App schlechter, ohne dass jemand etwas davon hat.
 Unten auf dem Pro-Bildschirm sitzt deshalb ein klar benannter Schalter, der das
-Limit abschaltet. Er ist kein Trick und kein Easter Egg — er fliegt raus, sobald
-es einen echten Kauf gibt (App-Store-Abo oder Einmalkauf über
-`expo-in-app-purchases`; beides braucht ein Entwicklerkonto und einen Firmen-
-oder Privateintrag beim Store).
+Limit abschaltet — aber **nur, solange der Laden zu ist**. Sobald auf dem Worker
+Stripe-Schlüssel liegen, verschwindet er und an seiner Stelle steht der Kauf
+für 4,99 € (siehe oben). Beides gleichzeitig gibt es nie.
 
 Bevor irgendjemand dafür Geld verlangt, muss die Erkennung an einem echten Tisch
 bestehen. Der Prüfstand unten simuliert ein Wohnzimmer; ein Wohnzimmer ist er
@@ -1026,6 +1269,10 @@ Wischgeschwindigkeiten — auf einem Handy nicht mehr zielbar.
 - **Halbautomatische Becher-Erkennung** (Web-Version) — beide Racks einmal
   ausrichten, danach meldet die App jeden verschwundenen Becher, ordnet ihn dem
   richtigen Team zu und fragt nach
+- **Spielstand-Sicherung** — ein Schalter im Profil, ein Code, und der
+  Fortschritt übersteht ein neues Handy; ohne Konto und ohne E-Mail
+- **Kamera ohne Wochenlimit für 4,99 €** — einmalig über Stripe, kein Abo;
+  der Freischalt-Code gilt auch auf einem zweiten Handy
 - **Online gegen einen anderen Tisch** — Code aus vier Zeichen, jede Seite
   zählt nur ihr eigenes Rack, gemeinsamer Spielstand; kostenlos zu betreiben
   (siehe „Online spielen")
@@ -1077,9 +1324,12 @@ components/              UI-Bausteine, Arcade-Grafik (Becher, Ball, Würfe)
 lib/                     Store (zustand), Spiel-Logik, Layout, Sound, i18n
                          cupVision.ts = Becher-Erkennung, frameSampler* = Bildquelle
                          entitlement.ts = freies Kamera-Kontingent
+                         licence.ts / shop.ts = Kauf und Freischalt-Code
+                         saveCode.ts / cloudSave.ts = Spielstand-Sicherung
                          onlineProtocol.ts = Regeln des Online-Spiels (App + Server)
                          onlineRoom.ts = die Socket-Seite davon im Handy
-server/                  Cloudflare Worker: ein Raum pro Code (siehe „Online spielen")
+server/                  Cloudflare Worker: Räume für den Online-Modus, der Kauf
+                         über Stripe und die Spielstand-Sicherung
 public/                  Wird 1:1 in die Web-Version kopiert (Manifest, Icons, sw.js)
 theme/                   Farben, Schriften, Glow-Effekt
 tools/                   Hilfsskripte (Logo/Icons und Sounds erzeugen)

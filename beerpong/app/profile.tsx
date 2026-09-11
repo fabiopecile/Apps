@@ -9,6 +9,7 @@ import { CountUp } from '@/components/ui/CountUp';
 import { Card } from '@/components/ui/Card';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { NeonSwitch } from '@/components/ui/NeonSwitch';
+import { BackupCard } from '@/components/ui/BackupCard';
 import { selectCombinedStats, selectCareerProgress, useBeerpongStore } from '@/lib/store';
 import { LANGUAGES, useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
@@ -110,6 +111,9 @@ export default function ProfileScreen() {
               </View>
             </View>
           </Card>
+
+          <SectionLabel>{t('backup.title')}</SectionLabel>
+          <BackupCard />
 
           <SectionLabel>{t('profile.pro')}</SectionLabel>
           <Pressable
