@@ -41,8 +41,12 @@ import {
   splitLicence,
 } from '../lib/licence';
 
+import { isSaveCode, normaliseSaveCode } from '../lib/saveCode';
+
 export interface Env {
   ROOMS: DurableObjectNamespace;
+  /** One object per save code; see the `Save` class at the bottom. */
+  SAVES: DurableObjectNamespace;
   /** Set with `wrangler secret put STRIPE_SECRET_KEY`. Absent = shop closed. */
   STRIPE_SECRET_KEY?: string;
   /** Set with `wrangler secret put LICENCE_SECRET`. Absent = shop closed. */
@@ -63,7 +67,10 @@ const MAX_MESSAGE_BYTES = 1024;
 
 const CORS: Record<string, string> = {
   'access-control-allow-origin': '*',
-  'access-control-allow-methods': 'GET, POST, OPTIONS',
+  // PUT and DELETE are the backup's; leaving them out made the browser's
+  // preflight refuse the write before it was ever sent, which showed up as
+  // "turning backup on does nothing" rather than as an error anybody could see.
+  'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'access-control-allow-headers': 'content-type',
 };
 
@@ -85,6 +92,14 @@ export default {
       return new Response(JSON.stringify({ ok: true }), {
         headers: { ...CORS, 'content-type': 'application/json' },
       });
+    }
+
+    // A save lives under its code, the same way a room does. The code is the
+    // only secret there is, so it is also the only thing checked.
+    if (url.pathname.startsWith('/save/')) {
+      const saveCode = normaliseSaveCode(url.pathname.slice('/save/'.length));
+      if (!isSaveCode(saveCode)) return json({ error: 'code' }, 400);
+      return env.SAVES.get(env.SAVES.idFromName(saveCode)).fetch(request);
     }
 
     if (url.pathname === '/shop') return shopInfo(env);
@@ -433,5 +448,75 @@ export class Room implements DurableObject {
         }
       }
     }
+  }
+}
+
+/**
+ * One save, under one code.
+ *
+ * Deliberately dumb: it holds a blob of JSON it never looks inside, plus when
+ * it was written. The app decides what a save *is*; this decides only that the
+ * newest one wins and that it does not sit here forever.
+ *
+ * No merging. Two phones on one code is last-write-wins, and pretending
+ * otherwise — conflict resolution for a single player's coin count — would be
+ * a great deal of machinery in service of a problem nobody has.
+ */
+export class Save implements DurableObject {
+  /** A save nobody has touched in a year is not a save anybody wants. */
+  private static readonly TTL_MS = 365 * 24 * 60 * 60 * 1000;
+  /** The real thing is a few kilobytes. This is a guard, not a budget. */
+  private static readonly MAX_BYTES = 256 * 1024;
+
+  constructor(
+    private readonly ctx: DurableObjectState,
+    _env: Env
+  ) {}
+
+  async fetch(request: Request): Promise<Response> {
+    if (request.method === 'GET') {
+      const stored = await this.ctx.storage.get<{ updatedAt: number; state: string }>('save');
+      if (!stored) return json({ found: false }, 404);
+      return json({ found: true, updatedAt: stored.updatedAt, state: stored.state });
+    }
+
+    if (request.method === 'PUT') {
+      const body = await request
+        .json<{ state?: string; updatedAt?: number }>()
+        .catch(() => ({}) as { state?: string; updatedAt?: number });
+      if (typeof body.state !== 'string' || body.state.length === 0) {
+        return json({ error: 'state' }, 400);
+      }
+      if (body.state.length > Save.MAX_BYTES) return json({ error: 'tooBig' }, 413);
+
+      const updatedAt = typeof body.updatedAt === 'number' ? body.updatedAt : Date.now();
+      const existing = await this.ctx.storage.get<{ updatedAt: number }>('save');
+      // Out-of-order arrivals lose. Two devices racing is still last-write-wins
+      // by their own clocks, which is the honest limit of a design with no
+      // accounts and no merge.
+      if (existing && existing.updatedAt > updatedAt) {
+        return json({ ok: false, stale: true, updatedAt: existing.updatedAt }, 409);
+      }
+
+      await this.ctx.storage.put('save', { updatedAt, state: body.state });
+      await this.ctx.storage.setAlarm(Date.now() + Save.TTL_MS);
+      return json({ ok: true, updatedAt });
+    }
+
+    if (request.method === 'DELETE') {
+      await this.ctx.storage.deleteAll();
+      return json({ ok: true });
+    }
+
+    return json({ error: 'method' }, 405);
+  }
+
+  async alarm(): Promise<void> {
+    const stored = await this.ctx.storage.get<{ updatedAt: number }>('save');
+    if (stored && Date.now() - stored.updatedAt < Save.TTL_MS) {
+      await this.ctx.storage.setAlarm(stored.updatedAt + Save.TTL_MS);
+      return;
+    }
+    await this.ctx.storage.deleteAll();
   }
 }
