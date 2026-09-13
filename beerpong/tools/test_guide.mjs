@@ -34,6 +34,7 @@ for (const name of [
   'arcadeLayout',
   'cupGeometry',
   'cupSkins',
+  'cupShop',
   'catalogue',
   'competition',
   'entitlement',

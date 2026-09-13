@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_BALL_SKIN, DEFAULT_TABLE_SKIN, SKINS } from './skins';
 import { DEFAULT_CUP_SKIN } from './cupSkins';
+import { coinPrice, weeklyOffer } from './cupShop';
 import { LEAGUE_OPPONENTS } from './opponents';
 import {
   EMPTY_TRACKER_USE,
@@ -200,6 +201,8 @@ interface BeerpongStore {
   cupLicences: Record<string, string[]>;
   /** Records a verified code for a cup design, or for the whole set. */
   redeemCupLicence: (code: string, designIds: string[]) => void;
+  /** Spends coins on one of this week's designs. False if it cannot be had. */
+  buyCupDesign: (designId: string) => boolean;
   equipCupSkin: (designId: string) => void;
   /** Tracked games used this week; see `lib/entitlement.ts`. */
   trackerUse: TrackerUse;
@@ -405,6 +408,31 @@ export const useBeerpongStore = create<BeerpongStore>()(
             equippedCupSkin: designIds[0] ?? s.equippedCupSkin,
           };
         }),
+
+      /**
+       * A design bought with coins rather than money.
+       *
+       * It lands in the same `ownedCupSkins` as a bought one, which is right:
+       * once it is yours the game should not care how. What it must never do is
+       * go the other way — `coinPrice` returns null for anything that is not in
+       * the coin list, so a country cannot be had for coins however the id is
+       * spelled, and the week's offer is checked as well so last month's
+       * design cannot be bought out of season.
+       */
+      buyCupDesign: (designId) => {
+        const cost = coinPrice(designId);
+        if (cost === null) return false;
+        const state = get();
+        if (state.ownedCupSkins.includes(designId)) return true;
+        if (!weeklyOffer(new Date()).some((design) => design.id === designId)) return false;
+        if (state.coins < cost) return false;
+        set((s) => ({
+          coins: s.coins - cost,
+          ownedCupSkins: [...s.ownedCupSkins, designId],
+          equippedCupSkin: designId,
+        }));
+        return true;
+      },
 
       equipCupSkin: (designId) =>
         set((s) => (s.ownedCupSkins.includes(designId) ? { equippedCupSkin: designId } : {})),
