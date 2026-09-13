@@ -12,7 +12,7 @@
  * viewer, so `y` maps to Z and height maps to Y.
  */
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
-import { useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
 import * as THREE from 'three';
 
@@ -23,6 +23,7 @@ import {
   type CupSpec,
 } from '@/lib/arcadeLayout';
 import { beerHeight, beerRadius, cupProfile } from '@/lib/cupGeometry';
+import { DEFAULT_CUP_SKIN, cupTexture, type CupDesign } from '@/lib/cupSkins';
 import { BALL_SIZE, type BallFlight } from './useBallFlight';
 
 /** Table points to world units. */
@@ -35,6 +36,8 @@ export interface Rack {
   cups: CupSpec[];
   aliveFlags: boolean[];
   colour: string;
+  /** A country's flag wrapped round the cups, when one has been bought. */
+  design?: CupDesign;
   /**
    * One cup painted differently and lit from inside — the Lucky Shot's golden
    * cup. It has to be unmistakable from the throwing end, where every cup is
@@ -169,13 +172,54 @@ function Surface({ width }: { width: number }) {
   );
 }
 
+/**
+ * Lays the texture on the cup the way a label goes on: around and up.
+ *
+ * A lathe's own UVs run along the whole profile, which here is the outside
+ * *and* the inside — so a flag mapped with them would be squeezed into the
+ * outer half and mirrored down the inside. These are rebuilt from the geometry
+ * instead: `u` from the angle around the axis, `v` from the height. The inside
+ * gets the same flag, which is right: you see it through the beer.
+ */
+function wrapUvs(geometry: THREE.LatheGeometry): void {
+  const position = geometry.getAttribute('position');
+  const uv = geometry.getAttribute('uv');
+  let highest = 0;
+  for (let i = 0; i < position.count; i++) highest = Math.max(highest, position.getY(i));
+  for (let i = 0; i < position.count; i++) {
+    const x = position.getX(i);
+    const z = position.getZ(i);
+    const angle = Math.atan2(z, x);
+    uv.setXY(i, (angle + Math.PI) / (Math.PI * 2), highest > 0 ? position.getY(i) / highest : 0);
+  }
+  uv.needsUpdate = true;
+}
+
 function CupRack({ rack, width }: { rack: Rack; width: number }) {
   const geometry = useMemo(() => {
     const points = cupProfile().map((p) => new THREE.Vector2(p.r * CUP_WIDTH * S, p.y * CUP_WIDTH * S));
-    const lathe = new THREE.LatheGeometry(points, 26);
+    const lathe = new THREE.LatheGeometry(points, 48);
     lathe.computeVertexNormals();
+    wrapUvs(lathe);
     return lathe;
   }, []);
+  /**
+   * The flag, as a texture. Built from bytes rather than loaded from a file:
+   * there is no image to download, nothing to keep in step with the material,
+   * and it works the same in the browser and in a native build.
+   */
+  const texture = useMemo(() => {
+    if (!rack.design || rack.design.id === DEFAULT_CUP_SKIN) return null;
+    const size = 64;
+    const map = new THREE.DataTexture(cupTexture(rack.design, size), size, size, THREE.RGBAFormat);
+    map.needsUpdate = true;
+    // Crisp bands rather than a gradient: a flag has edges.
+    map.magFilter = THREE.LinearFilter;
+    map.minFilter = THREE.LinearFilter;
+    map.colorSpace = THREE.SRGBColorSpace;
+    return map;
+  }, [rack.design]);
+  useEffect(() => () => texture?.dispose(), [texture]);
   const beer = useMemo(
     () => ({ r: beerRadius() * CUP_WIDTH * S, y: beerHeight() * CUP_WIDTH * S }),
     []
@@ -191,6 +235,7 @@ function CupRack({ rack, width }: { rack: Rack; width: number }) {
             geometry={geometry}
             beer={beer}
             colour={golden ? rack.highlight!.colour : rack.colour}
+            texture={golden ? null : texture}
             glow={golden}
             alive={rack.aliveFlags[cup.index]}
             x={wx(cup.x, width)}
@@ -206,6 +251,7 @@ function Cup({
   geometry,
   beer,
   colour,
+  texture,
   glow = false,
   alive,
   x,
@@ -214,6 +260,7 @@ function Cup({
   geometry: THREE.LatheGeometry;
   beer: { r: number; y: number };
   colour: string;
+  texture?: THREE.Texture | null;
   /** Lit from inside and breathing, for a cup that is the point of the shot. */
   glow?: boolean;
   alive: boolean;
@@ -254,9 +301,11 @@ function Cup({
     <group ref={group} position={[x, 0, z]}>
       <mesh geometry={geometry} castShadow={false}>
         <meshStandardMaterial
-          color={colour}
-          emissive={colour}
-          emissiveIntensity={glow ? 0.9 : 0.12}
+          map={texture ?? null}
+          // White under a texture, or the flag comes out tinted red.
+          color={texture ? '#FFFFFF' : colour}
+          emissive={texture ? '#FFFFFF' : colour}
+          emissiveIntensity={glow ? 0.9 : texture ? 0.06 : 0.12}
           roughness={glow ? 0.2 : 0.35}
           metalness={glow ? 0.35 : 0.05}
           side={THREE.DoubleSide}

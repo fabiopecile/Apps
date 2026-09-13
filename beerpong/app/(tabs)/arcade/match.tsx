@@ -65,6 +65,7 @@ import { LEAGUE_OPPONENTS } from '@/lib/opponents';
  */
 const SCREEN_POINTS_PER_TABLE_POINT = 1;
 import { SKINS } from '@/lib/skins';
+import { cupDesign } from '@/lib/cupSkins';
 import { selectCareerLevel, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { divisionName, translate, useLanguage, useT, type TranslationKey as MatchKey } from '@/lib/i18n';
@@ -211,6 +212,7 @@ export default function MatchScreen() {
   );
 
   const arcade = useBeerpongStore((s) => s.arcade);
+  const equippedCupSkin = useBeerpongStore((s) => s.equippedCupSkin);
   const coins = useBeerpongStore((s) => s.coins);
   const rivals = useBeerpongStore((s) => s.rivals);
   const trackerTeams = useBeerpongStore((s) => s.tracker.teams);
@@ -298,6 +300,7 @@ export default function MatchScreen() {
   }, [mode, difficulty, rivals.division, matchSeed, isPassPlay, language]);
 
   const ballSkin = SKINS.find((s) => s.id === arcade.equippedBall) ?? SKINS[0];
+  const myCupDesign = cupDesign(equippedCupSkin);
   const opponentRemaining = opponentAlive.filter(Boolean).length;
   const playerRemaining = playerAlive.filter(Boolean).length;
 
@@ -863,7 +866,12 @@ export default function MatchScreen() {
             width={tableWidth}
             racks={[
               { cups: opponentCups, aliveFlags: opponentAlive, colour: setup.color },
-              { cups: playerCups, aliveFlags: playerAlive, colour: colors.neon },
+              {
+                cups: playerCups,
+                aliveFlags: playerAlive,
+                colour: colors.neon,
+                design: myCupDesign,
+              },
             ]}
             balls={[playerFlight, opponentFlight]}
             ballColours={[ballSkin.accent, isPassPlay ? colors.gold : colors.danger]}

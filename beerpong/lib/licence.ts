@@ -71,6 +71,28 @@ export function looksLikeLicence(raw: string): boolean {
   return normaliseLicence(raw).length === LICENCE_BODY + LICENCE_CHECK;
 }
 
+/**
+ * What a code's check digits are computed over.
+ *
+ * There is more than one thing for sale now, and a code has to say which one it
+ * is: without this, a €1.99 cup design and a €4.99 camera unlock would be the
+ * same twelve characters, and the cheaper one would open the dearer thing.
+ *
+ * The camera keeps the old message with no item in it, so every code sold
+ * before this existed still verifies. Anything else is checked over its item
+ * id, which makes a code minted for one item fail against another — the check
+ * digits simply do not come out.
+ */
+export const PRO_ITEM_ID = 'pro';
+
+export function licenceCheckMessage(body: string, item: string): string {
+  return item === PRO_ITEM_ID ? `check:${body}` : `check:${body}|${item}`;
+}
+
+export function licenceBodyMessage(sessionId: string, item: string): string {
+  return item === PRO_ITEM_ID ? `id:${sessionId}` : `id:${sessionId}|${item}`;
+}
+
 export function splitLicence(raw: string): { body: string; check: string } | null {
   const clean = normaliseLicence(raw);
   if (clean.length !== LICENCE_BODY + LICENCE_CHECK) return null;

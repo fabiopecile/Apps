@@ -466,6 +466,46 @@ const STRINGS = {
     en: 'Auto detection only runs in the web version. The installed app has no access to individual camera frames.',
   },
 
+  // ---------------------------------------------------------- cup designs
+  'cups.title': { de: 'Becher-Designs', en: 'Cup designs' },
+  'cups.intro': {
+    de: 'Spielt unter eurer Flagge. Jedes Design gehört dir dauerhaft, gilt auf allen Geräten mit deinem Code — und die andere Seite sieht es im Online-Spiel.',
+    en: 'Play under your own flag. Each design is yours for good, works on any device with your code — and the other table sees it in an online game.',
+  },
+  'cups.yours': { de: 'Deine Becher', en: 'Your cups' },
+  'cups.forSale': { de: 'Zu haben', en: 'For sale' },
+  'cups.onTheTable': { de: 'AUF DEM TISCH', en: 'ON THE TABLE' },
+  'cups.owned': { de: 'Gehört dir', en: 'Yours' },
+  'cups.oneOff': { de: 'Einmalig, kein Abo', en: 'One-off, no subscription' },
+  'cups.closed': {
+    de: 'Kaufen geht noch nicht — auf dem Pro-Bildschirm steht, woran es liegt.',
+    en: 'Buying is not possible yet — the Pro screen says why.',
+  },
+  'cups.bundleTitle': { de: 'Alle Länder auf einmal', en: 'Every country at once' },
+  'cups.bundleBody': {
+    de: 'Alle {count} Designs für {price} statt einzeln. Wer mehr als vier will, fährt damit besser.',
+    en: 'All {count} designs for {price} instead of one at a time. Better value past four of them.',
+  },
+  'cups.bundleBuy': { de: 'Alle für {price}', en: 'All for {price}' },
+  'cups.bought': {
+    de: 'Freigeschaltet. Dein Code: {code} — notiere ihn, damit du das Design auf einem neuen Handy wiederbekommst.',
+    en: 'Unlocked. Your code: {code} — write it down so you can get the design back on a new phone.',
+  },
+  'cups.restore': { de: 'Code eingeben (schon gekauft)', en: 'Enter a code (already bought)' },
+  'cups.restoreBody': {
+    de: 'Code aus einem früheren Kauf eintippen. Er schaltet genau das Design frei, für das er ausgestellt wurde.',
+    en: 'Type a code from an earlier purchase. It unlocks exactly the design it was issued for.',
+  },
+  'cups.footnote': {
+    de: 'Becher-Designs ändern nichts am Spiel — kein Vorteil, keine besseren Chancen, nur das Aussehen. Bezahlt wird einmal, über Stripe.',
+    en: 'Cup designs change nothing about the game — no advantage, no better odds, only the look. Paid once, through Stripe.',
+  },
+  'hub.cups.title': { de: 'Becher-Designs', en: 'Cup designs' },
+  'hub.cups.subtitle': {
+    de: 'Länder-Becher — spielt unter eurer Flagge',
+    en: 'Country cups — play under your own flag',
+  },
+
   // ------------------------------------------------- arcade against a phone
   'arcadeOnline.title': { de: 'Online spielen', en: 'Play online' },
   'arcadeOnline.intro': {
