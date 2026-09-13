@@ -55,6 +55,19 @@ export default function OnboardingScreen() {
     router.replace('/(tabs)/camera');
   };
 
+  /**
+   * The whole manual, for whoever wants it now.
+   *
+   * Deliberately a link rather than more slides: an app that asks you to read
+   * nine chapters before throwing a ball is an app people close. Onboarding
+   * stays three screens; everything else is one tap away here and permanently
+   * in the profile.
+   */
+  const openGuide = () => {
+    completeOnboarding();
+    router.replace('/guide');
+  };
+
   const next = () => {
     feedback.tap();
     if (isLast) finish();
@@ -112,6 +125,14 @@ export default function OnboardingScreen() {
         </Animated.View>
 
         <View style={styles.bottom}>
+          {isLast ? (
+            <Pressable onPress={openGuide} hitSlop={8} style={styles.guideLink}>
+              <Ionicons name="book-outline" size={14} color={colors.textSecondary} />
+              <Text style={styles.guideText} selectable={false}>
+                {t('onboarding.guide')}
+              </Text>
+            </Pressable>
+          ) : null}
           <View style={styles.dots}>
             {SLIDES.map((_, i) => (
               <View
@@ -136,6 +157,14 @@ export default function OnboardingScreen() {
 }
 
 const styles = StyleSheet.create({
+  guideLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: spacing.sm,
+  },
+  guideText: { fontFamily: fonts.bodyRegular, fontSize: 13, color: colors.textSecondary },
   container: { flex: 1, backgroundColor: colors.background },
   safe: { flex: 1, paddingHorizontal: spacing.lg },
   topRow: {

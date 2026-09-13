@@ -262,6 +262,55 @@ zählen) und aus denen danach Becher verschwinden (müssen **genau einmal** und
 dem **richtigen Team** gemeldet werden). Chromium kann sie per
 `--use-file-for-fake-video-capture=t.y4m` als Kamera ausgeben.
 
+### Wie hoch das Handy stehen muss
+
+Nicht egal, und zwar aus Geometrie, nicht aus Geschmack. Das Raster, das du auf
+die Becher legst, ist ein **flaches Dreieck** — verschieben, größer ziehen,
+drehen, mehr geht nicht. Ein echtes Rack von schräg unten ist auf dem Bild kein
+Dreieck, sondern ein Trapez: die hinteren Reihen rücken zusammen. Je flacher der
+Blick, desto weniger lässt sich das eine auf das andere legen.
+
+`npm run bench:angle` rechnet das für einen echten Tisch (244 × 61 cm, Becher
+95 mm Mündung, 12 cm hoch) aus — wie weit der schlechteste Ring danebenliegt,
+in Mündungsbreiten:
+
+| Höhe über der Tischplatte | Blickwinkel | Ring daneben |
+|---|---|---|
+| 25 cm | 14° | 1,35 |
+| 40 cm | 28° | 0,97 |
+| 60 cm | 43° | 0,64 |
+| **80 cm** | **52°** | **0,43** |
+| 100 cm | 59° | 0,30 |
+| 130 cm | 66° | 0,19 |
+
+Und `npm run bench:vision` sagt, wie viel davon die Erkennung verträgt — dafür
+wurde der Messfleck absichtlich danebengeschoben:
+
+| Ring daneben | auf dem Becher | gefunden | Fehlalarme |
+|---|---|---|---|
+| 0,3 | 90 % | 10/10 | 0 |
+| 0,4 | 67 % | 10/10 | 0 |
+| **0,5** | **44 %** | **10/10** | **0** |
+| 0,6 | 23 % | 5/10 | 0 |
+
+Bei einer Mündung von 9,5 cm heißt „0,5 daneben" also **knapp 5 cm** — so viel
+darf ein Ring verrutscht sein. Daraus fällt die Empfehlung von selbst:
+
+* **Vom Tischende: ab etwa 80 cm über der Platte.** Darunter liegen die
+  hinteren Ringe weiter daneben, als die Erkennung verträgt.
+* **Von der Längsseite: ab etwa 100 cm**, dafür sind beide Racks gleich weit weg.
+* Ein Beerpong-Tisch ist rund 70 cm hoch — das sind also etwa 1,50 m über dem
+  Boden. Auf einen Stapel stellen, an eine Lampe lehnen, Stativ.
+
+Das ist der Grund, warum die alten Messungen zu gut aussahen: Sie erzeugten
+**pro Becher** eine Messprobe und haben damit stillschweigend angenommen, der
+Ring sitze perfekt. Die Reihe oben ist die erste, die fragt, was ein Ring
+daneben kostet.
+
+Ein Perspektiv-Regler (hinten schmaler ziehen) würde die nötige Höhe vom
+Tischende auf etwa 60 cm drücken — gemessen 0,43 → 0,23 bei 80 cm. Von der
+Längsseite hilft er nicht, dort steht das Rack quer zur Verzerrung.
+
 ## Was ein Skin kostet
 
 Gemessen an dem, was ein Spieltag einbringt: die Tagesaufgaben sind 70 bis 220
@@ -916,6 +965,39 @@ nicht.
 
 `npm run test:free` prüft die Regeln — drei Spiele, Wochenwechsel am Montag,
 kein Limit für Zahlende, und eine uralte gespeicherte Woche sperrt niemanden aus.
+
+## Die Anleitung in der App
+
+Unter **Profil → Anleitung** steht alles, was die App kann: zehn Kapitel,
+57 Abschnitte, aufklappbar, in Deutsch und Englisch. Kamera von Hand und
+automatisch, das Aufstellen des Handys, Highlights, alle Arcade-Regeln und
+-Modi, Coins und Statistiken, beide Kaufsachen, der Spielstand-Code, die
+Einstellungen — und ein eigenes Kapitel **„Was die App nicht kann"**.
+
+Zwei Entscheidungen dahinter:
+
+**Das Onboarding bleibt drei Folien.** Eine App, die vor dem ersten Wurf zehn
+Kapitel lesen lässt, wird geschlossen. Auf der letzten Folie steht ein Link zur
+Anleitung, und im Profil steht sie dauerhaft.
+
+**Jede Einschränkung steht bei ihrer Funktion**, nicht in einer Fußnote. Dass
+die Erkennung nur im Web läuft, steht im Kamera-Kapitel. Dass man online
+schummeln könnte, im Online-Abschnitt. Dass Becher-Designs nichts am Spiel
+ändern, beim Preis.
+
+### Sie kann nicht mit dem Code auseinanderlaufen
+
+Alle Zahlen kommen per Import aus dem Programm — Freispiele pro Woche, Bälle
+pro Zug, Becher in der Verlängerung, Preise, Lucky-Shot-Belohnungen,
+Highlight-Sekunden. Eine Anleitung, die „drei Spiele pro Woche" sagt, während
+der Code vier meint, ist schlimmer als keine.
+
+Was als Satz ausgeschrieben ist, prüft `npm run test:guide` gegen die Quelle:
+Coins pro Treffer, Wurf, Sieg und Niederlage werden aus `lib/store.ts` gelesen,
+die XP ebenso, das Abtastintervall aus `AutoDetect.tsx`, die Kamerahöhe aus dem
+Winkel-Bench. Dazu: beide Sprachen vorhanden, keine Textstelle zweimal
+dieselbe (das wäre eine vergessene Übersetzung), keine Platzhalter, und eine
+Liste von Themen, die vorkommen müssen — ein still gelöschtes Kapitel fällt auf.
 
 ## Zurück heißt zurück ins Hauptmenü
 

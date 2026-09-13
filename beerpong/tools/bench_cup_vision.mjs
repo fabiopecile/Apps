@@ -52,9 +52,20 @@ const GONE = { r: 44, g: 78, b: 52, contrast: 9 };
  * auto-exposure does. `shade` does the same to a slice of the rack only, which
  * is what a person leaning over one end does.
  */
-function frame(alive, { light = 1, shade = null, grain = 0, random = Math.random } = {}) {
+function frame(alive, { light = 1, shade = null, grain = 0, cover = 1, random = Math.random } = {}) {
   return alive.map((standing, i) => {
-    const base = standing ? STANDING : GONE;
+    // `cover` is how much of the cup's mouth the measured patch actually sits
+    // over. A ring placed a little off centre reads part cup and part table,
+    // so both the standing and the empty sample move towards bare table and
+    // the *difference* between them — which is the whole signal — shrinks with
+    // it. This is what a rack seen from too low does to the calibration.
+    const pure = standing ? STANDING : GONE;
+    const base = {
+      r: pure.r * cover + GONE.r * (1 - cover),
+      g: pure.g * cover + GONE.g * (1 - cover),
+      b: pure.b * cover + GONE.b * (1 - cover),
+      contrast: pure.contrast * cover + GONE.contrast * (1 - cover),
+    };
     let k = light;
     if (shade && i >= shade.from && i < shade.to) k *= shade.light;
     const noise = () => (random() - 0.5) * 2 * grain;
@@ -164,3 +175,45 @@ run('ein ganzes Spiel, zehn Becher', 2400, (f, random) => {
   const light = 1 - 0.18 * Math.min(1, f / 2400);
   return { alive, samples: frame(alive, { light, grain: 4, random }) };
 });
+
+// ---------------------------------------------------------------------------
+// How exactly the rings have to sit on the cups.
+//
+// Everything above assumes the patch is centred on its cup, which is what the
+// old benches quietly did — they generated a sample *per cup* and never asked
+// what happens when the ring is a centimetre out. Filmed from a low angle it
+// always is: the guide is a flat triangle and a real rack on screen is a
+// keystoned trapezoid, so the far rings sit off their cups however carefully
+// somebody drags them. `tools/bench_camera_angle.mjs` measures how far off, in
+// mouth-widths; this measures what that costs.
+
+/** How much of a cup's mouth a patch covers when it is `d` mouths off centre. */
+function overlap(d) {
+  const R = 0.5;
+  const r = (4 / Math.ceil(Math.sqrt(2 * CUPS))) * 0.34;
+  if (d >= R + r) return 0;
+  if (d <= R - r) return 1;
+  const a = (d * d + r * r - R * R) / (2 * d * r);
+  const b = (d * d + R * R - r * r) / (2 * d * R);
+  const area =
+    r * r * Math.acos(Math.max(-1, Math.min(1, a))) +
+    R * R * Math.acos(Math.max(-1, Math.min(1, b))) -
+    0.5 * Math.sqrt(Math.max(0, (-d + r + R) * (d + r - R) * (d - r + R) * (d + r + R)));
+  return area / (Math.PI * r * r);
+}
+
+console.log('\nWie genau die Ringe sitzen müssen (dasselbe Spiel, Ring daneben)\n');
+for (const off of [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6]) {
+  const cover = overlap(off);
+  run(
+    `Ring ${off.toFixed(1)} Mündungen daneben (${(cover * 100).toFixed(0)}% auf dem Becher)`,
+    2400,
+    (f, random) => {
+      const alive = allUp();
+      const sunk = Math.min(CUPS, Math.floor((f - 200) / 200) + 1);
+      for (let i = 0; i < Math.max(0, sunk); i++) alive[i] = false;
+      const light = 1 - 0.18 * Math.min(1, f / 2400);
+      return { alive, samples: frame(alive, { light, grain: 4, cover, random }) };
+    }
+  );
+}

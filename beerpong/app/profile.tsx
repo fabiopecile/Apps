@@ -112,6 +112,21 @@ export default function ProfileScreen() {
             </View>
           </Card>
 
+          <SectionLabel>{t('profile.guide')}</SectionLabel>
+          <Pressable
+            onPress={() => router.push('/guide')}
+            style={({ pressed }) => [styles.proCard, pressed && { opacity: 0.75 }]}
+          >
+            <View style={[styles.proIcon, { borderColor: colors.neon }]}>
+              <Ionicons name="book" size={20} color={colors.neon} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.proTitle}>{t('profile.guide')}</Text>
+              <Text style={styles.proSubtitle}>{t('profile.guideBody')}</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+          </Pressable>
+
           <SectionLabel>{t('backup.title')}</SectionLabel>
           <BackupCard />
 
