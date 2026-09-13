@@ -31,10 +31,13 @@ function open(url) {
     const ws = new WebSocket(url);
     ws.states = [];
     ws.errors = [];
+    /** Everything the queue said, which is not the room's message shape. */
+    ws.queueMessages = [];
     ws.addEventListener('message', (e) => {
       const m = JSON.parse(e.data);
       if (m.type === 'state') ws.states.push(m);
       if (m.type === 'error') ws.errors.push(m.reason);
+      if (m.type === 'matched' || m.type === 'waiting') ws.queueMessages.push(m);
     });
     ws.addEventListener('open', () => resolve(ws));
     ws.addEventListener('error', () => resolve(ws));
@@ -165,5 +168,54 @@ await wait(400);
 check('throwing out of turn changes nothing', last(one)?.match.alive[0].filter(Boolean).length === 10);
 
 one.close(); two.close();
+// --- looking for an opponent ----------------------------------------------
+// The queue's whole job: two sockets in, one room code out, and an honest
+// answer when there is only one. Both halves matter — the second one is what
+// the app shows for as long as nobody else is playing, which at the start is
+// always.
+const queueUrl = (division) => `${HTTP.replace(/^http/, 'ws')}/queue?division=${division}`;
+
+const alone = await open(queueUrl(10));
+await wait(500);
+check('somebody alone in the queue is told so', alone.states.length === 0 && alone.readyState === 1);
+const aloneSeen = [];
+alone.addEventListener('message', (e) => aloneSeen.push(JSON.parse(e.data)));
+
+const partner = await open(queueUrl(10));
+await wait(700);
+const pairings = [...alone.queueMessages ?? [], ...aloneSeen];
+check('a second phone pairs with it', pairings.some((m) => m.type === 'matched'), JSON.stringify(pairings));
+const matched = pairings.find((m) => m.type === 'matched');
+check('with a four-character room code', /^[A-HJ-NP-Z2-9]{4}$/.test(matched?.code ?? ''), matched?.code);
+// Neither is told to open it, and that is the fix rather than an oversight:
+// when one of them had to, the joiner regularly arrived first and was turned
+// away with "no such room". The queue makes the room before either phone hears
+// the code, so both only ever join something that is already there.
+check('neither is asked to open the room', matched?.create === false, JSON.stringify(matched));
+check('the room the queue made is already there', await (async () => {
+  const probe = await open(`${BASE}/${matched.code}?seat=0`);
+  await wait(500);
+  const joined = last(probe)?.code === matched.code && probe.errors.length === 0;
+  probe.close();
+  return joined;
+})(), 'a reserved room must accept a plain join');
+
+// The two are in different divisions, so they must not meet.
+const beginner = await open(queueUrl(10));
+const veteran = await open(queueUrl(1));
+await wait(700);
+const beginnerSaw = [];
+beginner.addEventListener('message', (e) => beginnerSaw.push(JSON.parse(e.data)));
+await wait(400);
+check(
+  'divisions are separate queues',
+  beginnerSaw.every((m) => m.type !== 'matched'),
+  JSON.stringify(beginnerSaw)
+);
+beginner.close();
+veteran.close();
+alone.close();
+partner.close();
+
 console.log(`\n${ok} ok, ${bad} failed`);
 process.exit(bad > 0 ? 1 : 0);
