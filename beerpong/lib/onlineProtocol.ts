@@ -85,6 +85,8 @@ export const CUP_COUNT_CHOICES = [6, 10, 15] as const;
 
 export interface OnlineTeam {
   name: string;
+  /** The cup design this side is playing with, when it has bought one. */
+  skin?: string;
   cupsLeft: number;
   hits: number;
   throws: number;
@@ -155,6 +157,8 @@ export type OnlineAction =
   | { type: 'miss' }
   | { type: 'undo' }
   | { type: 'rename'; name: string }
+  /** Which cup design to show on this seat's rack. Vanity, and nothing else. */
+  | { type: 'skin'; id: string }
   | { type: 'rematch' }
   | { type: 'setCups'; cups: number }
   /**
@@ -305,6 +309,18 @@ export function applyAction(
       if (name === match.teams[seat].name) return match;
       const teams: [OnlineTeam, OnlineTeam] = [{ ...match.teams[0] }, { ...match.teams[1] }];
       teams[seat] = { ...teams[seat], name };
+      return next({ teams });
+    }
+
+    case 'skin': {
+      // Not checked against a purchase, and deliberately not: the room would
+      // have to be told about licences to do that, and the worst a faked one
+      // buys is a flag on cups nobody else can keep. What it *is* checked for
+      // is length, so this cannot be used to push a novel through the socket.
+      const id = action.id.slice(0, 24);
+      if (id === match.teams[seat].skin) return match;
+      const teams: [OnlineTeam, OnlineTeam] = [{ ...match.teams[0] }, { ...match.teams[1] }];
+      teams[seat] = { ...teams[seat], skin: id };
       return next({ teams });
     }
 
@@ -467,6 +483,8 @@ export function isOnlineAction(value: unknown): value is OnlineAction {
       return true;
     case 'rename':
       return typeof (value as { name?: unknown }).name === 'string';
+    case 'skin':
+      return typeof (value as { id?: unknown }).id === 'string';
     case 'setCups':
       return typeof (value as { cups?: unknown }).cups === 'number';
     case 'shot': {

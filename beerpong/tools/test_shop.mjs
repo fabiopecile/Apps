@@ -231,5 +231,66 @@ if (await reachable(`${HALF_WORKER}/health`)) {
   console.log('  --   halb eingerichteter Worker läuft nicht, übersprungen');
 }
 
+// --- more than one thing for sale -----------------------------------------
+// A cup design at €1.99 beside the camera at €4.99. The case that matters is
+// the cheap one buying the dear one: both are "a code", and until the item went
+// into the signature they were the same twelve characters.
+const shopItems = Object.fromEntries((shop.d.items ?? []).map((entry) => [entry.id, entry.amount]));
+check('the price list reaches the app', typeof shopItems['item-cup-at'] === 'number', JSON.stringify(shop.d.items?.slice(0, 3)));
+check('a cup design costs 1,99 €', shopItems['item-cup-at'] === 199, String(shopItems['item-cup-at']));
+check('the bundle costs less than four of them', shopItems['cups-all'] < 4 * 199, String(shopItems['cups-all']));
+
+const cupStart = await post('/checkout', { path: '/(tabs)/arcade/cups', item: 'item-cup-at' });
+check('a design can be bought', typeof cupStart.d.sessionId === 'string', JSON.stringify(cupStart.d));
+const cupForm = await fetch(`${STRIPE}/sent/${cupStart.d.sessionId}`).then((r) => r.json());
+check(
+  'and is charged at 1,99 €, priced by the server',
+  cupForm['line_items[0][price_data][unit_amount]'] === '199',
+  cupForm['line_items[0][price_data][unit_amount]']
+);
+check(
+  'the checkout page says which design',
+  String(cupForm['line_items[0][price_data][product_data][name]']).includes('Österreich'),
+  cupForm['line_items[0][price_data][product_data][name]']
+);
+check('and the session records the item', cupForm['metadata[item]'] === 'item-cup-at');
+
+await fetch(`${STRIPE}/pay/${cupStart.d.sessionId}`, { method: 'POST' });
+const cupClaim = await get(`/licence?session=${cupStart.d.sessionId}`);
+check('paying it yields a code', cupClaim.d.paid === true && !!cupClaim.d.licence, JSON.stringify(cupClaim.d));
+check('and the answer says what was bought', cupClaim.d.item === 'item-cup-at', String(cupClaim.d.item));
+
+const cupCode = cupClaim.d.licence;
+check('the code opens that design', (await post('/licence/verify', { licence: cupCode, item: 'item-cup-at' })).d.ok === true);
+check(
+  'and not another one',
+  (await post('/licence/verify', { licence: cupCode, item: 'item-cup-de' })).d.ok === false
+);
+check(
+  'and not the camera — €1.99 must not buy €4.99',
+  (await post('/licence/verify', { licence: cupCode, item: 'pro' })).d.ok === false
+);
+check(
+  'and not the whole bundle',
+  (await post('/licence/verify', { licence: cupCode, item: 'cups-all' })).d.ok === false
+);
+check(
+  'the camera code does not open a design either',
+  (await post('/licence/verify', { licence, item: 'item-cup-at' })).d.ok === false
+);
+
+// Asking for a dearer item than was paid for, by editing the address bar.
+const swapped = await get(`/licence?session=${cupStart.d.sessionId}&item=pro`);
+check(
+  'the item cannot be swapped on the way home',
+  swapped.d.item === 'item-cup-at' && swapped.d.licence === cupCode,
+  JSON.stringify(swapped.d)
+);
+
+check(
+  'an invented item cannot be bought',
+  (await post('/checkout', { path: '/pro', item: 'item-cup-atlantis' })).status === 400
+);
+
 console.log(`\n${ok} ok, ${bad} failed`);
 process.exit(bad > 0 ? 1 : 0);

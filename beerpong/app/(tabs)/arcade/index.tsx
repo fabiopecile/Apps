@@ -203,6 +203,15 @@ export default function ArcadeHubScreen() {
           <View style={styles.section}>
             <SectionLabel>{t('hub.collection')}</SectionLabel>
             <ModeCard
+              icon="flag"
+              title={t('hub.cups.title')}
+              subtitle={t('hub.cups.subtitle')}
+              accent={colors.gold}
+              href="/(tabs)/arcade/cups"
+              index={4}
+            />
+
+            <ModeCard
               icon="color-palette"
               title={t('hub.skins.title')}
               subtitle={t('hub.skins.subtitle')}
