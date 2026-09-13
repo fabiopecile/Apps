@@ -15,13 +15,27 @@ import { join } from 'node:path';
 import ts from 'typescript';
 
 const dir = mkdtempSync(join(tmpdir(), 'online-'));
-const source = readFileSync(new URL('../lib/onlineProtocol.ts', import.meta.url), 'utf8');
-const js = ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const file = join(dir, 'onlineProtocol.mjs');
-writeFileSync(file, js);
+/**
+ * The protocol imports the turn rules and the rack sizes rather than restating
+ * them, so the arcade game online plays by the same rules as offline. That
+ * means its neighbours come along to the temp folder too.
+ */
+const transpile = (name) => {
+  const source = readFileSync(new URL(`../lib/${name}.ts`, import.meta.url), 'utf8');
+  const js = ts
+    .transpileModule(source, {
+      compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
+    })
+    .outputText.replace(/from ['"]\.\/(\w+)['"]/g, "from './$1.mjs'");
+  const file = join(dir, `${name}.mjs`);
+  writeFileSync(file, js);
+  return file;
+};
+transpile('turnRules');
+transpile('arcadeLayout');
+const file = transpile('onlineProtocol');
 const {
+  OVERTIME_CUPS,
   ROOM_CODE_ALPHABET,
   ROOM_CODE_LENGTH,
   applyAction,
@@ -194,6 +208,195 @@ check('junk off the wire is not an action', () => {
   }
   assert.ok(isOnlineAction({ type: 'cupDown' }));
   assert.ok(isOnlineAction({ type: 'rename', name: 'A' }));
+});
+
+// ---------------------------------------------------------------- arcade ---
+// The flick game, played by two phones. Everything the room decides is here:
+// whose go it is, what the score is, and when it is over. The physics stays on
+// the phone that threw — the room takes the result and owns what follows.
+
+const arcade = (cups = 10) => createMatch(cups, ['Wir', 'Ihr'], T0, 'arcade');
+/** The cup a shot claims, with the landing point the flight is redrawn from. */
+const shot = (hit, cups = [], bounce = false) => ({
+  type: 'shot',
+  hit,
+  cups,
+  landing: { x: 0, y: 0 },
+  bounce,
+});
+const standing = (match, seat) => match.alive[seat].filter(Boolean).length;
+
+check('an arcade room starts with two full racks and nobody ahead', () => {
+  const match = arcade();
+  assert.equal(match.kind, 'arcade');
+  assert.deepEqual([standing(match, 0), standing(match, 1)], [10, 10]);
+  assert.equal(match.turn.ballsLeft, 2);
+  assert.equal(match.activeTeam, 0);
+});
+
+check('a hit takes the cup off the other rack, not your own', () => {
+  const match = applyAction(arcade(), 0, shot(true, [4]), T0);
+  assert.equal(standing(match, 1), 9, 'the cup comes off the rack being thrown at');
+  assert.equal(standing(match, 0), 10, 'and never off your own');
+  assert.equal(match.teams[0].hits, 1);
+  assert.equal(match.teams[1].cupsLeft, 9);
+});
+
+check('throwing out of turn changes nothing at all', () => {
+  const start = arcade();
+  const match = applyAction(start, 1, shot(true, [0]), T0);
+  assert.equal(match, start, 'the seat that is not up must not be able to score');
+});
+
+check('a cup that is already down cannot be hit twice', () => {
+  let match = applyAction(arcade(), 0, shot(true, [4]), T0);
+  match = applyAction(match, 0, shot(true, [4]), T0);
+  assert.equal(standing(match, 1), 9, 'the same cup must not count a second time');
+  assert.equal(match.teams[0].hits, 1, 'and it counts as the miss it was');
+  assert.equal(match.teams[0].throws, 2);
+});
+
+check('a bounce takes two cups, a plain hit only one', () => {
+  const bounced = applyAction(arcade(), 0, shot(true, [3, 4], true), T0);
+  assert.equal(standing(bounced, 1), 8);
+  const plain = applyAction(arcade(), 0, shot(true, [3, 4], false), T0);
+  assert.equal(standing(plain, 1), 9, 'without a bounce only the cup that was hit goes');
+});
+
+check('two balls a turn, then it is their go', () => {
+  let match = applyAction(arcade(), 0, shot(false), T0);
+  assert.equal(match.activeTeam, 0, 'the first ball does not hand over');
+  assert.equal(match.turn.ballsLeft, 1);
+  match = applyAction(match, 0, shot(false), T0);
+  assert.equal(match.activeTeam, 1, 'the second one does');
+  assert.equal(match.turn.ballsLeft, 2, 'and they start a fresh set');
+});
+
+check('both in and the balls come back', () => {
+  let match = applyAction(arcade(), 0, shot(true, [0]), T0);
+  match = applyAction(match, 0, shot(true, [1]), T0);
+  assert.equal(match.activeTeam, 0, 'sinking both keeps the ball');
+  assert.equal(match.note, 'ballsBack');
+  assert.equal(match.turn.ballsLeft, 2);
+});
+
+check('clearing their rack does not win it — they shoot redemption', () => {
+  let match = arcade(2);
+  match = applyAction(match, 0, shot(true, [0]), T0);
+  match = applyAction(match, 0, shot(true, [1]), T0);
+  assert.equal(standing(match, 1), 0);
+  assert.equal(match.winner, null, 'nobody has won while redemption is still owed');
+  assert.equal(match.activeTeam, 1, 'the side on the brink gets the ball');
+  assert.equal(match.turn.redemption, true);
+  assert.equal(match.note, 'redemption');
+});
+
+check('redemption missed is the match', () => {
+  let match = arcade(1);
+  match = applyAction(match, 0, shot(true, [0]), T0);
+  match = applyAction(match, 1, shot(false), T0);
+  assert.equal(match.winner, 0, 'the side that cleared the rack takes it');
+});
+
+check('redemption that clears the rack goes to overtime, not a loss', () => {
+  // This is the rule the offline game once got wrong, and it cost a game that
+  // had been won. Online it must not be wrong in a second place.
+  let match = arcade(1);
+  match = applyAction(match, 0, shot(true, [0]), T0);
+  assert.equal(match.activeTeam, 1);
+  match = applyAction(match, 1, shot(true, [0]), T0);
+  assert.equal(match.winner, null, 'a good redemption is level, never a win either way');
+  assert.equal(match.note, 'overtime');
+  assert.equal(match.overtime, 1);
+  assert.deepEqual([standing(match, 0), standing(match, 1)], [OVERTIME_CUPS, OVERTIME_CUPS]);
+  assert.equal(match.activeTeam, 1, 'whoever shot the redemption throws first');
+  assert.equal(match.turn.redemption, false, 'and the set starts over');
+});
+
+check('a throw carries the landing point so the other phone can redraw it', () => {
+  const match = applyAction(
+    arcade(),
+    0,
+    { type: 'shot', hit: true, cups: [2], landing: { x: 12, y: -34 }, bounce: false },
+    T0
+  );
+  assert.deepEqual(match.lastShot.landing, { x: 12, y: -34 });
+  assert.equal(match.lastShot.seat, 0);
+  assert.deepEqual(match.lastShot.cups, [2]);
+  assert.equal(match.lastShot.id, 1, 'the id counts up so a redraw is not a new throw');
+});
+
+check('a landing point that is not a number is refused outright', () => {
+  const start = arcade();
+  for (const landing of [{ x: NaN, y: 0 }, { x: 0, y: Infinity }]) {
+    const match = applyAction(start, 0, { type: 'shot', hit: false, cups: [], landing }, T0);
+    assert.equal(match, start);
+  }
+});
+
+check('nothing counts once it is over', () => {
+  let match = arcade(1);
+  match = applyAction(match, 0, shot(true, [0]), T0);
+  match = applyAction(match, 1, shot(false), T0);
+  const finished = match;
+  match = applyAction(match, 0, shot(true, [0]), T0);
+  assert.equal(match, finished);
+});
+
+check('undo is refused in the arcade game rather than half applied', () => {
+  const match = applyAction(arcade(), 0, shot(true, [0]), T0);
+  assert.equal(applyAction(match, 0, { type: 'undo' }, T0), match);
+});
+
+check('changing the rack size before the first ball resizes the racks too', () => {
+  const match = applyAction(arcade(10), 0, { type: 'setCups', cups: 6 }, T0);
+  assert.deepEqual([standing(match, 0), standing(match, 1)], [6, 6]);
+});
+
+check('a rematch deals two fresh racks and keeps the game it is', () => {
+  let match = applyAction(arcade(6), 0, shot(true, [0]), T0);
+  match = applyAction(match, 1, { type: 'rematch' }, T0 + 5000);
+  assert.equal(match.kind, 'arcade');
+  assert.deepEqual([standing(match, 0), standing(match, 1)], [6, 6]);
+  assert.equal(match.turn.ballsLeft, 2);
+  assert.equal(match.teams[0].hits, 0);
+});
+
+check('a whole arcade game only ever ends on a missed redemption', () => {
+  // Walk a long game with a fixed pattern of hits and misses and assert the
+  // one property that matters: no ending that is not a redemption missed.
+  let match = arcade(10);
+  let random = 12345;
+  const next = () => ((random = (random * 1103515245 + 12345) & 0x7fffffff) / 0x7fffffff);
+  let guard = 0;
+  while (match.winner == null && guard < 4000) {
+    guard += 1;
+    const seat = match.activeTeam;
+    const target = seat === 0 ? 1 : 0;
+    const standingCups = match.alive[target]
+      .map((up, index) => (up ? index : -1))
+      .filter((index) => index >= 0);
+    const hit = next() < 0.45 && standingCups.length > 0;
+    const before = match.turn.redemption;
+    match = applyAction(match, seat, shot(hit, hit ? [standingCups[0]] : []), T0);
+    if (match.winner != null) {
+      assert.ok(before && !hit, 'a match can only end on a redemption that missed');
+    }
+  }
+  assert.ok(match.winner != null, `the game should finish; stopped after ${guard} throws`);
+});
+
+check('junk shots off the wire are not actions', () => {
+  for (const junk of [
+    { type: 'shot' },
+    { type: 'shot', hit: true, cups: [0] },
+    { type: 'shot', hit: 'yes', cups: [], landing: { x: 0, y: 0 } },
+    { type: 'shot', hit: true, cups: ['2'], landing: { x: 0, y: 0 } },
+    { type: 'shot', hit: true, cups: [], landing: { x: 0 } },
+  ]) {
+    assert.equal(isOnlineAction(junk), false, `${JSON.stringify(junk)} should be rejected`);
+  }
+  assert.ok(isOnlineAction({ type: 'shot', hit: true, cups: [1], landing: { x: 1, y: 2 } }));
 });
 
 console.log(`\n${passed} checks passed`);

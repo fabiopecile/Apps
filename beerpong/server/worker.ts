@@ -400,6 +400,9 @@ export class Room implements DurableObject {
     const creating = url.searchParams.get('create') === '1';
     const name = url.searchParams.get('name') ?? '';
     const cups = Number(url.searchParams.get('cups') ?? '10');
+    // Which game the room holds. Only read when the room is opened — whoever
+    // joins gets whatever the room already is.
+    const game = url.searchParams.get('game') === 'arcade' ? 'arcade' : 'camera';
 
     const pair = new WebSocketPair();
     const [client, server] = [pair[0], pair[1]];
@@ -427,7 +430,8 @@ export class Room implements DurableObject {
         match: createMatch(
           [6, 10, 15].includes(cups) ? cups : 10,
           [name.slice(0, 16) || 'Team 1', 'Team 2'],
-          now
+          now,
+          game
         ),
         touchedAt: now,
       };
@@ -436,6 +440,13 @@ export class Room implements DurableObject {
       if (this.record == null) return refuse('missing', 4004);
       if (name.trim().length > 0) {
         this.record.match = applyAction(this.record.match, seat, { type: 'rename', name }, now);
+        // Written down, not just held in memory. Sockets here hibernate: the
+        // object is torn down between messages and built again from storage,
+        // so a name that was only ever in memory came back as "Team 2" at the
+        // first throw. It showed on the other phone first and then quietly
+        // reverted, which is the sort of thing that reads as the app losing
+        // track of who is playing.
+        await this.save();
       }
     }
 
