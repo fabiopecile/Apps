@@ -8,6 +8,7 @@ import { COIN_CUP_DESIGNS, PAID_CUP_DESIGNS } from './cupSkins';
 import { WEEKLY_OFFER_SIZE } from './cupShop';
 import { KNOCKOUT_SIZES, KNOCKOUT_STAKES } from './knockout';
 import { GHOST_MIN_THROWS } from './ghosts';
+import { PARTY_WATCHER_LIMIT } from './partyProtocol';
 import { WEEKEND_MATCHES, WEEKEND_UNLOCK_DIVISION } from './competition';
 import {
   LUCKY_CUP_COINS,
@@ -402,6 +403,14 @@ export const GUIDE: GuideChapter[] = [
         body: {
           de: `Im Arcade-Hub. Du zahlst einen Einsatz (${KNOCKOUT_STAKES.join(', ')} Coins) und wählst ein Feld aus ${KNOCKOUT_SIZES.join(' oder ')} Teams. Jede Runde ist ein echtes Match gegen einen Gegner, der von Runde zu Runde härter wird — das Feld wird vor dem Bezahlen ausgelost, du siehst also, wer im Finale wartet. Gewinnst du alles, bekommst du den ganzen Topf: **Einsatz mal Teamanzahl**. Verlierst du eine Runde, ist der Einsatz weg. **Ein Match, das du mittendrin verlässt, zählt als Niederlage** — sonst könnte man jede Runde so lange wiederholen, bis sie passt. Der Topf ist bewusst knapp berechnet: Wer die Hälfte seiner Spiele gewinnt, kommt auf Dauer ungefähr auf null raus.`,
           en: `In the arcade hub. You pay a stake (${KNOCKOUT_STAKES.join(', ')} coins) and pick a field of ${KNOCKOUT_SIZES.join(' or ')} teams. Every round is a real match against an opponent who gets harder each time — the field is drawn before you pay, so you can see who is waiting in the final. Win it all and the whole pot is yours: **the stake times the number of teams**. Lose a round and the stake is gone. **A match you walk out of counts as a loss** — otherwise any round could be replayed until it went your way. The pot is deliberately tight: winning half your matches comes out roughly level in the long run.`,
+        },
+      },
+      {
+        de: 'Live-Anzeige für alle am Tisch',
+        en: 'A live scoreboard for the whole table',
+        body: {
+          de: `Im Kamera-Modus oben das QR-Symbol. Das Handy, das mitzählt, zeigt einen Code; alle anderen halten ihre Kamera drauf, öffnen den Link und sehen den Spielstand live auf dem eigenen Handy — ohne etwas zu installieren und ohne Anmeldung. Bis zu ${PARTY_WATCHER_LIMIT} Leute gleichzeitig. Gezählt wird weiter **nur auf dem einen Handy**: Wer zuschaut, kann nichts ändern, und das ist die einzige Aufteilung, die stimmen kann — nur das eine Handy schaut auf den Tisch. Wer mitten im Abend dazukommt, sieht sofort den aktuellen Stand. Geht das zählende Handy weg, bleibt der letzte Stand stehen und die Anzeige sagt es. Braucht die Server-Adresse, dieselbe wie der Online-Modus.`,
+          en: `The QR icon at the top of camera mode. The phone doing the counting shows a code; everyone else points a camera at it, opens the link and watches the score on their own phone — nothing to install, no sign-up. Up to ${PARTY_WATCHER_LIMIT} people at once. The counting still happens **on that one phone only**: watchers can change nothing, which is the only arrangement that can be true since only that phone is pointed at the table. Somebody who joins halfway through sees the current score straight away. If the counting phone goes, the last score stays up and the page says so. Needs the server address, the same one the online mode uses.`,
         },
       },
       {

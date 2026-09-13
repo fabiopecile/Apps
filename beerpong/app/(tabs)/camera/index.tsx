@@ -195,6 +195,18 @@ export default function CameraTrackerScreen() {
             >
               <Ionicons name="globe" size={17} color={colors.neon} />
             </Pressable>
+            {/* One phone counts, everybody else watches on their own. The
+                usual shape of the camera mode is one person holding the phone
+                and four people asking them what the score is. */}
+            <Pressable
+              onPress={() => router.push('/(tabs)/camera/party')}
+              style={styles.iconButton}
+              hitSlop={8}
+              accessibilityRole="button"
+              accessibilityLabel={t('party.hubTitle')}
+            >
+              <Ionicons name="qr-code" size={17} color={colors.neon} />
+            </Pressable>
             <Pressable
               onPress={() => router.push('/(tabs)/camera/highlights')}
               style={styles.iconButton}

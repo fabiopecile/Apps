@@ -968,6 +968,52 @@ const STRINGS = {
   'skins.buy': { de: '{cost} Coins', en: '{cost} coins' },
   'skins.cups': { de: 'Becher', en: 'Cups' },
 
+  'party.title': { de: 'Live-Anzeige', en: 'Live scoreboard' },
+  'party.hubTitle': { de: 'Anzeige teilen', en: 'Share the score' },
+  'party.how': {
+    de: 'Handykamera drauf halten, Link öffnen — fertig. Wer den Code scannt, sieht den Spielstand live auf dem eigenen Handy. Nichts zu installieren, nichts anzumelden.',
+    en: 'Point a phone camera at it and open the link. Whoever scans it sees the score live on their own phone. Nothing to install, nothing to sign into.',
+  },
+  'party.connecting': { de: 'Verbinde …', en: 'Connecting…' },
+  'party.watching1': { de: '1 Person schaut zu', en: '1 person watching' },
+  'party.watchingN': { de: '{count} Personen schauen zu', en: '{count} people watching' },
+  'party.honest': {
+    de: 'Gezählt wird weiter nur auf diesem Handy. Die anderen sehen zu und können nichts ändern — das ist die einzige Aufteilung, die stimmen kann, weil nur dieses Handy auf den Tisch schaut.',
+    en: 'The counting still happens only on this phone. The others watch and can change nothing — the only arrangement that can be true, since this is the phone pointed at the table.',
+  },
+  'party.nativeNote': {
+    de: 'In der installierten App zeigt der Code auf die App selbst: Wer sie schon hat, landet direkt in der Anzeige. Wer nicht, braucht die Web-Adresse. Am zuverlässigsten ist es, die Anzeige aus der Web-Version zu teilen.',
+    en: 'In the installed app the code points at the app itself, so it opens for anybody who already has it and does nothing for anybody who does not. Sharing from the web version is the reliable way.',
+  },
+  'party.noServer': { de: 'Kein Server eingerichtet', en: 'No server configured' },
+  'party.noServerBody': {
+    de: 'Die Live-Anzeige braucht die Server-Adresse (EXPO_PUBLIC_ONLINE_URL) — dieselbe wie der Online-Modus. Siehe README.',
+    en: 'The live scoreboard needs the server address (EXPO_PUBLIC_ONLINE_URL) — the same one the online mode uses. See the README.',
+  },
+  'party.live': { de: 'Live', en: 'Live' },
+  'party.hostGone': { de: 'Zähl-Handy weg', en: 'The scoring phone has gone' },
+  'party.full': { de: 'Zu viele Zuschauer', en: 'Too many watchers' },
+  'party.badCode': { de: 'Code passt nicht', en: 'Not a code' },
+  'party.badCodeBody': {
+    de: 'Dieser Link führt nirgendwo hin. Scanne den Code noch einmal vom Handy, das mitzählt.',
+    en: 'This link goes nowhere. Scan the code again from the phone that is counting.',
+  },
+  'party.waiting': {
+    de: 'Warte auf den Spielstand vom Handy, das mitzählt.',
+    en: 'Waiting for the score from the phone that is counting.',
+  },
+  'party.record': {
+    de: '{hits}/{throws} · {percent}%',
+    en: '{hits}/{throws} · {percent}%',
+  },
+  'party.turn': { de: 'ist dran', en: 'to throw' },
+  'party.won': { de: 'Gewonnen', en: 'Won' },
+  'party.watcherNote': {
+    de: 'Du schaust nur zu. Gezählt wird am Tisch.',
+    en: 'You are watching. The counting happens at the table.',
+  },
+  'party.openApp': { de: 'App öffnen', en: 'Open the app' },
+
   'ghost.title': { de: 'Echte Gegner', en: 'Real opponents' },
   'ghost.badge': { de: 'Aus echten Spielen', en: 'From real games' },
   'ghost.tagline': {

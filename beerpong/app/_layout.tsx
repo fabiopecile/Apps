@@ -91,6 +91,9 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="guide" />
+        {/* Opened by scanning a code at somebody's table. Outside the tabs on
+            purpose: whoever lands here wants a number, not an app. */}
+        <Stack.Screen name="party/[code]" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen
           name="profile"
