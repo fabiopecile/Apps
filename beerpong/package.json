@@ -65,6 +65,7 @@
     "test:shop": "node tools/test_shop.mjs",
     "test:room": "node tools/test_room_server.mjs",
     "bench:vision": "node tools/bench_cup_vision.mjs",
+    "bench:angle": "node tools/bench_camera_angle.mjs",
     "bench:ai": "node tools/bench_opponent.mjs",
     "fake:stripe": "node tools/fake_stripe.mjs"
   },
