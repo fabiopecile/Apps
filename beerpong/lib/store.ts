@@ -35,6 +35,14 @@ import {
   type Tournament,
 } from './tournament';
 import {
+  KNOCKOUT_SIZES,
+  KNOCKOUT_STAKES,
+  reportRound,
+  startRun,
+  type KnockoutResult,
+  type KnockoutRun,
+} from './knockout';
+import {
   ENTRY_DIVISION,
   TOP_DIVISION,
   WEEKEND_MATCHES,
@@ -258,6 +266,22 @@ interface BeerpongStore {
   cameraHit: () => void;
   cameraMiss: () => void;
   cameraResetGame: () => void;
+
+  /**
+   * The arcade tournament in progress, if any. See `lib/knockout.ts` — it is a
+   * paid-for bracket played out match by match, not the party bracket above.
+   */
+  knockout: KnockoutRun | null;
+  /** Pays the stake and draws the field. False if it cannot be afforded. */
+  knockoutStart: (stake: number, teams: number) => boolean;
+  /** Marks the current round as out being played. */
+  knockoutBeginMatch: () => void;
+  /** Settles a round and pays the pot on a won final. */
+  knockoutReport: (won: boolean) => KnockoutResult | null;
+  /** Ends a run whose match was abandoned. True if there was one. */
+  knockoutForfeitPending: () => boolean;
+  /** Abandons a run deliberately; the stake stays spent. */
+  knockoutGiveUp: () => void;
 
   tournament: Tournament | null;
   tournamentStart: (teams: string[]) => void;
@@ -527,6 +551,52 @@ export const useBeerpongStore = create<BeerpongStore>()(
         }),
 
       tournamentReset: () => set({ tournament: null }),
+
+      knockout: null,
+
+      knockoutStart: (stake, teams) => {
+        const state = get();
+        if (state.knockout) return false;
+        if (!KNOCKOUT_STAKES.includes(stake as (typeof KNOCKOUT_STAKES)[number])) return false;
+        if (!KNOCKOUT_SIZES.includes(teams as (typeof KNOCKOUT_SIZES)[number])) return false;
+        if (state.coins < stake) return false;
+        set((s) => ({
+          coins: s.coins - stake,
+          knockout: startRun(stake, teams, Date.now()),
+        }));
+        return true;
+      },
+
+      knockoutBeginMatch: () =>
+        set((s) => (s.knockout ? { knockout: { ...s.knockout, pending: true } } : {})),
+
+      knockoutReport: (won) => {
+        const run = get().knockout;
+        if (!run) return null;
+        const result = reportRound(run, won);
+        set((s) => ({
+          knockout: result.run,
+          coins: s.coins + result.coins,
+        }));
+        return result;
+      },
+
+      /**
+       * Resolves a match that was walked out of.
+       *
+       * Called by the tournament screen when it finds a run with a match still
+       * marked as being played. Without it, the way to win any bracket is to
+       * quit whenever a final is going badly and start it again.
+       */
+      knockoutForfeitPending: () => {
+        const run = get().knockout;
+        if (!run?.pending) return false;
+        set({ knockout: null });
+        return true;
+      },
+
+      /** Walks away from a run on purpose. The stake is not refunded. */
+      knockoutGiveUp: () => set({ knockout: null }),
 
       tracker: makeTracker(DEFAULT_START_CUPS),
 
@@ -880,6 +950,7 @@ export const useBeerpongStore = create<BeerpongStore>()(
         camera: state.camera,
         tracker: state.tracker,
         tournament: state.tournament,
+        knockout: state.knockout,
         daily: state.daily,
         claimedAchievements: state.claimedAchievements,
         claimedSeasonTiers: state.claimedSeasonTiers,

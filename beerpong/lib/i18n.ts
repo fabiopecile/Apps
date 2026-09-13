@@ -967,6 +967,52 @@ const STRINGS = {
   'skins.equip': { de: 'Ausrüsten', en: 'Equip' },
   'skins.buy': { de: '{cost} Coins', en: '{cost} coins' },
   'skins.cups': { de: 'Becher', en: 'Cups' },
+
+  'knockout.title': { de: 'Turnier', en: 'Knockout' },
+  'knockout.tagline': {
+    de: 'Einsatz zahlen, Bracket gewinnen, Topf mitnehmen',
+    en: 'Pay in, win the bracket, take the pot',
+  },
+  'knockout.round.final': { de: 'Finale', en: 'Final' },
+  'knockout.round.semi': { de: 'Halbfinale', en: 'Semi-final' },
+  'knockout.round.quarter': { de: 'Viertelfinale', en: 'Quarter-final' },
+  'knockout.size': { de: '{teams} Teams', en: '{teams} teams' },
+  'knockout.sizeNote': {
+    de: '{rounds} Runden · Topf {pot} Coins',
+    en: '{rounds} rounds · pot {pot} coins',
+  },
+  'knockout.stake': { de: 'Einsatz', en: 'Stake' },
+  'knockout.enter': { de: 'Für {stake} Coins antreten', en: 'Enter for {stake} coins' },
+  'knockout.tooPoor': { de: 'Nicht genug Coins', en: 'Not enough coins' },
+  'knockout.explain': {
+    de: 'Du zahlst den Einsatz einmal. Gewinnst du jede Runde bis zum Finale, bekommst du den ganzen Topf — das ist dein Einsatz mal Teamanzahl. Verlierst du eine Runde, ist der Einsatz weg. Die Gegner werden vorher ausgelost und stehen fest: Du siehst also, wer im Finale wartet, bevor du dich entscheidest.',
+    en: 'You pay the stake once. Win every round through to the final and the whole pot is yours — your stake times the number of teams. Lose a round and the stake is gone. The field is drawn before you decide, so you can see who is waiting in the final.',
+  },
+  'knockout.walkout': {
+    de: 'Ein abgebrochenes Match zählt als Niederlage. Wer aus einem Finale aussteigt, das schlecht läuft, hat das Turnier verloren — sonst könnte man jede Runde so lange wiederholen, bis sie passt.',
+    en: 'A match you walk out of counts as a loss. Quitting a final that is going badly loses the tournament — otherwise every round could simply be replayed until it went your way.',
+  },
+  'knockout.forfeited': {
+    de: 'Das letzte Turnier wurde mitten im Match verlassen und gilt als verloren.',
+    en: 'The last tournament was left mid-match and counts as lost.',
+  },
+  'knockout.running': { de: 'Laufendes Turnier', en: 'Tournament in progress' },
+  'knockout.next': { de: 'Jetzt: {round} gegen {name}', en: 'Now: {round} against {name}' },
+  'knockout.play': { de: '{round} spielen', en: 'Play the {round}' },
+  'knockout.give': { de: 'Aufgeben — Einsatz verfällt', en: 'Give up — the stake is lost' },
+  'knockout.bracket': { de: 'Das Feld', en: 'The field' },
+  'knockout.wonPot': { de: 'Turnier gewonnen · +{coins} Coins', en: 'Tournament won · +{coins} coins' },
+  'knockout.throughTo': { de: 'Weiter ins {round}', en: 'Through to the {round}' },
+  'knockout.knockedOut': {
+    de: 'Ausgeschieden · {stake} Coins Einsatz weg',
+    en: 'Knocked out · {stake} coins staked and lost',
+  },
+  'knockout.champion': { de: 'Turniersieg', en: 'Tournament won' },
+  'knockout.championSub': {
+    de: 'Das ganze Bracket gewonnen — {coins} Coins.',
+    en: 'The whole bracket — {coins} coins.',
+  },
+  'knockout.backToBracket': { de: 'Zum Turnier', en: 'Back to the bracket' },
   'skins.weekly': { de: 'Diese Woche', en: 'This week' },
   'skins.rotationHours': {
     de: 'Neue Auswahl in {hours} Std.',
