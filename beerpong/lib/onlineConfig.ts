@@ -25,6 +25,8 @@ export interface RoomUrlOptions {
   create?: boolean;
   name?: string;
   cups?: number;
+  /** Which game the room holds. Only read when the room is opened. */
+  game?: 'camera' | 'arcade';
 }
 
 /** `https://…` becomes `wss://…`, and `http://` stays plain for local testing. */
@@ -34,6 +36,7 @@ export function roomSocketUrl(code: string, options: RoomUrlOptions): string {
   if (options.create) query.set('create', '1');
   if (options.name) query.set('name', options.name);
   if (options.cups) query.set('cups', String(options.cups));
+  if (options.game === 'arcade') query.set('game', 'arcade');
   return `${base}/room/${code}?${query.toString()}`;
 }
 

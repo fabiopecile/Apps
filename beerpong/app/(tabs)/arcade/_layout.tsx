@@ -13,6 +13,7 @@ export default function ArcadeStackLayout() {
       <Stack.Screen name="index" />
       <Stack.Screen name="offline" />
       <Stack.Screen name="passplay" />
+      <Stack.Screen name="online" />
       <Stack.Screen name="rivals" />
       <Stack.Screen name="weekend" />
       <Stack.Screen name="skins" />
@@ -20,6 +21,7 @@ export default function ArcadeStackLayout() {
       <Stack.Screen name="lucky" options={{ animation: 'fade' }} />
       <Stack.Screen name="stats" />
       <Stack.Screen name="match" options={{ animation: 'fade' }} />
+      <Stack.Screen name="onlinematch" options={{ animation: 'fade' }} />
     </Stack>
   );
 }

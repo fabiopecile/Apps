@@ -462,6 +462,30 @@ Nachricht löscht sich der Raum und der Code ist wieder frei.
 
 Zu finden über den **Globus** oben im Kamera-Modus.
 
+### Dasselbe im Arcade-Spiel, ohne echten Tisch
+
+Der Raum hält seit neuestem auch die zweite Sorte Spiel: das Wischspiel gegen
+einen echten Menschen statt gegen den Computer. **Arcade → Online gegen
+Freunde**, Raum eröffnen, Code weitergeben, die andere Seite tritt bei.
+
+Es gelten dieselben Regeln wie offline — zwei Bälle pro Zug, beide getroffen
+und sie kommen zurück, letzter Becher weg heißt letzte Chance, und eine
+geglückte letzte Chance ist Verlängerung und keine Niederlage. Das ist wörtlich
+gemeint: der Raum ruft dieselben Funktionen aus `lib/turnRules.ts` auf, die das
+Handy offline aufruft. Zwei Kopien derselben Regeln wären zwei Kopien, die
+auseinanderlaufen — und genau diese Regel war schon einmal falsch.
+
+Über die Leitung geht ein einziger Punkt pro Wurf: **wo der Ball aufgekommen
+ist**. Beide Seiten bauen die Flugbahn mit derselben Funktion daraus, also ist
+der Ball, den du fliegen siehst, derselbe Ball, den die andere Seite gesehen
+hat — da kann nichts auseinanderdriften, weil nichts nachgerechnet wird.
+
+Wessen Zug es ist, wie es steht und wann Schluss ist, entscheidet allein der
+Raum. Ein Wurf, der nicht dran ist, ändert nichts. Das Ergebnis eines Wurfs
+kommt allerdings von dem Handy, das geworfen hat — anders geht es nicht, das
+Wischen passiert dort. Wer also unbedingt will, kann schummeln. Ein Code, den
+man jemandem vorliest, ist kein Turnier; spielt mit Leuten, die ihr mögt.
+
 ### Was das kostet: nichts
 
 Ein Beerpong-Spiel sind ein paar Dutzend Nachrichten von je ein paar hundert
@@ -508,6 +532,19 @@ dass derselbe Code beide Handys in denselben Raum bringt, dass ein dritter
 abgewiesen wird, dass ein Handy nach einem Verbindungsabbruch seinen Platz und
 den Spielstand zurückbekommt, und dass der Raum Unsinn ignoriert statt
 umzufallen.
+
+Für das Arcade-Spiel prüft `npm run test:online` unter anderem, dass ein Wurf
+außer der Reihe nichts ändert, dass derselbe Becher nicht zweimal zählt und
+dass ein ganzes Spiel **nur** auf einer verpassten letzten Chance enden kann —
+über viertausend Würfe hinweg.
+
+Gegen zwei echte Browser durchgespielt, nicht nur gegen die Regeln: Raum
+eröffnen, beitreten, werfen, Becher fällt auf beiden Seiten, Zug wechselt nach
+zwei Fehlwürfen, „Bälle zurück" erscheint auf beiden Handys. Dabei kamen zwei
+Fehler heraus, die beim Lesen des Codes nicht aufgefallen wären: der Becher
+verschwand, *bevor* der Ball ankam, und der Name der beitretenden Seite
+verwandelte sich Minuten später zurück in „Team 2", weil er nur im Speicher
+stand und die Räume zwischendurch schlafen gelegt werden.
 
 ## Damit nicht alles verloren geht
 

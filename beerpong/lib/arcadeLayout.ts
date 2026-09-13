@@ -123,6 +123,37 @@ export function generatePlayerRack(tableWidth: number, cupCount = CUP_COUNT): Cu
  * Re-rack: pull the remaining cups forward into a tight formation by moving
  * them onto the last slots, which are the rows nearest the net.
  */
+/**
+ * The second cup a bounce shot takes.
+ *
+ * A bounce counts two at a real table. Picking the second one at random made a
+ * cup on the far side of the rack vanish with the ball nowhere near it, which
+ * reads as a glitch rather than a rule; the nearest one still standing at least
+ * looks like the ball carried on into it.
+ *
+ * `primaryIndex` is the cup that was hit and is assumed to be going anyway.
+ * Returns null when there is nothing else left to take.
+ */
+export function companionCup(
+  rack: CupSpec[],
+  aliveFlags: boolean[],
+  primaryIndex: number
+): number | null {
+  const from = rack[primaryIndex];
+  if (!from) return null;
+  let nearest: number | null = null;
+  let nearestDistance = Infinity;
+  rack.forEach((cup) => {
+    if (cup.index === primaryIndex || !aliveFlags[cup.index]) return;
+    const distance = Math.hypot(cup.x - from.x, cup.y - from.y);
+    if (distance < nearestDistance) {
+      nearestDistance = distance;
+      nearest = cup.index;
+    }
+  });
+  return nearest;
+}
+
 export function reRackFlags(aliveFlags: boolean[]): boolean[] {
   const remaining = aliveFlags.filter(Boolean).length;
   return aliveFlags.map((_, i) => i >= aliveFlags.length - remaining);

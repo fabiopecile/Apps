@@ -466,6 +466,31 @@ const STRINGS = {
     en: 'Auto detection only runs in the web version. The installed app has no access to individual camera frames.',
   },
 
+  // ------------------------------------------------- arcade against a phone
+  'arcadeOnline.title': { de: 'Online spielen', en: 'Play online' },
+  'arcadeOnline.intro': {
+    de: 'Das Arcade-Spiel gegen einen echten Menschen statt gegen den Computer. Einer eröffnet, gibt den Code weiter, der andere tritt bei — dann wird abwechselnd geworfen, und ihr seht die Würfe der anderen Seite fliegen.',
+    en: 'The arcade game against a real person instead of the computer. One opens a room, passes the code on, the other joins — then you throw in turns and watch each other’s balls fly.',
+  },
+  'arcadeOnline.yourName': { de: 'Wie heißt du?', en: 'What is your name?' },
+  'arcadeOnline.createBody': {
+    de: 'Ihr bekommt einen Code aus vier Zeichen. Gib ihn weiter, dann kann die andere Seite beitreten.',
+    en: 'You get a four-character code. Pass it on and the other side can join.',
+  },
+  'arcadeOnline.fairPlay': {
+    de: 'Jede Seite wirft auf dem eigenen Handy, und das Ergebnis eines Wurfs kommt von dort. Wer unbedingt will, kann also schummeln — ein Code, den man jemandem vorliest, ist kein Turnier. Spielt mit Leuten, die ihr mögt.',
+    en: 'Each side throws on its own phone, and the result of a throw comes from there. So somebody determined could cheat — a code you read out to a friend is not a tournament. Play with people you like.',
+  },
+  'hub.arcadeOnline.title': { de: 'Online gegen Freunde', en: 'Online against friends' },
+  'hub.arcadeOnline.subtitle': {
+    de: 'Zwei Handys, ein Tisch — abwechselnd werfen',
+    en: 'Two phones, one table — throwing in turns',
+  },
+  'hub.arcadeOnline.off': {
+    de: 'Kein Server eingetragen',
+    en: 'No server set up',
+  },
+
   'tracker.openOnline': {
     de: 'Online gegen anderen Tisch spielen (Pro)',
     en: 'Play online against another table (Pro)',
