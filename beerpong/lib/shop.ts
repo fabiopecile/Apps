@@ -22,17 +22,37 @@ import {
  * a URL; everything to do with cards happens on Stripe's own page.
  */
 
+/**
+ * Why the shop is shut, when it is.
+ *
+ * Worth carrying around rather than collapsing into `enabled: false`, because
+ * the three causes need three different people to do three different things —
+ * and from the outside all three look identical: no button. Whoever set this
+ * up should not have to guess which one they are looking at.
+ */
+export type ShopClosedReason =
+  /** No server address was built into this version of the app. */
+  | 'no-server'
+  /** There is an address, but nothing answered at it. */
+  | 'unreachable'
+  /** The server answered and said it has no Stripe keys. */
+  | 'no-keys'
+  /** Open for business. */
+  | null;
+
 export interface ShopInfo {
   enabled: boolean;
   /** In the currency's smallest unit, the way Stripe counts. */
   amount: number;
   currency: string;
+  closedBecause: ShopClosedReason;
 }
 
 export const SHOP_CLOSED: ShopInfo = {
   enabled: false,
   amount: DEFAULT_PRICE_CENTS,
   currency: DEFAULT_CURRENCY,
+  closedBecause: 'no-server',
 };
 
 /**
@@ -49,17 +69,22 @@ export async function fetchShop(): Promise<ShopInfo> {
   if (!ONLINE_AVAILABLE) return SHOP_CLOSED;
   try {
     const response = await fetch(`${ONLINE_SERVER_URL}/shop`);
-    if (!response.ok) return SHOP_CLOSED;
+    if (!response.ok) return { ...SHOP_CLOSED, closedBecause: 'unreachable' };
     const data = (await response.json()) as Partial<ShopInfo>;
+    const enabled = data.enabled === true;
     return {
-      enabled: data.enabled === true,
+      enabled,
       amount: typeof data.amount === 'number' ? data.amount : DEFAULT_PRICE_CENTS,
       currency: typeof data.currency === 'string' ? data.currency : DEFAULT_CURRENCY,
+      closedBecause: enabled ? null : 'no-keys',
     };
   } catch {
-    return SHOP_CLOSED;
+    return { ...SHOP_CLOSED, closedBecause: 'unreachable' };
   }
 }
+
+/** The address the app is actually talking to, for the diagnosis on screen. */
+export const SHOP_SERVER_URL = ONLINE_SERVER_URL;
 
 /**
  * Opens a checkout. `path` is the app route to come back to, which the web
