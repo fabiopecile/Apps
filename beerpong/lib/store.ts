@@ -34,6 +34,7 @@ import {
   propagate,
   type Tournament,
 } from './tournament';
+import { foldGame, type Ghost, type TrackedSide } from './ghosts';
 import {
   KNOCKOUT_SIZES,
   KNOCKOUT_STAKES,
@@ -283,6 +284,18 @@ interface BeerpongStore {
   /** Abandons a run deliberately; the stake stays spent. */
   knockoutGiveUp: () => void;
 
+  /**
+   * Opponents built from real games at a real table; see `lib/ghosts.ts`.
+   *
+   * Written only by `recordTrackedGame`, which the camera screen calls once a
+   * game has actually finished — there is no way to add one by hand, because a
+   * ghost that was typed in rather than measured is just an opponent with
+   * somebody's name on it.
+   */
+  ghosts: Ghost[];
+  /** Folds both teams of a finished tracked game into the ghost record. */
+  recordTrackedGame: (sides: TrackedSide[], at: number) => void;
+
   tournament: Tournament | null;
   tournamentStart: (teams: string[]) => void;
   tournamentReportWinner: (matchId: string, winner: string) => void;
@@ -525,6 +538,10 @@ export const useBeerpongStore = create<BeerpongStore>()(
             gamesPlayed: s.camera.gamesPlayed + 1,
           },
         })),
+
+      ghosts: [],
+      recordTrackedGame: (sides, at) =>
+        set((s) => ({ ghosts: foldGame(s.ghosts, sides, at) })),
 
       tournament: null,
 
@@ -951,6 +968,7 @@ export const useBeerpongStore = create<BeerpongStore>()(
         tracker: state.tracker,
         tournament: state.tournament,
         knockout: state.knockout,
+        ghosts: state.ghosts,
         daily: state.daily,
         claimedAchievements: state.claimedAchievements,
         claimedSeasonTiers: state.claimedSeasonTiers,

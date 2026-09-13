@@ -968,6 +968,42 @@ const STRINGS = {
   'skins.buy': { de: '{cost} Coins', en: '{cost} coins' },
   'skins.cups': { de: 'Becher', en: 'Cups' },
 
+  'ghost.title': { de: 'Echte Gegner', en: 'Real opponents' },
+  'ghost.badge': { de: 'Aus echten Spielen', en: 'From real games' },
+  'ghost.tagline': {
+    de: 'Spiele gegen die Trefferquote von Leuten am echten Tisch',
+    en: 'Play the hit rate of people at a real table',
+  },
+  'ghost.explain': {
+    // No **bold** here: that markup is the manual's, and only the manual
+    // renders it. On this screen it would show as literal asterisks, which is
+    // what the first screenshot of it did.
+    de: 'Die Kamera zählt bei jedem echten Spiel mit, wie oft jedes Team trifft. Daraus wird hier ein Arcade-Gegner, der genauso oft trifft wie die Person am Tisch. Das ist kein Abbild der Person — nur ihre Quote und ihr Name. Und es ist kein Online-Spiel: Die Person selbst spielt nicht mit, ihr Handy weiß nichts davon.',
+    en: 'The camera counts how often each team scores in every real game. That becomes an arcade opponent here who sinks cups as often as the person at the table did. It is not a copy of the person — only their rate and their name. It is not an online match either: they are not playing, and their phone knows nothing about it.',
+  },
+  'ghost.empty': {
+    de: 'Noch niemand da. Spiele ein Spiel im Kamera-Modus zu Ende, dann steht hier jedes Team, das mitgespielt hat.',
+    en: 'Nobody here yet. Finish a game in camera mode and every team that played will appear here.',
+  },
+  'ghost.record': {
+    de: '{hits}/{throws} Becher · {percent}% · {games} Spiele',
+    en: '{hits}/{throws} cups · {percent}% · {games} games',
+  },
+  'ghost.needsMore': {
+    de: 'Noch {left} Würfe, dann spielbar',
+    en: '{left} more throws and they can be played',
+  },
+  'ghost.why': {
+    de: 'Ab {min} Würfen — etwa zwei Spielen — wird jemand spielbar. Ehrlich dazu: Auch dann ist die Quote noch ungenau. Wer in Wahrheit 30 % trifft, landet nach {min} Würfen irgendwo zwischen 15 % und 45 %. Das wird mit jedem Spiel besser, und der Gegner wird mit.',
+    en: 'From {min} throws — about two games — somebody becomes playable. Honestly, though: the rate is still rough there. A true 30% shooter lands anywhere between 15% and 45% after {min} throws. It sharpens with every game, and so does the opponent.',
+  },
+  'ghost.play': { de: 'Gegen {name} spielen', en: 'Play {name}' },
+  'ghost.streak': { de: 'Beste Serie: {streak}', en: 'Best run: {streak}' },
+  'ghost.hubSubtitle': {
+    de: '{count} aus echten Spielen',
+    en: '{count} from real games',
+  },
+
   'knockout.title': { de: 'Turnier', en: 'Knockout' },
   'knockout.tagline': {
     de: 'Einsatz zahlen, Bracket gewinnen, Topf mitnehmen',

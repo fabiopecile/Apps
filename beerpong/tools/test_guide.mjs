@@ -37,6 +37,7 @@ for (const name of [
   'cupShop',
   'opponents',
   'knockout',
+  'ghosts',
   'catalogue',
   'competition',
   'entitlement',
@@ -108,6 +109,24 @@ check('the one piece of markup is balanced', () => {
   }
 });
 
+check('the manual is the only place that writes **bold**', () => {
+  // Everywhere else it renders as literal asterisks, because only the manual
+  // has a renderer for it. A screenshot of the ghost screen caught one.
+  //
+  // Read out of the source rather than imported: the table is not exported,
+  // and exporting it purely so a test can reach it would be the test changing
+  // the code. So this looks at the translation lines themselves — `de:` and
+  // `en:` string literals — which leaves the JSDoc comments alone.
+  const i18n = readFileSync(new URL('../lib/i18n.ts', import.meta.url), 'utf8');
+  i18n.split('\n').forEach((line, index) => {
+    if (!/^\s*(de|en):\s*['"`]/.test(line)) return;
+    assert.ok(
+      !line.includes('**'),
+      `lib/i18n.ts:${index + 1} uses the manual's bold markup: ${line.trim().slice(0, 70)}`
+    );
+  });
+});
+
 check('nothing is left as a placeholder', () => {
   for (const chapter of GUIDE) {
     for (const item of chapter.items) {
@@ -147,6 +166,7 @@ check('it covers every part of the app', () => {
     'becher-design',
     'turnier',
     'einsatz',
+    'echte gegner',
     'pass & play',
     'sprache',
   ]) {
