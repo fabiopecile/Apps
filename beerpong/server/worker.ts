@@ -52,6 +52,8 @@ export interface Env {
   ROOMS: DurableObjectNamespace;
   /** One object per save code; see the `Save` class at the bottom. */
   SAVES: DurableObjectNamespace;
+  /** One object per division: whoever is waiting for an opponent. */
+  QUEUE: DurableObjectNamespace;
   /** Set with `wrangler secret put STRIPE_SECRET_KEY`. Absent = shop closed. */
   STRIPE_SECRET_KEY?: string;
   /** Set with `wrangler secret put LICENCE_SECRET`. Absent = shop closed. */
@@ -123,6 +125,14 @@ export default {
       const saveCode = normaliseSaveCode(url.pathname.slice('/save/'.length));
       if (!isSaveCode(saveCode)) return json({ error: 'code' }, 400);
       return env.SAVES.get(env.SAVES.idFromName(saveCode)).fetch(request);
+    }
+
+    // Looking for somebody to play. One queue per division, so a beginner is
+    // not handed the best player in the app as their first opponent.
+    if (url.pathname.startsWith('/queue')) {
+      const division = Math.max(1, Math.min(10, Number(url.searchParams.get('division') ?? '10')));
+      const id = env.QUEUE.idFromName(`division-${division}`);
+      return env.QUEUE.get(id).fetch(request);
     }
 
     if (url.pathname === '/shop') return shopInfo(env);
@@ -469,11 +479,42 @@ export class Room implements DurableObject {
 
   async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
+    const code = normaliseRoomCode(url.pathname.replace(/^\/room\//, ''));
+
+    /**
+     * Made by the matchmaking queue, before either phone is told about it.
+     *
+     * Without this the two raced: both were sent the same code and told which
+     * of them should open it, and the one joining regularly arrived first and
+     * was turned away with "no such room". Reserving it here means both sides
+     * only ever join something that already exists, and the order they arrive
+     * in stops mattering.
+     */
+    if (request.method === 'POST' && url.searchParams.get('reserve') === '1') {
+      const now = Date.now();
+      const stale = this.record != null && now - this.record.touchedAt > ROOM_TTL_MS;
+      if (this.record == null || stale) {
+        const cups = Number(url.searchParams.get('cups') ?? '10');
+        this.record = {
+          code,
+          match: createMatch(
+            [6, 10, 15].includes(cups) ? cups : 10,
+            ['Team 1', 'Team 2'],
+            now,
+            url.searchParams.get('game') === 'arcade' ? 'arcade' : 'camera'
+          ),
+          touchedAt: now,
+        };
+        await this.save();
+        await this.ctx.storage.setAlarm(now + ROOM_TTL_MS);
+      }
+      return json({ ok: true, code });
+    }
+
     if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') {
       return new Response('expected websocket', { status: 426, headers: CORS });
     }
 
-    const code = normaliseRoomCode(url.pathname.replace(/^\/room\//, ''));
     const seat: Seat = url.searchParams.get('seat') === '1' ? 1 : 0;
     const creating = url.searchParams.get('create') === '1';
     const name = url.searchParams.get('name') ?? '';
@@ -699,4 +740,112 @@ export class Save implements DurableObject {
     }
     await this.ctx.storage.deleteAll();
   }
+}
+
+/**
+ * Whoever is waiting for an opponent, per division.
+ *
+ * The smallest thing that can honestly be called matchmaking: two sockets in
+ * the same object get a room code and are told to go and play in it. There is
+ * no rating beyond the division somebody is already in, because a rating needs
+ * a history and a history needs accounts.
+ *
+ * What it deliberately does not do is pretend. If nobody else is waiting, it
+ * says so and keeps saying so — the app then offers the computer, labelled as
+ * the computer. An app with few players that fakes a human opponent is an app
+ * that gets found out, and this one already has a plausible-gamertag generator
+ * it can fall back to without lying about what it is.
+ */
+export class Queue implements DurableObject {
+  /** Sockets waiting, oldest first. */
+  private waiting: WebSocket[] = [];
+
+  constructor(
+    private readonly ctx: DurableObjectState,
+    private readonly env: Env
+  ) {
+    // Sockets survive the object being evicted, so pick them back up on wake
+    // rather than starting with an empty queue and stranding whoever is in it.
+    // Order is lost when that happens, which only costs fairness about who
+    // waited longest — not correctness, since the room is made before either
+    // phone hears about it.
+    this.waiting = this.ctx.getWebSockets();
+  }
+
+  async fetch(request: Request): Promise<Response> {
+    if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') {
+      return json({ waiting: this.waiting.length });
+    }
+    const pair = new WebSocketPair();
+    const [client, server] = [pair[0], pair[1]];
+    this.ctx.acceptWebSocket(server);
+    // Appended rather than re-read from the runtime: `getWebSockets()` makes no
+    // promise about order, and first-come-first-served is the one thing a queue
+    // owes the people in it.
+    this.waiting = [...this.waiting.filter((socket) => socket !== server), server];
+    await this.pairUp();
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  /**
+   * Two waiting and a room is made.
+   *
+   * The code is minted here rather than by either phone, so neither can pick a
+   * room somebody else is already playing in. Seats are handed out with it: the
+   * one who waited longest opens the room and throws first, which is as fair as
+   * anything else and at least is not random twice.
+   */
+  private async pairUp(): Promise<void> {
+    while (this.waiting.length >= 2) {
+      const first = this.waiting.shift()!;
+      const second = this.waiting.shift()!;
+      const code = roomCode();
+      // Made here, so both phones only ever join a room that already exists.
+      await this.env.ROOMS.get(this.env.ROOMS.idFromName(code)).fetch(
+        new Request(`https://queue/room/${code}?reserve=1&game=arcade&cups=10`, { method: 'POST' })
+      );
+      const tell = (socket: WebSocket, seat: 0 | 1) => {
+        try {
+          socket.send(JSON.stringify({ type: 'matched', code, seat, create: false }));
+          socket.close(1000, 'matched');
+        } catch {
+          // A socket that died between the check and the send simply loses its
+          // place; the other one goes back to waiting rather than into a room
+          // with nobody in it.
+        }
+      };
+      tell(first, 0);
+      tell(second, 1);
+    }
+    // Tell whoever is left that they are alone, so the app can count seconds
+    // rather than spin forever on a blank screen.
+    for (const socket of this.waiting) {
+      try {
+        socket.send(JSON.stringify({ type: 'waiting', ahead: this.waiting.indexOf(socket) }));
+      } catch {
+        // Same as above: nothing to do about a socket that has gone.
+      }
+    }
+  }
+
+  async webSocketMessage(): Promise<void> {
+    // Nothing to say while waiting. Keep-alives are ignored on purpose.
+  }
+
+  async webSocketClose(ws: WebSocket): Promise<void> {
+    this.waiting = this.waiting.filter((socket) => socket !== ws);
+  }
+
+  async webSocketError(ws: WebSocket): Promise<void> {
+    this.waiting = this.waiting.filter((socket) => socket !== ws);
+  }
+}
+
+/** A room code, from the same alphabet the typed ones use. */
+function roomCode(): string {
+  const alphabet = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+  let code = '';
+  const bytes = crypto.getRandomValues(new Uint8Array(4));
+  for (const byte of bytes) code += alphabet[byte % alphabet.length];
+  return code;
 }

@@ -466,6 +466,20 @@ const STRINGS = {
     en: 'Auto detection only runs in the web version. The installed app has no access to individual camera frames.',
   },
 
+  'rivals.findHuman': { de: 'Echten Gegner suchen', en: 'Find a real opponent' },
+  'rivals.searching': {
+    de: 'Suche einen Gegner … {seconds} s',
+    en: 'Looking for an opponent… {seconds}s',
+  },
+  'rivals.nobodyThere': {
+    de: 'Gerade wartet niemand. Du kannst weitersuchen oder unten gegen den Computer spielen — der zählt genauso für die Division.',
+    en: 'Nobody is waiting right now. Keep looking, or play the computer below — that counts for the division just the same.',
+  },
+  'rivals.bothCount': {
+    de: 'Beides zählt für deine Division. Gegen den Computer steht „KI" dran, gegen einen Menschen der Name der anderen Seite.',
+    en: 'Both count towards your division. The computer is labelled as such; a person shows their own name.',
+  },
+
   // ---------------------------------------------------------- cup designs
   'cups.title': { de: 'Becher-Designs', en: 'Cup designs' },
   'cups.intro': {

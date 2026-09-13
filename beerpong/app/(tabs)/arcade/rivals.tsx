@@ -1,4 +1,5 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,6 +10,8 @@ import { CountUp } from '@/components/ui/CountUp';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { ALL_DIVISIONS, getDivision } from '@/lib/competition';
+import { SEARCH_PATIENCE_SECONDS, useMatchmaking } from '@/lib/matchmaking';
+import { DEFAULT_TEAM_NAMES } from '@/lib/store';
 import { useBeerpongStore } from '@/lib/store';
 import { divisionName, useLanguage, useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
@@ -18,6 +21,28 @@ export default function RivalsScreen() {
   const division = getDivision(rivals.division);
   const t = useT();
   const language = useLanguage();
+  const teamName = useBeerpongStore((s) => s.tracker.teams[0].name);
+  const { state, search, cancel } = useMatchmaking(rivals.division);
+
+  // Paired: straight into the room the queue made. Replace rather than push, so
+  // coming back from a match does not land on a stale search.
+  useEffect(() => {
+    if (state.status !== 'matched') return;
+    cancel();
+    router.replace({
+      pathname: '/(tabs)/arcade/onlinematch',
+      params: {
+        code: state.code,
+        seat: String(state.seat),
+        create: state.create ? '1' : '0',
+        name: DEFAULT_TEAM_NAMES.includes(teamName) ? '' : teamName,
+        cups: '10',
+      },
+    });
+  }, [state, cancel, teamName]);
+
+  const searching = state.status === 'searching';
+  const givenUp = searching && state.seconds >= SEARCH_PATIENCE_SECONDS;
 
   return (
     <View style={styles.container}>
@@ -70,14 +95,40 @@ export default function RivalsScreen() {
               <Balance label={t('rivals.bestDiv')} value={rivals.bestDivision} color={colors.gold} />
             </View>
 
+            {state.status === 'off' ? null : searching ? (
+              <View style={styles.searchCard}>
+                <ActivityIndicator color={division.color} />
+                <Text style={styles.searchText} selectable={false}>
+                  {t('rivals.searching', { seconds: state.seconds })}
+                </Text>
+                {givenUp ? (
+                  <Text style={styles.searchText} selectable={false}>
+                    {t('rivals.nobodyThere')}
+                  </Text>
+                ) : null}
+                <Pressable onPress={cancel} hitSlop={8}>
+                  <Text style={styles.cancelText}>{t('common.cancel')}</Text>
+                </Pressable>
+              </View>
+            ) : (
+              <GlowButton
+                label={t('rivals.findHuman')}
+                size="lg"
+                accent={division.color}
+                onPress={search}
+                style={styles.playButton}
+              />
+            )}
+
             <GlowButton
               label={t('rivals.findOpponent')}
-              size="lg"
+              size={state.status === 'off' ? 'lg' : 'sm'}
+              variant={state.status === 'off' ? 'filled' : 'outline'}
               onPress={() => router.push({ pathname: '/(tabs)/arcade/match', params: { mode: 'rivals' } })}
               style={styles.playButton}
             />
             <Text style={styles.matchmakingNote} selectable={false}>
-              {t('rivals.matchmakingNote')}
+              {state.status === 'off' ? t('rivals.matchmakingNote') : t('rivals.bothCount')}
             </Text>
           </View>
 
@@ -232,6 +283,19 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   playButton: { width: '100%' },
+  searchCard: {
+    width: '100%',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+  },
+  searchText: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 13,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  cancelText: { fontFamily: fonts.label, fontSize: 12, color: colors.textMuted },
   matchmakingNote: {
     fontFamily: fonts.bodyRegular,
     fontSize: 11,
