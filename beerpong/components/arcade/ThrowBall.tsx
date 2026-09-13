@@ -34,6 +34,14 @@ export interface ThrowResult {
   overshoot: number;
   /** How far wide of the nearest cup it landed. */
   sideways: number;
+  /**
+   * Where on the table the ball came down, in ground coordinates.
+   *
+   * Only the online game needs it, and it needs it badly: the other phone
+   * rebuilds the identical arc from this one point rather than being sent a
+   * swipe it would have to re-simulate.
+   */
+  landing: { x: number; y: number };
 }
 
 interface ThrowBallProps {
@@ -160,7 +168,7 @@ export function ThrowBall({
 
     const { hit, rimOut, cupIndex, power, landing } = outcome;
     const miss = missDistance(landing, cups, aliveFlags, direction);
-    const result = { cupIndex, hit, power, rimOut, ...miss };
+    const result = { cupIndex, hit, power, rimOut, ...miss, landing };
 
     setFlyingState(true);
     onLaunch?.();

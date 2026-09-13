@@ -36,6 +36,8 @@ export interface RoomParams {
   create: boolean;
   name: string;
   cups?: number;
+  /** Which game the room holds. Only read when the room is opened. */
+  game?: 'camera' | 'arcade';
 }
 
 export interface RoomSession {
@@ -73,6 +75,7 @@ export function useOnlineRoom(params: RoomParams | null): RoomSession {
   const seat: Seat = params?.seat ?? 0;
   const create = params?.create ?? false;
   const cups = params?.cups;
+  const game = params?.game;
 
   useEffect(() => {
     if (!ONLINE_AVAILABLE) {
@@ -99,6 +102,7 @@ export function useOnlineRoom(params: RoomParams | null): RoomSession {
         create: opening,
         name: nameRef.current,
         cups,
+        game,
       });
       socket = new WebSocket(url);
       socketRef.current = socket;
@@ -168,7 +172,7 @@ export function useOnlineRoom(params: RoomParams | null): RoomSession {
       // come back without waiting for a timeout.
       open?.close(1000, 'left');
     };
-  }, [code, seat, create, cups]);
+  }, [code, seat, create, cups, game]);
 
   const send = useCallback((action: OnlineAction) => {
     const socket = socketRef.current;

@@ -276,6 +276,22 @@ const STRINGS = {
   },
   'free.devOn': { de: 'Limit abgeschaltet ✓', en: 'Limit switched off ✓' },
   'free.devOff': { de: 'Limit abschalten', en: 'Switch the limit off' },
+  'shop.whyNoServer': {
+    de: 'Grund: In dieser Version steckt keine Server-Adresse. Sie kommt aus der Variablen ONLINE_URL bei GitHub → Settings → Secrets and variables → Actions → Variables, und sie wirkt erst nach einem neuen Veröffentlichen der Web-App.',
+    en: 'Reason: this build carries no server address. It comes from the ONLINE_URL variable under GitHub → Settings → Secrets and variables → Actions → Variables, and only takes effect after the web app is published again.',
+  },
+  'shop.whyUnreachable': {
+    de: 'Grund: {url} antwortet nicht. Läuft der Server, und stimmt die Adresse?',
+    en: 'Reason: {url} is not answering. Is the server running, and is the address right?',
+  },
+  'shop.whyNoKeys': {
+    de: 'Grund: Der Server läuft, aber dort fehlt: {missing}. Beide müssen als Secret gesetzt sein, genau so geschrieben. Prüfen: {url}',
+    en: 'Reason: the server is up, but it is missing: {missing}. Both must be set as secrets, spelled exactly. Check: {url}',
+  },
+  'shop.whyNoKeysBoth': {
+    de: 'STRIPE_SECRET_KEY und LICENCE_SECRET',
+    en: 'STRIPE_SECRET_KEY and LICENCE_SECRET',
+  },
 
   // ----------------------------------------------------------- online play
   'online.title': { de: 'Online-Spiel', en: 'Online game' },
@@ -448,6 +464,31 @@ const STRINGS = {
   'detect.unsupported': {
     de: 'Die Auto-Erkennung läuft nur in der Web-Version. In der installierten App fehlt der Zugriff auf einzelne Kamerabilder.',
     en: 'Auto detection only runs in the web version. The installed app has no access to individual camera frames.',
+  },
+
+  // ------------------------------------------------- arcade against a phone
+  'arcadeOnline.title': { de: 'Online spielen', en: 'Play online' },
+  'arcadeOnline.intro': {
+    de: 'Das Arcade-Spiel gegen einen echten Menschen statt gegen den Computer. Einer eröffnet, gibt den Code weiter, der andere tritt bei — dann wird abwechselnd geworfen, und ihr seht die Würfe der anderen Seite fliegen.',
+    en: 'The arcade game against a real person instead of the computer. One opens a room, passes the code on, the other joins — then you throw in turns and watch each other’s balls fly.',
+  },
+  'arcadeOnline.yourName': { de: 'Wie heißt du?', en: 'What is your name?' },
+  'arcadeOnline.createBody': {
+    de: 'Ihr bekommt einen Code aus vier Zeichen. Gib ihn weiter, dann kann die andere Seite beitreten.',
+    en: 'You get a four-character code. Pass it on and the other side can join.',
+  },
+  'arcadeOnline.fairPlay': {
+    de: 'Jede Seite wirft auf dem eigenen Handy, und das Ergebnis eines Wurfs kommt von dort. Wer unbedingt will, kann also schummeln — ein Code, den man jemandem vorliest, ist kein Turnier. Spielt mit Leuten, die ihr mögt.',
+    en: 'Each side throws on its own phone, and the result of a throw comes from there. So somebody determined could cheat — a code you read out to a friend is not a tournament. Play with people you like.',
+  },
+  'hub.arcadeOnline.title': { de: 'Online gegen Freunde', en: 'Online against friends' },
+  'hub.arcadeOnline.subtitle': {
+    de: 'Zwei Handys, ein Tisch — abwechselnd werfen',
+    en: 'Two phones, one table — throwing in turns',
+  },
+  'hub.arcadeOnline.off': {
+    de: 'Kein Server eingetragen',
+    en: 'No server set up',
   },
 
   'tracker.openOnline': {

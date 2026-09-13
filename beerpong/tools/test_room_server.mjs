@@ -126,5 +126,44 @@ await wait(300);
 check('a rematch starts over with the names kept', last(host)?.match.teams[1].cupsLeft === 10 && last(host)?.match.teams[1].name === 'Ihr');
 
 host.close(); back.close();
+
+// --- the arcade game in a room --------------------------------------------
+// Same room, different game: two phones flicking at each other's cups. The
+// rules live in the protocol and are checked there; what matters here is that
+// a room opened as an arcade room stays one, and that a throw arriving over a
+// socket lands on the other side's rack.
+const ARCADE = Array.from({ length: 4 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join('');
+const one = await open(`${BASE}/${ARCADE}?seat=0&create=1&name=Eins&game=arcade`);
+await wait(400);
+check('an arcade room opens as an arcade room', last(one)?.match.kind === 'arcade');
+check('with two full racks', last(one)?.match.alive?.[0].filter(Boolean).length === 10);
+
+const two = await open(`${BASE}/${ARCADE}?seat=1&name=Zwei`);
+await wait(400);
+check('the other phone joins it', last(two)?.match.kind === 'arcade' && last(one)?.present[1] === true);
+
+const shot = (hit, cups) => ({ type: 'shot', hit, cups, landing: { x: 0, y: 0 }, bounce: false });
+send(one, shot(true, [3]));
+await wait(400);
+check('a throw takes a cup off the other rack', last(two)?.match.alive[1].filter(Boolean).length === 9);
+check('and both phones see the same throw', last(two)?.match.lastShot?.id === last(one)?.match.lastShot?.id);
+
+// The name a phone joined with, still there after a throw.
+//
+// Said plainly, because a test that looks like it covers something it does
+// not is worse than no test: this passes either way in a run this fast. The
+// bug it is written against was that the joining phone's name was applied in
+// memory and never written down, and these sockets hibernate — so the room
+// was rebuilt from storage and "Zwei" came back as "Team 2" minutes later,
+// after the other phone had already seen the real name. Reproducing that
+// needs the room actually torn down, which was done by hand: join, restart
+// the worker, reconnect. Without the write it read "Team 2", with it "Zwei".
+check('the name a phone joined with is still there after a throw', last(one)?.match.teams[1].name === 'Zwei');
+
+send(two, shot(true, [0]));
+await wait(400);
+check('throwing out of turn changes nothing', last(one)?.match.alive[0].filter(Boolean).length === 10);
+
+one.close(); two.close();
 console.log(`\n${ok} ok, ${bad} failed`);
 process.exit(bad > 0 ? 1 : 0);
