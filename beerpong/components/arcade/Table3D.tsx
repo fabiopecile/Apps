@@ -106,8 +106,15 @@ function Rig({ watching }: { watching: 'far' | 'near' }) {
             at: new THREE.Vector3(0, 0.1, wz(400)),
           }
         : {
-            pos: new THREE.Vector3(0, 5.8, wz(TABLE_LENGTH) + 5.2),
-            at: new THREE.Vector3(0, 0.1, wz(540)),
+            // Watching a ball come *at* you, which needs the far end in frame:
+            // the other side's ball starts behind their rack and climbs, and
+            // from closer in the whole first half of the throw happened above
+            // the top of the screen. Reported from an online game as "I cannot
+            // see where the opponent is throwing", and it was just as true of
+            // the computer's throws — a ball that appears halfway down the
+            // table reads as teleporting rather than as a throw.
+            pos: new THREE.Vector3(0, 6.6, wz(TABLE_LENGTH) + 6.6),
+            at: new THREE.Vector3(0, 0.1, wz(430)),
           },
     [watching]
   );

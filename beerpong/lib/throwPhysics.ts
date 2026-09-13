@@ -24,7 +24,8 @@
  * simulated a hundred thousand times in a test.
  */
 
-import type { CupSpec } from './arcadeLayout';
+import { BALL_WIDTH, CUP_WIDTH, type CupSpec } from './arcadeLayout';
+import { INNER_RIM_RADIUS, RIM_RADIUS } from './cupGeometry';
 
 export interface Point {
   x: number;
@@ -80,8 +81,10 @@ export const MAX_RANGE = 900;
 /**
  * Wobble at zero steadiness, in points. Scaled down by steadiness and up by
  * how hard the ball was thrown. Tuned by simulation rather than by feel, and
- * re-tuned whenever the table changes shape: with this, a normal thrower lands
- * about 90% at the front cup and about 87% on the last cup standing.
+ * re-tuned whenever the table changes shape — or whenever what counts as "in"
+ * does. Against the honest mouth above, a swipe pointed straight at a cup goes
+ * in about 85% of the time at normal steadiness, and a bounce shot, thrown
+ * wilder for double the cups, about 58%.
  *
  * Note what is *not* a difficulty measure any more: hitting the back row of a
  * full rack. On a real triangle a throw that misses its cup drops into the
@@ -90,7 +93,7 @@ export const MAX_RANGE = 900;
  * left with nothing around it to catch a miss, and that is what the test
  * measures.
  */
-const SPREAD_AT_ZERO_SKILL = 75;
+const SPREAD_AT_ZERO_SKILL = 50;
 /** How much of that wobble goes into depth rather than sideways; see below. */
 const DEPTH_WOBBLE = 0.6;
 /** A bounce shot is thrown flatter and lands wilder. */
@@ -99,17 +102,35 @@ const BOUNCE_SPREAD_FACTOR = 1.6;
 export const RESTITUTION = 0.6;
 
 /**
- * The catching ellipse, as a fraction of a cup's width.
+ * What counts as in, and what counts as touching — both taken from the cup and
+ * the ball as they are drawn, rather than chosen.
  *
- * The drawn rim is 0.37 of the width; this is deliberately wider, because a
- * ball has to be allowed to clip the inside of the lip and drop rather than
- * needing to thread the exact pixels of the opening. Its height follows the
- * drawn openness, so the target is the shape you can see.
+ * This used to be a number: the catching circle was 0.52 of a cup's width
+ * while the drawn rim is 0.5, so a ball whose centre came down 23.9 points from
+ * a cup — further out than the rim itself, and with a 12.5-point ball that
+ * means most of it beside the cup — was counted in. It was reported as "with
+ * Bounce ×2 it scores when I only hit the cup", and that is exactly what it
+ * was: the bounce flies flat and slow, so you can watch where it goes, where a
+ * lobbed ball drops out of the sky and is over before you can judge it.
+ *
+ * Now the cup and the ball decide it. Dead physics would ask the ball to be
+ * fully over the hole — inside 22.0 by its own 12.5, so within 9.5 points —
+ * and measured, that leaves a game where four throws in five clip the rim. A
+ * ball is allowed half of itself over the lip instead, which is the part a
+ * real cup catches and drops:
+ *
+ *   in      22.0 - 6.2 = 15.7 points
+ *   touches 23.0 + 12.5 = 35.5 points
+ *
+ * The scoring target is still less than half what it was, so the hand's spread
+ * below and the help for strength are both re-measured against it —
+ * `tools/bench_cup_mouth.mjs` has the numbers.
  */
-const MOUTH_RX = 0.52;
+const MOUTH_RX = RIM_RADIUS;
+const BALL_RADIUS_IN_WIDTHS = BALL_WIDTH / 2 / CUP_WIDTH;
 /** Inside the first the ball drops in; out to the second it catches the rim. */
-const IN_THRESHOLD = 1;
-const RIM_THRESHOLD = 1.45;
+const IN_THRESHOLD = (INNER_RIM_RADIUS - BALL_RADIUS_IN_WIDTHS * 0.5) / MOUTH_RX;
+const RIM_THRESHOLD = (RIM_RADIUS + BALL_RADIUS_IN_WIDTHS) / MOUTH_RX;
 
 /**
  * The opening of a cup, on the table — what a throw is actually aimed at.
@@ -189,18 +210,18 @@ export function spreadFor(skill: number, power: number, bounce: boolean): number
  * of throws for very little, and no opponent in the league is that bad.
  */
 const ACCURACY_TO_SPREAD: [spread: number, rate: number][] = [
-  [25, 0.97],
-  [33, 0.859],
-  [42, 0.774],
-  [53, 0.709],
-  [66, 0.653],
-  [82, 0.588],
-  [102, 0.512],
-  [128, 0.429],
-  [160, 0.342],
-  [200, 0.26],
-  [280, 0.17],
-  [400, 0.1],
+  [16.0, 0.97],
+  [19.4, 0.859],
+  [21.7, 0.774],
+  [23.5, 0.709],
+  [25.2, 0.653],
+  [27.4, 0.588],
+  [30.3, 0.512],
+  [35.0, 0.429],
+  [46.5, 0.342],
+  [81.1, 0.26],
+  [145.3, 0.17],
+  [223.7, 0.1],
 ];
 
 export function spreadForAccuracy(accuracy: number): number {
@@ -386,21 +407,19 @@ export function resolveLanding(
  * sideways, and it never moves the ball to a different cup than the one it was
  * already heading for.
  *
- * The window has to cover the whole depth of a rack *plus* the error in a
- * drag, because the required strength moves as cups are cleared: the nearest
- * cup starts 525pt away and the last one standing can be 650pt away. Measured
- * in the browser under narrower windows, a run stalled at 6 of 10 cups — once
- * the front rows were gone, every throw fell short of everything left and got
- * no help at all, throw after throw, with the game telling the player "drag
- * further" and the player having no way to know how much further. At 220 any
- * drag between roughly 66 and 189 points lands somewhere on the rack, and
- * which cup it finds is down to your line. Strength therefore picks the table, and the pull finds the cup;
- * direction is still entirely yours. A wild overthrow is still a wild
- * overthrow — nothing is pulled onto a cup it was never near, and a test says
- * so.
+ * It was 220 — most of the length of a rack — back when the pull could reach
+ * sideways as well, and any drag in a wide band found *something*. That is the
+ * other half of why a ball thrown up the middle used to score. Now the pull
+ * only runs along the line of the throw, so the window can be what it should
+ * have been: a nudge for a flick that is roughly right. Eighty points is about
+ * an eighth out on a throw at the nearest cup, which is the error a thumb
+ * makes; past that the ball is short or long and the game says so.
+ *
+ * A wild overthrow is still a wild overthrow — nothing is pulled onto a cup it
+ * was never pointed at, and a test says so.
  */
-const ASSIST_WINDOW = 220;
-const ASSIST_STRENGTH = 0.85;
+const ASSIST_WINDOW = 80;
+const ASSIST_STRENGTH = 0.95;
 
 /**
  * Pulls the landing distance towards whichever standing cup the throw was
@@ -417,23 +436,40 @@ function assistDistance(
   const range = Math.hypot(dx, dy);
   if (range < 1) return aim;
 
+  // Only cups the throw is actually pointed at are candidates, and the help is
+  // how far along that line they sit.
+  //
+  // It used to take whichever cup the aim point was nearest and pull the
+  // *distance* towards that cup's distance — even when the cup was off to one
+  // side. On a triangle that routinely put the ball at the right depth for a
+  // cup in the row behind and dead between it and its neighbour, which only
+  // ever scored because the catching mouth used to be wide enough to cover the
+  // gap. Measured with an honest mouth: being 6% out of strength landed 36% of
+  // the time against 88% spot on, which is not "strength is helped" at all.
+  const ux = dx / range;
+  const uy = dy / range;
   let best: number | null = null;
   let bestGap = Infinity;
   for (const cup of cups) {
     if (!aliveFlags[cup.index]) continue;
     const mouth = cupMouth(cup);
-    // How far away that cup is, and how far the aim point sits from it.
-    const cupRange = Math.hypot(mouth.x - start.x, mouth.y - start.y);
-    const miss = Math.hypot(aim.x - mouth.x, aim.y - mouth.y);
-    if (miss < bestGap) {
-      bestGap = miss;
-      best = cupRange;
+    const vx = mouth.x - start.x;
+    const vy = mouth.y - start.y;
+    // Split the cup into how far along the line of the throw it lies, and how
+    // far off that line it sits.
+    const along = vx * ux + vy * uy;
+    const across = Math.abs(vx * uy - vy * ux);
+    if (across > mouth.rx) continue;
+    const gap = Math.abs(along - range);
+    if (gap < bestGap) {
+      bestGap = gap;
+      best = along;
     }
   }
-  if (best === null || Math.abs(best - range) > ASSIST_WINDOW) return aim;
+  if (best === null || bestGap > ASSIST_WINDOW) return aim;
 
   const pulled = range + (best - range) * ASSIST_STRENGTH;
-  return { x: start.x + (dx / range) * pulled, y: start.y + (dy / range) * pulled };
+  return { x: start.x + ux * pulled, y: start.y + uy * pulled };
 }
 
 export interface ThrowOutcome extends LandingResult {
