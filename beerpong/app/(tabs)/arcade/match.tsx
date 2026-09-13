@@ -55,6 +55,7 @@ import {
 } from '@/lib/competition';
 import { LEAGUE_OPPONENTS } from '@/lib/opponents';
 import { difficultyForRound, opponentById, roundKey } from '@/lib/knockout';
+import { findGhost, ghostSkill } from '@/lib/ghosts';
 
 /**
  * Screen points per table point at the ball's resting depth.
@@ -107,12 +108,13 @@ interface Celebration {
 }
 
 export default function MatchScreen() {
-  const params = useLocalSearchParams<{ mode?: string; difficulty?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; difficulty?: string; ghost?: string }>();
   const mode: MatchMode =
     params.mode === 'rivals' ||
     params.mode === 'weekend' ||
     params.mode === 'passplay' ||
-    params.mode === 'knockout'
+    params.mode === 'knockout' ||
+    params.mode === 'ghost'
       ? params.mode
       : 'offline';
   const isPassPlay = mode === 'passplay';
@@ -222,6 +224,8 @@ export default function MatchScreen() {
   const trackerTeams = useBeerpongStore((s) => s.tracker.teams);
   const weekend = useBeerpongStore((s) => s.weekend);
   const knockout = useBeerpongStore((s) => s.knockout);
+  const ghosts = useBeerpongStore((s) => s.ghosts);
+  const ghost = params.ghost ? findGhost(ghosts, params.ghost) : null;
   const knockoutReport = useBeerpongStore((s) => s.knockoutReport);
   const storedDifficulty = useBeerpongStore((s) => s.aiDifficulty);
   const arcadeRecordThrow = useBeerpongStore((s) => s.arcadeRecordThrow);
@@ -275,6 +279,19 @@ export default function MatchScreen() {
         }),
       };
     }
+    if (mode === 'ghost' && ghost) {
+      const skill = ghostSkill(ghost);
+      return {
+        id: `ghost-${ghost.name}`,
+        name: ghost.name,
+        accuracy: skill.accuracy,
+        focus: skill.focus,
+        aim: skill.aim,
+        playerSkill: skill.playerSkill,
+        color: AI_PRESETS[skill.nearest].color,
+        badge: translate(language, 'ghost.badge'),
+      };
+    }
     if (mode === 'knockout' && knockout) {
       // The bracket named this opponent before a coin was staked, so it has to
       // be this one: seeing Legend waiting in the final and then playing
@@ -321,7 +338,7 @@ export default function MatchScreen() {
           : divisionName(language, getDivision(rivals.division)),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, difficulty, rivals.division, matchSeed, isPassPlay, language]);
+  }, [mode, difficulty, rivals.division, matchSeed, isPassPlay, language, ghost, knockout]);
 
   const ballSkin = SKINS.find((s) => s.id === arcade.equippedBall) ?? SKINS[0];
   const myCupDesign = cupDesign(equippedCupSkin);

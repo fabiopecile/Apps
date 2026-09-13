@@ -37,6 +37,7 @@ export default function CameraTrackerScreen() {
   const trackerNewGame = useBeerpongStore((s) => s.trackerNewGame);
   const trackDaily = useBeerpongStore((s) => s.trackDaily);
   const statsRecordMatch = useBeerpongStore((s) => s.statsRecordMatch);
+  const recordTrackedGame = useBeerpongStore((s) => s.recordTrackedGame);
 
   const feedback = useFeedback();
   const t = useT();
@@ -69,7 +70,25 @@ export default function CameraTrackerScreen() {
       throws: tracker.teams[0].throws,
       seconds: Math.max(0, Math.round((at - tracker.startedAt) / 1000)),
     });
-  }, [tracker.finishedAt, tracker.winner, tracker.teams, tracker.startedAt, statsRecordMatch]);
+    // Both sides, not just yours: the point of keeping these is to be able to
+    // play the people you played against. See `lib/ghosts.ts`.
+    recordTrackedGame(
+      tracker.teams.map((team) => ({
+        name: team.name,
+        hits: team.hits,
+        throws: team.throws,
+        bestStreak: team.bestStreak,
+      })),
+      at
+    );
+  }, [
+    tracker.finishedAt,
+    tracker.winner,
+    tracker.teams,
+    tracker.startedAt,
+    statsRecordMatch,
+    recordTrackedGame,
+  ]);
   const shooter = tracker.teams[tracker.activeTeam];
   const targetIndex: TeamIndex = tracker.activeTeam === 0 ? 1 : 0;
   const target = tracker.teams[targetIndex];

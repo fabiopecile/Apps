@@ -7,6 +7,7 @@ import { DEFAULT_PRICE_CENTS } from './licence';
 import { COIN_CUP_DESIGNS, PAID_CUP_DESIGNS } from './cupSkins';
 import { WEEKLY_OFFER_SIZE } from './cupShop';
 import { KNOCKOUT_SIZES, KNOCKOUT_STAKES } from './knockout';
+import { GHOST_MIN_THROWS } from './ghosts';
 import { WEEKEND_MATCHES, WEEKEND_UNLOCK_DIVISION } from './competition';
 import {
   LUCKY_CUP_COINS,
@@ -385,6 +386,14 @@ export const GUIDE: GuideChapter[] = [
         body: {
           de: `Ab Division ${WEEKEND_UNLOCK_DIVISION} freigeschaltet: ein Lauf über ${WEEKEND_MATCHES} Spiele, bei dem die Anzahl der Siege eine Stufe und eine Belohnung ergibt. Läuft gegen den Computer — online wäre ein Lauf, der abbricht, sobald mal niemand da ist, und das ist genau die Mechanik, die den Modus trägt.`,
           en: `Unlocked from division ${WEEKEND_UNLOCK_DIVISION}: a run of ${WEEKEND_MATCHES} matches where the number of wins gives you a tier and a reward. Played against the computer — online it would be a run that breaks the moment nobody is around, and that run is the whole point of the mode.`,
+        },
+      },
+      {
+        de: 'Echte Gegner aus dem Kamera-Modus',
+        en: 'Real opponents from camera mode',
+        body: {
+          de: `Das Einzige in der App, das ohne die Kamera nicht ginge. Die Kamera zählt bei jedem echten Spiel mit, wie oft jedes Team trifft. Ist ein Spiel zu Ende, landen **beide** Teams unter „Echte Gegner" im Arcade-Hub — und ab ${GHOST_MIN_THROWS} Würfen kannst du gegen die Trefferquote dieser Person spielen. Auf jeder Karte stehen die Zahlen, aus denen sie gebaut ist: Becher, Würfe, Prozent, Spiele. Zwei Dinge, die es ausdrücklich **nicht** ist: Es ist kein Online-Spiel — die andere Person spielt nicht mit und ihr Handy weiß nichts davon —, und es ist kein Abbild von ihr, sondern nur ihre Quote und ihr Name. Und die Quote ist selbst bei ${GHOST_MIN_THROWS} Würfen noch ungenau: Wer in Wahrheit 30 % trifft, liegt da irgendwo zwischen 15 % und 45 %. Mit jedem Spiel wird sie schärfer.`,
+          en: `The one thing in the app that could not exist without the camera. It counts how often each team scores in every real game, and when a game ends **both** teams appear under "Real opponents" in the arcade hub — from ${GHOST_MIN_THROWS} throws you can play against that person's hit rate. Each card shows the numbers it was built from: cups, throws, percentage, games. Two things it explicitly is **not**: an online match — they are not playing and their phone knows nothing about it — and a copy of them, rather than their rate and their name. And the rate is still rough at ${GHOST_MIN_THROWS} throws: a true 30% shooter lands anywhere between 15% and 45%. Every game sharpens it.`,
         },
       },
       {

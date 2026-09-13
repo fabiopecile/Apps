@@ -52,7 +52,7 @@
     "web": "expo start --web",
     "test:vision": "node tools/test_cup_vision.mjs",
     "test:throw": "node tools/test_throw_physics.mjs",
-    "test": "npm run test:vision && npm run test:throw && npm run test:turns && npm run test:free && npm run test:online && npm run test:lucky && npm run test:stats && npm run test:cups && npm run test:guide && npm run test:knockout && npm run test:licence && npm run test:savecode && npm run test:room && npm run test:shop && npm run test:save",
+    "test": "npm run test:vision && npm run test:throw && npm run test:turns && npm run test:free && npm run test:online && npm run test:lucky && npm run test:stats && npm run test:cups && npm run test:guide && npm run test:knockout && npm run test:ghosts && npm run test:licence && npm run test:savecode && npm run test:room && npm run test:shop && npm run test:save",
     "test:turns": "node tools/test_turn_rules.mjs",
     "test:free": "node tools/test_entitlement.mjs",
     "test:online": "node tools/test_online_protocol.mjs",
@@ -69,7 +69,8 @@
     "bench:angle": "node tools/bench_camera_angle.mjs",
     "bench:ai": "node tools/bench_opponent.mjs",
     "fake:stripe": "node tools/fake_stripe.mjs",
-    "test:knockout": "node tools/test_knockout.mjs"
+    "test:knockout": "node tools/test_knockout.mjs",
+    "test:ghosts": "node tools/test_ghosts.mjs"
   },
   "private": true
 }

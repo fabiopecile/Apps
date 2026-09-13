@@ -25,6 +25,7 @@ export type StatsMode =
   | 'weekend'
   | 'passplay'
   | 'knockout'
+  | 'ghost'
   | 'lucky'
   | 'tracker';
 

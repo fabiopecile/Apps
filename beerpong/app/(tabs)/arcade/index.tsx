@@ -38,6 +38,7 @@ export default function ArcadeHubScreen() {
   const rivals = useBeerpongStore((s) => s.rivals);
   const weekend = useBeerpongStore((s) => s.weekend);
   const knockout = useBeerpongStore((s) => s.knockout);
+  const ghosts = useBeerpongStore((s) => s.ghosts);
   const aiDifficulty = useBeerpongStore((s) => s.aiDifficulty);
   const daily = useBeerpongStore((s) => s.daily);
   const ownedSkinIds = useBeerpongStore((s) => s.ownedSkinIds);
@@ -178,6 +179,19 @@ export default function ArcadeHubScreen() {
               index={5}
               badge={knockout ? 1 : undefined}
             />
+
+            {/* Only once there is somebody to play. An empty list dressed up as
+                a mode is a promise the app has not kept yet. */}
+            {ghosts.length > 0 ? (
+              <ModeCard
+                icon="people"
+                title={t('ghost.title')}
+                subtitle={t('ghost.hubSubtitle', { count: ghosts.length })}
+                accent={colors.neonAlt}
+                href="/(tabs)/arcade/ghosts"
+                index={5}
+              />
+            ) : null}
           </View>
 
           <View style={styles.section}>
