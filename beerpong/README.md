@@ -790,6 +790,64 @@ echte API. Mit den Test-Schlüsseln (`sk_test_…`) und der Testkarte
 `4242 4242 4242 4242` sind das fünf Minuten — **mach das, bevor du den
 Live-Schlüssel einträgst.**
 
+## Becher-Designs für 1,99 €
+
+Länder-Becher: Österreich, Deutschland, England, Italien, Spanien, Frankreich,
+Schweiz, Niederlande, Belgien, Polen, Irland, Schweden, Portugal. Jedes 1,99 €,
+alle zusammen 6,99 €.
+
+Sie sind **reine Optik** — kein Vorteil, keine besseren Chancen. Das steht auch
+im Laden, denn das Gegenteil wäre ein Spiel, das man sich kaufen kann, und das
+verliert schneller Spieler, als 1,99 € einbringen.
+
+Jedes Design ist eine Flagge, die um den Becher gelegt wird. Keine Bilddateien:
+die Muster stehen als Daten in `lib/cupSkins.ts` und werden zur Textur
+gerechnet. Dreizehn PNGs wären dreizehn Downloads und dreizehn Dinge, die mit
+dem 3D-Material Schritt halten müssen — eine Flagge ist drei Streifen oder ein
+Kreuz.
+
+### Ein Code sagt jetzt, wofür er gilt
+
+Vorher gab es genau eine Sache zu kaufen, also musste der Code nur „bezahlt"
+heißen. Mit dreizehn weiteren Artikeln wäre derselbe Code für 1,99 € und für
+4,99 € **dieselben zwölf Zeichen** gewesen — der billige hätte den teuren
+geöffnet.
+
+Die Prüfziffern werden deshalb über den Artikel mitgerechnet. Ein Code für
+Österreich ergibt gegen Deutschland, gegen das Bundle und gegen die
+Kamera-Freischaltung schlicht andere Ziffern und wird abgelehnt. Der
+Kamera-Code behält seine alte Ableitung ohne Artikel, damit jeder bereits
+verkaufte Code weiter funktioniert.
+
+Zwei weitere Stellen, an denen Geld und Zugang auseinanderlaufen könnten, sind
+zu:
+
+* **Der Preis kommt vom Server**, nie vom Handy. Die Liste steht in
+  `lib/catalogue.ts` und wird von App *und* Worker importiert; berechnet wird,
+  was dort steht.
+* **Was gekauft wurde, sagt Stripe**, nicht die Adresszeile. Der Worker liest
+  den Artikel aus den Metadaten der Sitzung — `&item=pro` an die Rückkehr-URL
+  zu hängen, bringt trotzdem den Becher-Code, für den bezahlt wurde.
+
+`npm run test:shop` prüft genau diese Fälle gegen einen wirklich laufenden
+Worker, `npm run test:cups` die Flaggen und die Codes ohne Netz.
+
+### Was dabei schiefging
+
+Zwei Fehler, und beide sind erwähnenswert, weil sie auf verschiedene Arten
+gefunden wurden.
+
+**Das Bundle war drei Cent teurer als vier Einzelkäufe** (7,99 € gegen 4 × 1,99
+= 7,96 €). Ein Test, der „das Paket muss billiger sein als vier einzelne"
+behauptete, fiel darüber. Jetzt 6,99 €.
+
+**Deutschland stand auf dem Kopf** — Schwarz unten, Gold oben. Das ist die
+Flagge eines anderen Landes. Der Test dazu ist danebengegangen, weil ich ihn
+*neben* dem Code geschrieben habe und beide denselben Denkfehler hatten: Er
+behauptete „Schwarz unten" und war grün. Gefunden hat es der Screenshot vom
+Laden. Im Test steht das jetzt als Warnung dabei, denn es ist der Grund, warum
+ein Screenshot kein Luxus ist.
+
 ### Und das Rechtliche
 
 Ein Verkauf an Verbraucher bringt Pflichten mit, die keine Codezeile löst:

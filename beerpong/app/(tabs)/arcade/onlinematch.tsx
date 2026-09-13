@@ -26,6 +26,7 @@ import { BALLS_PER_TURN } from '@/lib/turnRules';
 import { isRoomCode, otherSeat, type Seat } from '@/lib/onlineProtocol';
 import { useOnlineRoom } from '@/lib/onlineRoom';
 import { SKINS } from '@/lib/skins';
+import { cupDesign } from '@/lib/cupSkins';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { useT } from '@/lib/i18n';
@@ -65,6 +66,7 @@ export default function ArcadeOnlineMatchScreen() {
   const feedback = useFeedback();
   const { width, height } = useWindowDimensions();
   const equippedBall = useBeerpongStore((s) => s.arcade.equippedBall);
+  const equippedCupSkin = useBeerpongStore((s) => s.equippedCupSkin);
   const ballSkin = SKINS.find((skin) => skin.id === equippedBall) ?? SKINS[0];
 
   const room = useOnlineRoom(
@@ -154,6 +156,14 @@ export default function ArcadeOnlineMatchScreen() {
     flyingRef.current = true;
     setRemote({ id: shot.id, landing: shot.landing, cupIndex: shot.cups[0] ?? null });
   }, [match?.lastShot, mySeat]);
+
+  // Tell the other table which cups we are playing with, once connected and
+  // again whenever it changes.
+  useEffect(() => {
+    if (room.status !== 'open') return;
+    if (match?.teams[mySeat].skin === equippedCupSkin) return;
+    send({ type: 'skin', id: equippedCupSkin });
+  }, [room.status, equippedCupSkin, match?.teams, mySeat, send]);
 
   // Our own throw came back from the room, so the ball is free again.
   useEffect(() => {
@@ -292,8 +302,22 @@ export default function ArcadeOnlineMatchScreen() {
           <Table3D
             width={tableWidth}
             racks={[
-              { cups: theirCups, aliveFlags: shown[theirSeat], colour: colors.gold },
-              { cups: myCups, aliveFlags: shown[mySeat], colour: colors.neon },
+              {
+                cups: theirCups,
+                aliveFlags: shown[theirSeat],
+                colour: colors.gold,
+                // Their cups wear whatever they bought. Half the point of a
+                // country on your cups is the other table seeing it.
+                design: match?.teams[theirSeat].skin
+                  ? cupDesign(match.teams[theirSeat].skin!)
+                  : undefined,
+              },
+              {
+                cups: myCups,
+                aliveFlags: shown[mySeat],
+                colour: colors.neon,
+                design: cupDesign(equippedCupSkin),
+              },
             ]}
             balls={[myFlight, theirFlight]}
             ballColours={[ballSkin.accent, colors.danger]}

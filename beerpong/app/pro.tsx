@@ -22,6 +22,7 @@ import { useFeedback } from '@/lib/feedback';
 import { useT, type TranslationKey } from '@/lib/i18n';
 import { FREE_TRACKED_GAMES_PER_WEEK, trackedGamesLeft } from '@/lib/entitlement';
 import { formatPrice, looksLikeLicence, normaliseLicence, prettyLicence } from '@/lib/licence';
+import { PRO_ITEM } from '@/lib/catalogue';
 import {
   CHECKOUT_REDIRECTS,
   SHOP_CLOSED,
@@ -94,7 +95,8 @@ export default function ProScreen() {
     if (!paid || paid === 'cancelled') return;
     let alive = true;
     setBusy('claiming');
-    claimLicence(paid).then((granted) => {
+    claimLicence(paid).then((result) => {
+      const granted = result?.item === PRO_ITEM ? result.licence : null;
       if (!alive) return;
       setBusy('idle');
       if (granted) {
