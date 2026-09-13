@@ -410,6 +410,18 @@ export function AutoDetect({
                 </Text>
               </View>
             ) : null}
+            {/* The one thing that cannot be fixed by dragging harder. The grid
+                is a flat triangle and a rack seen from low down is a keystoned
+                trapezoid; measured, the back rings land more than half a cup
+                mouth off below about 80cm, and half a mouth is where the
+                detector starts missing hits. See tools/bench_camera_angle.mjs
+                and the misalignment sweep in tools/bench_cup_vision.mjs. */}
+            <View style={styles.tipRow}>
+              <Ionicons name="arrow-up-outline" size={14} color={colors.gold} />
+              <Text style={styles.tip} selectable={false}>
+                {t('detect.heightTip')}
+              </Text>
+            </View>
             {/* Recording is a decision, so it is offered where the game is
                 started rather than buried in settings. */}
             {HIGHLIGHTS_SUPPORTED && !landscape ? (

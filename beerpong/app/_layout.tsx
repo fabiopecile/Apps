@@ -90,6 +90,7 @@ export default function RootLayout() {
         }}
       >
         <Stack.Screen name="(tabs)" />
+        <Stack.Screen name="guide" />
         <Stack.Screen name="onboarding" />
         <Stack.Screen
           name="profile"

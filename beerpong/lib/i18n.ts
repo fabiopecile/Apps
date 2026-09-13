@@ -77,6 +77,21 @@ const STRINGS = {
 
   // ------------------------------------------------------------- onboarding
   'onboarding.skip': { de: 'Überspringen', en: 'Skip' },
+  'onboarding.guide': { de: 'Alles im Detail erklärt', en: 'Everything, explained in full' },
+  'guide.title': { de: 'Anleitung', en: 'Guide' },
+  'guide.intro': {
+    de: 'Alles, was die App kann — {chapters} Kapitel, {items} Abschnitte. Tippe ein Kapitel an. Du musst das nicht auf einmal lesen; die Anleitung steht jederzeit im Profil.',
+    en: 'Everything the app does — {chapters} chapters, {items} sections. Tap a chapter. You do not have to read it in one go; the guide is always in your profile.',
+  },
+  'guide.footnote': {
+    de: 'Steht hier etwas, das nicht stimmt? Dann ist es ein Fehler in der Anleitung oder in der App — beides gehört gemeldet. Die Zahlen in diesem Text kommen direkt aus dem Programm, damit sie nicht auseinanderlaufen.',
+    en: 'Something here not true? Then it is a fault in the guide or in the app — both are worth reporting. The numbers in this text come straight out of the program so the two cannot drift apart.',
+  },
+  'profile.guide': { de: 'Anleitung', en: 'Guide' },
+  'profile.guideBody': {
+    de: 'Alles erklärt: Kamera, Arcade, Online, Codes, Preise, Grenzen.',
+    en: 'Everything explained: camera, arcade, online, codes, prices, limits.',
+  },
   'onboarding.start': { de: 'Los geht’s', en: "Let's go" },
   'onboarding.tracker.title': { de: 'Zähl dein echtes Spiel', en: 'Score your real game' },
   'onboarding.tracker.body': {
@@ -427,6 +442,10 @@ const STRINGS = {
   'detect.turnTip': {
     de: 'Handy quer halten zeigt fast dreimal so viel vom Tisch — dann von der Längsseite filmen.',
     en: 'Turning the phone sideways shows nearly three times as much table — then film from the long side.',
+  },
+  'detect.heightTip': {
+    de: 'Hoch genug aufstellen: mindestens etwa 80 cm über der Tischplatte, schräg von oben. Flacher gehalten läuft das Raster mit der Perspektive auseinander, und die hinteren Ringe sitzen neben ihren Bechern.',
+    en: 'Stand it high enough: about 80 cm above the table top or more, looking down at an angle. Held flatter, the grid and the perspective drift apart and the back rings sit beside their cups.',
   },
   'detect.alignOwn': { de: 'Euer eigenes Rack', en: 'Your own rack' },
   'detect.nextRack': { de: 'Weiter zum 2. Rack', en: 'On to rack 2' },
