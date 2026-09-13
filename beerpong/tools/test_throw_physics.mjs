@@ -339,14 +339,29 @@ check('swiping at a cup beats swiping a cup-width beside it', () => {
   );
 });
 
-check('a full rack catches misses, a lone cup does not', () => {
-  // Not the other way round, which is what this used to assert. Aiming into
-  // the middle of a full triangle is forgiving because a throw that misses its
-  // cup drops into the neighbour; the same cup on its own is the hard shot.
+check('a rack bails out a wild throw, but not a badly aimed one', () => {
+  // This used to be "a full rack catches misses", full stop, and it held for a
+  // reason that was not a rule: the catching mouth was wider than the drawn cup
+  // and the cups stand a mouth apart, so the ten circles overlapped into one
+  // continuous target. A ball that missed its cup landed in the neighbour, and
+  // a ball thrown up the middle of the table scored without aiming at anything.
+  //
+  // With the mouth cut back to the cup there are real gaps between them. A
+  // steady hand gets nothing from the neighbours — measured, both 0.85 — and
+  // aiming at a cup is the whole job. A wild one still finds another cup now
+  // and then, which is what a triangle of ten is for.
   const lonely = allAlive.map((_, i) => i === 1);
-  assert.ok(hitRate(backRow, 0.55) > hitRate(backRow, 0.55, { alive: lonely }));
+  const steadyFull = hitRate(backRow, 0.55);
+  const steadyAlone = hitRate(backRow, 0.55, { alive: lonely });
+  assert.ok(
+    Math.abs(steadyFull - steadyAlone) < 0.05,
+    `a steady hand should not need the rack: ${steadyFull.toFixed(2)} vs ${steadyAlone.toFixed(2)}`
+  );
+  assert.ok(
+    hitRate(backRow, 0) > hitRate(backRow, 0, { alive: lonely }) + 0.05,
+    'a wild throw should still find a neighbour sometimes'
+  );
 });
-
 check('a steadier thrower scores more', () => {
   assert.ok(hitRate(apex, 0.62) > hitRate(apex, 0.48));
 });
@@ -400,9 +415,18 @@ check('a flick of nearly the right strength still lands', () => {
     }
     return hits / 4000;
   };
+  // Measured against a throw of exactly the right strength rather than against
+  // a fixed number: the absolute rate belongs to the size of the cup mouth, and
+  // that was cut back to the drawn cup. What has to hold is that misjudging the
+  // flick by a tenth costs you little, because nothing on screen tells you how
+  // hard you just swiped.
+  const spotOn = nearlyRight(0);
   for (const share of [-0.12, -0.06, 0.06, 0.12]) {
     const rate = nearlyRight(share);
-    assert.ok(rate > 0.6, `${(share * 100).toFixed(0)}% out of strength lands only ${rate.toFixed(2)}`);
+    assert.ok(
+      rate > spotOn * 0.75,
+      `${(share * 100).toFixed(0)}% out of strength lands ${rate.toFixed(2)} against ${spotOn.toFixed(2)} spot on`
+    );
   }
 });
 

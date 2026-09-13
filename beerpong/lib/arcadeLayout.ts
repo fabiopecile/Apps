@@ -22,6 +22,17 @@ export interface CupSpec {
   height: number;
 }
 
+/**
+ * How wide the ball is drawn.
+ *
+ * Here rather than with the renderer because the scoring needs it: whether a
+ * ball fits inside a cup depends on how big the ball is, and the size that
+ * decides has to be the size you can see. A real ball is about 40mm against a
+ * 95mm cup, which would be 19 here; it is drawn larger on purpose, because
+ * from this camera a true-to-scale ball is a speck at the far end.
+ */
+export const BALL_WIDTH = 25;
+
 /** A cup's mouth across, and how tall it stands. */
 export const CUP_WIDTH = 46;
 export const CUP_ASPECT = 1.35;
