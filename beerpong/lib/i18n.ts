@@ -285,8 +285,12 @@ const STRINGS = {
     en: 'Reason: {url} is not answering. Is the server running, and is the address right?',
   },
   'shop.whyNoKeys': {
-    de: 'Grund: Der Server läuft, meldet aber keine Stripe-Schlüssel. Beide müssen gesetzt sein, genau so geschrieben: STRIPE_SECRET_KEY und LICENCE_SECRET. Prüfen: {url}',
-    en: 'Reason: the server is up but reports no Stripe keys. Both must be set, spelled exactly: STRIPE_SECRET_KEY and LICENCE_SECRET. Check: {url}',
+    de: 'Grund: Der Server läuft, aber dort fehlt: {missing}. Beide müssen als Secret gesetzt sein, genau so geschrieben. Prüfen: {url}',
+    en: 'Reason: the server is up, but it is missing: {missing}. Both must be set as secrets, spelled exactly. Check: {url}',
+  },
+  'shop.whyNoKeysBoth': {
+    de: 'STRIPE_SECRET_KEY und LICENCE_SECRET',
+    en: 'STRIPE_SECRET_KEY and LICENCE_SECRET',
   },
 
   // ----------------------------------------------------------- online play

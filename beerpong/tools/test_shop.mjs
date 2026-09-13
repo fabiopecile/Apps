@@ -31,6 +31,13 @@
 const WORKER = process.env.WORKER_URL ?? 'http://127.0.0.1:8787';
 const STRIPE = process.env.FAKE_STRIPE_URL ?? 'http://127.0.0.1:8799';
 const CATALOG_WORKER = process.env.WORKER_CATALOG_URL ?? 'http://127.0.0.1:8788';
+/**
+ * A Worker with no Stripe keys at all, for the half-configured case:
+ *   cd server && npx wrangler dev --port 8789 --var STRIPE_SECRET_KEY:sk_test_x
+ * One key set and one missing is the state somebody lands in by adding the
+ * second one under the wrong heading, and it must name the one that is absent.
+ */
+const HALF_WORKER = process.env.WORKER_HALF_URL ?? 'http://127.0.0.1:8789';
 
 async function reachable(url) {
   try {
@@ -69,6 +76,11 @@ console.log('shop');
 const shop = await get('/shop');
 check('the shop says it is open', shop.d.enabled === true, JSON.stringify(shop.d));
 check('and at 4,99 €', shop.d.amount === 499 && shop.d.currency === 'eur', JSON.stringify(shop.d));
+check(
+  'and reports nothing missing',
+  Array.isArray(shop.d.missing) && shop.d.missing.length === 0,
+  JSON.stringify(shop.d.missing)
+);
 
 // --- an unpaid session -----------------------------------------------------
 const started = await post('/checkout', { path: '/pro' });
@@ -199,6 +211,24 @@ if (await reachable(`${CATALOG_WORKER}/health`)) {
   );
 } else {
   console.log('  --   Katalogpreis (STRIPE_PRICE_ID) — zweiter Worker läuft nicht, übersprungen');
+}
+
+// --- half configured -------------------------------------------------------
+// The shop being shut is not a bug; not saying which of the two names is
+// absent is, because from outside the two cases look identical and the fix
+// differs. Names only — never values.
+if (await reachable(`${HALF_WORKER}/health`)) {
+  const half = await fetch(`${HALF_WORKER}/shop`).then((r) => r.json());
+  check('a half-configured shop is shut', half.enabled === false, JSON.stringify(half));
+  check(
+    'and names the one that is missing, and only that one',
+    Array.isArray(half.missing) &&
+      half.missing.length === 1 &&
+      half.missing[0] === 'LICENCE_SECRET',
+    JSON.stringify(half.missing)
+  );
+} else {
+  console.log('  --   halb eingerichteter Worker läuft nicht, übersprungen');
 }
 
 console.log(`\n${ok} ok, ${bad} failed`);

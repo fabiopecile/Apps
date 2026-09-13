@@ -332,7 +332,12 @@ export default function ProScreen() {
                   ? t('shop.whyNoServer')
                   : shop.closedBecause === 'unreachable'
                     ? t('shop.whyUnreachable', { url: SHOP_SERVER_URL })
-                    : t('shop.whyNoKeys', { url: `${SHOP_SERVER_URL}/shop` })}
+                    : t('shop.whyNoKeys', {
+                        url: `${SHOP_SERVER_URL}/shop`,
+                        missing: shop.missing.length
+                          ? shop.missing.join(', ')
+                          : t('shop.whyNoKeysBoth'),
+                      })}
               </Text>
               <GlowButton
                 label={pro ? t('free.devOn') : t('free.devOff')}
