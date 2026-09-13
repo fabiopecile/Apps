@@ -4,7 +4,8 @@ import { BALLS_PER_TURN } from './turnRules';
 import { OVERTIME_CUP_COUNT } from './arcadeLayout';
 import { CUP_BUNDLE_CENTS, CUP_PRICE_CENTS } from './catalogue';
 import { DEFAULT_PRICE_CENTS } from './licence';
-import { PAID_CUP_DESIGNS } from './cupSkins';
+import { COIN_CUP_DESIGNS, PAID_CUP_DESIGNS } from './cupSkins';
+import { WEEKLY_OFFER_SIZE } from './cupShop';
 import { WEEKEND_MATCHES, WEEKEND_UNLOCK_DIVISION } from './competition';
 import {
   LUCKY_CUP_COINS,
@@ -429,6 +430,14 @@ export const GUIDE: GuideChapter[] = [
         body: {
           de: 'Bälle und Tische, bezahlt mit Coins. Der teuerste kostet etwa zwei Wochen Spielen — absichtlich, weil etwas übrig bleiben muss, worauf man hinspielt.',
           en: 'Balls and tables, paid for with coins. The dearest costs about a fortnight of playing — deliberately, because something has to be left to play towards.',
+        },
+      },
+      {
+        de: 'Becher-Designs der Woche',
+        en: 'The week’s cup designs',
+        body: {
+          de: `Unter **Skins → Becher** stehen jede Woche ${WEEKLY_OFFER_SIZE} Becher-Designs für Coins zum Kauf. Insgesamt gibt es ${COIN_CUP_DESIGNS.length}, jedes ist alle ${COIN_CUP_DESIGNS.length / WEEKLY_OFFER_SIZE} Wochen einmal dran — was du diese Woche nicht kaufst, kommt wieder. Unter dem Angebot siehst du die ganze Sammlung mit dem Hinweis, wann das jeweilige Design das nächste Mal im Angebot ist. Gewechselt wird in der Nacht auf Montag, und zwar für alle gleichzeitig: Zwei Leute am selben Tisch sehen immer dasselbe Angebot. Das sind Muster — Carbon, Camo, Sonnenuntergang. Die **Länderflaggen** sind etwas anderes und gibt es weiterhin nur im Becher-Shop für echtes Geld.`,
+          en: `Under **Skins → Cups**, ${WEEKLY_OFFER_SIZE} cup designs are on offer for coins each week. There are ${COIN_CUP_DESIGNS.length} in all and each comes round once every ${COIN_CUP_DESIGNS.length / WEEKLY_OFFER_SIZE} weeks, so one you skip this week is not gone. Below the offer is the whole collection, each with when it is next up. It changes overnight on Monday, and for everybody at once: two people at the same table always see the same three. These are patterns — carbon, camouflage, sunset. The **country flags** are a separate thing and stay in the cup shop, for money.`,
         },
       },
       {

@@ -966,6 +966,27 @@ const STRINGS = {
   'skins.active': { de: 'Aktiv', en: 'Active' },
   'skins.equip': { de: 'Ausrüsten', en: 'Equip' },
   'skins.buy': { de: '{cost} Coins', en: '{cost} coins' },
+  'skins.cups': { de: 'Becher', en: 'Cups' },
+  'skins.weekly': { de: 'Diese Woche', en: 'This week' },
+  'skins.rotationHours': {
+    de: 'Neue Auswahl in {hours} Std.',
+    en: 'New selection in {hours} h',
+  },
+  'skins.rotationDays': {
+    de: 'Neue Auswahl in {days} Tagen',
+    en: 'New selection in {days} days',
+  },
+  'skins.cupsNote': {
+    de: 'Drei Designs pro Woche, für Coins. Alle zwölf kommen im Monat einmal dran — was du diese Woche verpasst, ist nicht weg. Die Länderflaggen gibt es weiterhin nur im Becher-Shop für echtes Geld.',
+    en: 'Three designs a week, for coins. All twelve come round once a month, so what you miss this week is not gone. The country flags stay in the cup shop, for money.',
+  },
+  'skins.collection': { de: 'Deine Sammlung', en: 'Your collection' },
+  'skins.soon': { de: 'In {weeks} Wochen', en: 'In {weeks} weeks' },
+  'skins.soonNext': { de: 'Nächste Woche', en: 'Next week' },
+  'skins.locked': {
+    de: 'Noch nicht im Angebot',
+    en: 'Not on offer yet',
+  },
 
   'skin.ball-classic': { de: 'Der Standardball. Immer verfügbar.', en: 'The default ball. Always available.' },
   'skin.ball-neon': { de: 'Leuchtet in sattem Neongrün.', en: 'Glows in deep neon green.' },
