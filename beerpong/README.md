@@ -493,6 +493,30 @@ kommt allerdings von dem Handy, das geworfen hat — anders geht es nicht, das
 Wischen passiert dort. Wer also unbedingt will, kann schummeln. Ein Code, den
 man jemandem vorliest, ist kein Turnier; spielt mit Leuten, die ihr mögt.
 
+### Gegner suchen statt Code vorlesen
+
+**Division Rivals** hat jetzt zwei Knöpfe: *Echten Gegner suchen* und *Gegner
+suchen* (der Computer). Die Suche hängt an einer Warteschlange pro Division —
+wer wartet, wird mit dem Nächsten zusammengesteckt, der in derselben Division
+wartet. Die Warteschlange legt den Raum an und schickt beiden denselben Code;
+niemand liest etwas vor.
+
+**Beides zählt für die Division.** Gegen den Computer steht „KI" dran, gegen
+einen Menschen der Name der anderen Seite. Das ist Absicht: eine Leiter, die
+sich nur füllt, wenn zufällig jemand anderes wach ist, füllt sich am Anfang nie.
+
+Und wenn niemand da ist, sagt die App das — nach 25 Sekunden steht da
+„Gerade wartet niemand", und darunter der Knopf für den Computer. Kein
+erfundener Gegner mit erfundenem Namen, der in Wahrheit die KI ist. Eine junge
+App, die ihre KI als Fremden ausgibt, fliegt an einem Abend auf, und danach ist
+nichts mehr wert, was sie sonst noch behauptet.
+
+Ein Wettrennen kam beim Durchspielen mit zwei Browsern heraus: Anfangs bekam
+eine Seite gesagt „du machst den Raum auf" — und die andere war regelmäßig
+schneller da und wurde mit „Diesen Code gibt es nicht" abgewiesen. Jetzt
+reserviert die Warteschlange den Raum, bevor einer der beiden den Code
+überhaupt erfährt; beide treten nur noch bei.
+
 ### Was das kostet: nichts
 
 Ein Beerpong-Spiel sind ein paar Dutzend Nachrichten von je ein paar hundert
