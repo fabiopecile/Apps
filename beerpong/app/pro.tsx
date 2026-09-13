@@ -25,6 +25,7 @@ import { formatPrice, looksLikeLicence, normaliseLicence, prettyLicence } from '
 import {
   CHECKOUT_REDIRECTS,
   SHOP_CLOSED,
+  SHOP_SERVER_URL,
   claimLicence,
   fetchShop,
   startCheckout,
@@ -323,6 +324,16 @@ export default function ProScreen() {
             <View style={styles.devCard}>
               <Text style={styles.devTitle}>{t('free.devTitle')}</Text>
               <Text style={styles.explainBody}>{t('free.devBody')}</Text>
+              {/* Which of the three reasons it is. Without this the person who
+                  set the server up sees only an absent button and has nothing
+                  to go on. */}
+              <Text style={styles.devWhy}>
+                {shop.closedBecause === 'no-server'
+                  ? t('shop.whyNoServer')
+                  : shop.closedBecause === 'unreachable'
+                    ? t('shop.whyUnreachable', { url: SHOP_SERVER_URL })
+                    : t('shop.whyNoKeys', { url: `${SHOP_SERVER_URL}/shop` })}
+              </Text>
               <GlowButton
                 label={pro ? t('free.devOn') : t('free.devOff')}
                 variant="outline"
@@ -557,6 +568,12 @@ const styles = StyleSheet.create({
     color: colors.textMuted,
     letterSpacing: 1,
     textTransform: 'uppercase',
+  },
+  devWhy: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 12,
+    color: colors.textMuted,
+    lineHeight: 18,
   },
   explainCard: {
     borderRadius: radius.lg,

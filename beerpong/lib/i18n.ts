@@ -276,6 +276,18 @@ const STRINGS = {
   },
   'free.devOn': { de: 'Limit abgeschaltet ✓', en: 'Limit switched off ✓' },
   'free.devOff': { de: 'Limit abschalten', en: 'Switch the limit off' },
+  'shop.whyNoServer': {
+    de: 'Grund: In dieser Version steckt keine Server-Adresse. Sie kommt aus der Variablen ONLINE_URL bei GitHub → Settings → Secrets and variables → Actions → Variables, und sie wirkt erst nach einem neuen Veröffentlichen der Web-App.',
+    en: 'Reason: this build carries no server address. It comes from the ONLINE_URL variable under GitHub → Settings → Secrets and variables → Actions → Variables, and only takes effect after the web app is published again.',
+  },
+  'shop.whyUnreachable': {
+    de: 'Grund: {url} antwortet nicht. Läuft der Server, und stimmt die Adresse?',
+    en: 'Reason: {url} is not answering. Is the server running, and is the address right?',
+  },
+  'shop.whyNoKeys': {
+    de: 'Grund: Der Server läuft, meldet aber keine Stripe-Schlüssel. Beide müssen gesetzt sein, genau so geschrieben: STRIPE_SECRET_KEY und LICENCE_SECRET. Prüfen: {url}',
+    en: 'Reason: the server is up but reports no Stripe keys. Both must be set, spelled exactly: STRIPE_SECRET_KEY and LICENCE_SECRET. Check: {url}',
+  },
 
   // ----------------------------------------------------------- online play
   'online.title': { de: 'Online-Spiel', en: 'Online game' },
