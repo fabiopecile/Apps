@@ -24,6 +24,7 @@ import {
   type AchievementStats,
 } from '@/lib/progression';
 import { canPlayLucky } from '@/lib/luckyShot';
+import { ONLINE_AVAILABLE } from '@/lib/onlineConfig';
 import { selectCareerProgress, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { divisionName, useLanguage, useT } from '@/lib/i18n';
@@ -116,6 +117,17 @@ export default function ArcadeHubScreen() {
             />
 
             <ModeCard
+              icon="wifi"
+              title={t('hub.arcadeOnline.title')}
+              subtitle={
+                ONLINE_AVAILABLE ? t('hub.arcadeOnline.subtitle') : t('hub.arcadeOnline.off')
+              }
+              accent={ONLINE_AVAILABLE ? colors.neon : colors.textMuted}
+              href="/(tabs)/arcade/online"
+              index={2}
+            />
+
+            <ModeCard
               icon="globe"
               title={t('hub.rivals.title')}
               subtitle={t('hub.rivals.subtitle', {
@@ -125,7 +137,7 @@ export default function ArcadeHubScreen() {
               })}
               accent={division.color}
               href="/(tabs)/arcade/rivals"
-              index={2}
+              index={3}
             />
 
             <ModeCard
@@ -144,7 +156,7 @@ export default function ArcadeHubScreen() {
               }
               accent={weekendUnlocked ? colors.gold : colors.textMuted}
               href="/(tabs)/arcade/weekend"
-              index={3}
+              index={4}
               locked={!weekendUnlocked}
             />
           </View>

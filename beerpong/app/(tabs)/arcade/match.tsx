@@ -26,6 +26,7 @@ import {
 } from '@/components/arcade/CelebrationOverlay';
 import { ShareResultButton } from '@/components/ui/ShareableResult';
 import {
+  companionCup,
   generateOpponentRack,
   generatePlayerRack,
   reRackFlags,
@@ -526,18 +527,11 @@ export default function MatchScreen() {
   ): boolean[] => {
     const next = alive.map((value, i) => (i === primaryIndex ? false : value));
     if (!extra) return next;
-    const from = rack[primaryIndex];
-    let nearest = -1;
-    let nearestDistance = Infinity;
-    rack.forEach((cup) => {
-      if (!next[cup.index] || !from) return;
-      const distance = Math.hypot(cup.x - from.x, cup.y - from.y);
-      if (distance < nearestDistance) {
-        nearestDistance = distance;
-        nearest = cup.index;
-      }
-    });
-    if (nearest >= 0) next[nearest] = false;
+    // Shared with the online game, which has to pick the same second cup: two
+    // copies of "nearest one still standing" would drift the first time either
+    // was touched.
+    const companion = companionCup(rack, next, primaryIndex);
+    if (companion != null) next[companion] = false;
     return next;
   };
 
