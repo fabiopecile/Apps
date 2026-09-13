@@ -18,6 +18,15 @@ export const RIM_RADIUS = 0.5;
 export const BASE_RADIUS = 0.365;
 /** Wall thickness, so the rim reads as a rim rather than a paper edge. */
 const WALL = 0.022;
+/**
+ * The radius of the opening a ball actually has to fit through, in cup widths.
+ *
+ * The outer rim minus the wall. Exported because the scoring needs it: a ball
+ * drops in when its centre is inside this by at least its own radius, and
+ * anything wider than that would be counting balls that are visibly sitting on
+ * the lip.
+ */
+export const INNER_RIM_RADIUS = RIM_RADIUS - WALL;
 /** How far down the inside the beer sits. */
 export const BEER_DEPTH = 0.12;
 

@@ -610,6 +610,10 @@ const STRINGS = {
   },
   'match.bounce': { de: 'Bounce ×2', en: 'Bounce ×2' },
   'match.ballsBack': { de: 'BÄLLE ZURÜCK', en: 'BALLS BACK' },
+  'match.bounceScored': {
+    de: 'Bounce — zwei Becher: der getroffene und der daneben',
+    en: 'Bounce — two cups: the one it went in and its neighbour',
+  },
   'match.yourTurnBall': {
     de: 'Ball {ball} von {of} — beide treffen und du bekommst sie zurück',
     en: 'Ball {ball} of {of} — sink both and you get them back',
