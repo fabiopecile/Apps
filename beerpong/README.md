@@ -596,6 +596,13 @@ Solange nichts eingetragen ist, passiert nichts Schlimmes: der Online-Bildschirm
 sagt, dass noch keine Adresse hinterlegt ist, und der Rest der App läuft
 unverändert weiter.
 
+> **Nach einem Update des Servers noch einmal veröffentlichen.** Der Server
+> bekommt gelegentlich neue Teile — zuletzt die Live-Anzeige, über die alle am
+> Tisch den Spielstand auf dem eigenen Handy sehen. Die läuft in einem eigenen
+> Durable Object, und ein Server, der noch die alte Fassung ist, kennt es
+> schlicht nicht: Die Anzeige verbindet dann nicht. Ein Lauf des Workflows
+> „Online-Server veröffentlichen" reicht; an den Schlüsseln ändert sich nichts.
+
 ### Selbst ausprobieren
 
 ```bash
@@ -603,6 +610,7 @@ cd server && npm install && npx wrangler dev --port 8787   # Raum-Server lokal
 # und in einem zweiten Terminal, im App-Ordner:
 EXPO_PUBLIC_ONLINE_URL=http://127.0.0.1:8787 npx expo start --web
 npm run test:room     # zwei Spieler gegen den laufenden Server
+npm run test:party    # Live-Anzeige: ein Zähl-Handy, mehrere Zuschauer
 ```
 
 `npm run test:online` prüft die Regeln ohne Netz — vor allem die Richtung jeder

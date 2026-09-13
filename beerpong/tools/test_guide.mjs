@@ -38,6 +38,7 @@ for (const name of [
   'opponents',
   'knockout',
   'ghosts',
+  'partyProtocol',
   'catalogue',
   'competition',
   'entitlement',
@@ -167,6 +168,7 @@ check('it covers every part of the app', () => {
     'turnier',
     'einsatz',
     'echte gegner',
+    'live-anzeige',
     'pass & play',
     'sprache',
   ]) {

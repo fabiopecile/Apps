@@ -44,11 +44,20 @@ import {
 } from '../lib/licence';
 
 import { isSaveCode, normaliseSaveCode } from '../lib/saveCode';
+import {
+  PARTY_WATCHER_LIMIT,
+  isPartyAction,
+  isPartyCode,
+  normalisePartyCode,
+  type PartyMessage,
+  type PartyState,
+} from '../lib/partyProtocol';
 
 import { CATALOGUE, PRO_ITEM, catalogueItem } from '../lib/catalogue';
 import { CUP_DESIGNS } from '../lib/cupSkins';
 
 export interface Env {
+  PARTIES: DurableObjectNamespace;
   ROOMS: DurableObjectNamespace;
   /** One object per save code; see the `Save` class at the bottom. */
   SAVES: DurableObjectNamespace;
@@ -133,6 +142,17 @@ export default {
       const division = Math.max(1, Math.min(10, Number(url.searchParams.get('division') ?? '10')));
       const id = env.QUEUE.idFromName(`division-${division}`);
       return env.QUEUE.get(id).fetch(request);
+    }
+
+    // One table, one phone counting it, everyone else watching. Separate from
+    // a room on purpose — see `lib/partyProtocol.ts` for why the trust model is
+    // a different one.
+    if (url.pathname.startsWith('/party/')) {
+      const partyCode = normalisePartyCode(url.pathname.slice('/party/'.length));
+      if (!isPartyCode(partyCode)) {
+        return new Response('not found', { status: 404, headers: CORS });
+      }
+      return env.PARTIES.get(env.PARTIES.idFromName(partyCode)).fetch(request);
     }
 
     if (url.pathname === '/shop') return shopInfo(env);
@@ -667,6 +687,127 @@ export class Room implements DurableObject {
           // A socket that died between the check and the send is the other
           // side's problem, and its close event is already on its way.
         }
+      }
+    }
+  }
+}
+
+/**
+ * A scoreboard a room full of people can watch.
+ *
+ * The host's phone counts the game and sends what it counted; everybody else
+ * gets a copy and can do nothing at all. This object keeps the last state so
+ * somebody who scans the code halfway through the evening sees the score
+ * immediately rather than an empty screen until the next cup goes down.
+ *
+ * Sockets hibernate here the same way they do in a Room, so the state lives in
+ * storage rather than in a field — the object is torn down between messages and
+ * rebuilt from disk, and anything held only in memory comes back empty.
+ */
+export class Party implements DurableObject {
+  /** Long enough for a party, short enough that nothing lingers. */
+  private static readonly TTL_MS = 12 * 60 * 60 * 1000;
+
+  constructor(
+    private readonly ctx: DurableObjectState,
+    _env: Env
+  ) {}
+
+  async fetch(request: Request): Promise<Response> {
+    if (request.headers.get('upgrade')?.toLowerCase() !== 'websocket') {
+      return new Response('expected websocket', { status: 426, headers: CORS });
+    }
+    const url = new URL(request.url);
+    const hosting = url.searchParams.get('host') === '1';
+
+    const pair = new WebSocketPair();
+    const [client, server] = [pair[0], pair[1]];
+    const refuse = (reason: 'hosted' | 'full', closeCode: number) => {
+      server.accept();
+      server.send(JSON.stringify({ type: 'error', reason } satisfies PartyMessage));
+      server.close(closeCode, reason);
+      return new Response(null, { status: 101, webSocket: client });
+    };
+
+    if (hosting && this.sockets('host').length > 0) {
+      // Two phones both claiming to be the scoreboard would fight over the
+      // score, and the watchers would see it flicker between two versions.
+      return refuse('hosted', 4010);
+    }
+    if (!hosting && this.sockets('watch').length >= PARTY_WATCHER_LIMIT) {
+      return refuse('full', 4011);
+    }
+
+    this.ctx.acceptWebSocket(server, [hosting ? 'host' : 'watch']);
+    await this.ctx.storage.setAlarm(Date.now() + Party.TTL_MS);
+    await this.tell();
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  async webSocketMessage(ws: WebSocket, message: string | ArrayBuffer): Promise<void> {
+    if (typeof message !== 'string' || message.length > MAX_MESSAGE_BYTES * 4) return;
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(message);
+    } catch {
+      return;
+    }
+    if (!isPartyAction(parsed)) return;
+    if (parsed.type === 'ping') {
+      ws.send(JSON.stringify({ type: 'pong' } satisfies PartyMessage));
+      return;
+    }
+    // Only the host writes. A watcher sending a score is not an error worth
+    // reporting — it is somebody with the developer tools open — so it is
+    // simply ignored.
+    if (!this.ctx.getTags(ws).includes('host')) return;
+
+    const stored = await this.ctx.storage.get<PartyState>('state');
+    // Out of order arrivals would otherwise let an older score overwrite a
+    // newer one, and the scoreboard would count backwards.
+    if (stored != null && parsed.state.version < stored.version) return;
+    await this.ctx.storage.put('state', parsed.state);
+    await this.ctx.storage.setAlarm(Date.now() + Party.TTL_MS);
+    await this.tell();
+  }
+
+  async webSocketClose(): Promise<void> {
+    await this.tell();
+  }
+
+  async webSocketError(): Promise<void> {
+    await this.tell();
+  }
+
+  async alarm(): Promise<void> {
+    await this.ctx.storage.deleteAll();
+    for (const ws of this.ctx.getWebSockets()) {
+      try {
+        ws.close(1000, 'over');
+      } catch {
+        // Already gone.
+      }
+    }
+  }
+
+  private sockets(tag: 'host' | 'watch'): WebSocket[] {
+    return this.ctx.getWebSockets(tag).filter((ws) => ws.readyState === 1);
+  }
+
+  private async tell(): Promise<void> {
+    const state = (await this.ctx.storage.get<PartyState>('state')) ?? null;
+    const payload = JSON.stringify({
+      type: 'party',
+      state,
+      watchers: this.sockets('watch').length,
+      hosted: this.sockets('host').length > 0,
+    } satisfies PartyMessage);
+    for (const ws of this.ctx.getWebSockets()) {
+      if (ws.readyState !== 1) continue;
+      try {
+        ws.send(payload);
+      } catch {
+        // Its close event is already on the way.
       }
     }
   }
