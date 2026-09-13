@@ -428,6 +428,10 @@ const STRINGS = {
     de: 'Handy quer halten zeigt fast dreimal so viel vom Tisch — dann von der Längsseite filmen.',
     en: 'Turning the phone sideways shows nearly three times as much table — then film from the long side.',
   },
+  'detect.heightTip': {
+    de: 'Hoch genug aufstellen: mindestens etwa 80 cm über der Tischplatte, schräg von oben. Flacher gehalten läuft das Raster mit der Perspektive auseinander, und die hinteren Ringe sitzen neben ihren Bechern.',
+    en: 'Stand it high enough: about 80 cm above the table top or more, looking down at an angle. Held flatter, the grid and the perspective drift apart and the back rings sit beside their cups.',
+  },
   'detect.alignOwn': { de: 'Euer eigenes Rack', en: 'Your own rack' },
   'detect.nextRack': { de: 'Weiter zum 2. Rack', en: 'On to rack 2' },
   'detect.onlyOne': { de: 'Nur ein Rack', en: 'Just one rack' },
