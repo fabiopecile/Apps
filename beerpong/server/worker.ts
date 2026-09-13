@@ -38,10 +38,15 @@ import {
   LICENCE_CHECK,
   encodeLicenceChars,
   formatLicence,
+  licenceBodyMessage,
+  licenceCheckMessage,
   splitLicence,
 } from '../lib/licence';
 
 import { isSaveCode, normaliseSaveCode } from '../lib/saveCode';
+
+import { CATALOGUE, PRO_ITEM, catalogueItem } from '../lib/catalogue';
+import { CUP_DESIGNS } from '../lib/cupSkins';
 
 export interface Env {
   ROOMS: DurableObjectNamespace;
@@ -222,7 +227,18 @@ async function shopInfo(env: Env): Promise<Response> {
         env.STRIPE_SECRET_KEY ? null : 'STRIPE_SECRET_KEY',
         env.LICENCE_SECRET ? null : 'LICENCE_SECRET',
       ].filter((name): name is string => name !== null);
-  return json({ enabled: open, amount, currency, missing });
+  return json({
+    enabled: open,
+    amount,
+    currency,
+    missing,
+    // Every price in one answer. The app draws what this says, so a price is
+    // changed in one place and both ends move together.
+    items: CATALOGUE.map((entry) => ({
+      id: entry.id,
+      amount: entry.kind === 'pro' ? amount : entry.cents,
+    })),
+  });
 }
 
 async function hmac(secret: string, message: string): Promise<Uint8Array> {
@@ -244,16 +260,19 @@ async function hmac(secret: string, message: string): Promise<Uint8Array> {
  * tab, a refresh, a second attempt an hour later — gives back the same code
  * instead of minting a new one each time.
  */
-async function licenceFor(secret: string, sessionId: string): Promise<string> {
-  const body = encodeLicenceChars(await hmac(secret, `id:${sessionId}`), LICENCE_BODY);
-  const check = encodeLicenceChars(await hmac(secret, `check:${body}`), LICENCE_CHECK);
+async function licenceFor(secret: string, sessionId: string, item: string): Promise<string> {
+  const body = encodeLicenceChars(await hmac(secret, licenceBodyMessage(sessionId, item)), LICENCE_BODY);
+  const check = encodeLicenceChars(await hmac(secret, licenceCheckMessage(body, item)), LICENCE_CHECK);
   return formatLicence(body, check);
 }
 
-async function licenceValid(secret: string, code: string): Promise<boolean> {
+async function licenceValid(secret: string, code: string, item: string): Promise<boolean> {
   const parts = splitLicence(code);
   if (!parts) return false;
-  const expected = encodeLicenceChars(await hmac(secret, `check:${parts.body}`), LICENCE_CHECK);
+  const expected = encodeLicenceChars(
+    await hmac(secret, licenceCheckMessage(parts.body, item)),
+    LICENCE_CHECK
+  );
   // Constant time is overkill against a check this short, but comparing
   // properly costs nothing and stops the habit forming.
   let same = expected.length === parts.check.length ? 0 : 1;
@@ -271,15 +290,51 @@ async function licenceValid(secret: string, code: string): Promise<boolean> {
  * mean nobody can sell anything until they have set up a product, so the
  * built-in price stays as the path of least setup.
  */
-function lineItem(env: Env): Record<string, string> {
-  if (env.STRIPE_PRICE_ID) return { 'line_items[0][price]': env.STRIPE_PRICE_ID };
+/**
+ * What the buyer sees on Stripe's own page, per item.
+ *
+ * German, because that is the language the app is sold in, and specific: a
+ * checkout page that says only "Beerpong" leaves somebody paying €1.99 with no
+ * way to tell which of thirteen things they are paying for.
+ */
+function describeItem(itemId: string): { title: string; body: string } {
+  const item = catalogueItem(itemId);
+  if (!item || item.kind === 'pro') {
+    return {
+      title: 'Beerpong Pro',
+      body: 'Kamera-Tracking ohne Wochenlimit. Einmalig, kein Abo.',
+    };
+  }
+  if (item.kind === 'bundle') {
+    return {
+      title: 'Beerpong — alle Becher-Designs',
+      body: `Alle ${item.unlocks?.length ?? 0} Länder-Becher auf einmal. Einmalig, kein Abo.`,
+    };
+  }
+  const design = CUP_DESIGNS.find((entry) => entry.id === item.design);
+  return {
+    title: `Beerpong — Becher ${design?.name ?? item.design}`,
+    body: 'Ein Becher-Design für das Arcade-Spiel. Einmalig, kein Abo.',
+  };
+}
+
+function lineItem(env: Env, itemId: string): Record<string, string> {
+  // A price from the dashboard only ever stood for the camera unlock, which is
+  // what STRIPE_PRICE_ID was added for. The cup designs are a dozen small
+  // things priced in one list here; asking somebody to create a dozen Stripe
+  // products before they can sell a sticker would be a worse trade.
+  if (itemId === PRO_ITEM && env.STRIPE_PRICE_ID) {
+    return { 'line_items[0][price]': env.STRIPE_PRICE_ID };
+  }
+  const item = catalogueItem(itemId);
   const { amount, currency } = priceOf(env);
+  const cents = item && item.kind !== 'pro' ? item.cents : amount;
+  const name = describeItem(itemId);
   return {
     'line_items[0][price_data][currency]': currency,
-    'line_items[0][price_data][unit_amount]': String(amount),
-    'line_items[0][price_data][product_data][name]': 'Beerpong Pro',
-    'line_items[0][price_data][product_data][description]':
-      'Kamera-Tracking ohne Wochenlimit. Einmalig, kein Abo.',
+    'line_items[0][price_data][unit_amount]': String(cents),
+    'line_items[0][price_data][product_data][name]': name.title,
+    'line_items[0][price_data][product_data][description]': name.body,
   };
 }
 
@@ -313,22 +368,31 @@ async function startCheckout(request: Request, env: Env): Promise<Response> {
   const origin = appOrigin(request, env);
   if (!origin) return json({ error: 'origin' }, 400);
 
-  const body = await request.json<{ path?: string }>().catch(() => ({}) as { path?: string });
+  const body = await request
+    .json<{ path?: string; item?: string }>()
+    .catch(() => ({}) as { path?: string; item?: string });
   // The app says which of its routes to come back to, because the web build
   // can live under a sub-path on Pages.
   const back = typeof body.path === 'string' && body.path.startsWith('/') ? body.path : '/pro';
+  // What is being bought. Priced here, never by the app: a price that came
+  // off the phone would be a price anybody could edit before sending it.
+  const item = catalogueItem(typeof body.item === 'string' ? body.item : PRO_ITEM);
+  if (!item) return json({ error: 'item' }, 400);
 
   const result = await stripe(env, '/v1/checkout/sessions', {
     method: 'POST',
     body: {
       mode: 'payment',
       'line_items[0][quantity]': '1',
-      ...lineItem(env),
+      ...lineItem(env, item.id),
       success_url: `${origin}${back}?paid={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}${back}?paid=cancelled`,
       // So this is findable in a dashboard shared with another product.
       'metadata[app]': 'beerpong',
-      'metadata[product]': 'pro-camera',
+      'metadata[product]': item.kind === 'pro' ? 'pro-camera' : item.id,
+      // Read back when the code is claimed, so the item cannot be swapped for
+      // a dearer one on the way home.
+      'metadata[item]': item.id,
       ...statementDescriptor(env),
     },
   });
@@ -356,17 +420,31 @@ async function claimLicence(url: URL, env: Env): Promise<Response> {
   if (!result.ok) return json({ paid: false }, result.status === 404 ? 404 : 502);
   if (result.data.payment_status !== 'paid') return json({ paid: false });
 
-  return json({ paid: true, licence: await licenceFor(env.LICENCE_SECRET!, session) });
+  // What was actually paid for, according to Stripe rather than according to
+  // the query string. A session for a €1.99 cup must not be able to ask for a
+  // €4.99 code by adding &item=pro to the address bar.
+  const metadata = (result.data.metadata ?? {}) as Record<string, unknown>;
+  const paidFor = typeof metadata.item === 'string' ? metadata.item : PRO_ITEM;
+  const item = catalogueItem(paidFor);
+  if (!item) return json({ paid: true, error: 'item' }, 500);
+
+  return json({
+    paid: true,
+    item: item.id,
+    licence: await licenceFor(env.LICENCE_SECRET!, session, item.id),
+  });
 }
 
 async function verifyLicence(request: Request, env: Env): Promise<Response> {
   if (request.method !== 'POST') return json({ error: 'method' }, 405);
   if (!env.LICENCE_SECRET) return json({ error: 'closed' }, 503);
   const body = await request
-    .json<{ licence?: string }>()
-    .catch(() => ({}) as { licence?: string });
+    .json<{ licence?: string; item?: string }>()
+    .catch(() => ({}) as { licence?: string; item?: string });
   const code = typeof body.licence === 'string' ? body.licence : '';
-  return json({ ok: await licenceValid(env.LICENCE_SECRET, code) });
+  const asked = typeof body.item === 'string' ? body.item : PRO_ITEM;
+  if (!catalogueItem(asked)) return json({ ok: false });
+  return json({ ok: await licenceValid(env.LICENCE_SECRET, code, asked) });
 }
 
 interface RoomRecord {

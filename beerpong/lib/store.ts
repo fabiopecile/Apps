@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_BALL_SKIN, DEFAULT_TABLE_SKIN, SKINS } from './skins';
+import { DEFAULT_CUP_SKIN } from './cupSkins';
 import { LEAGUE_OPPONENTS } from './opponents';
 import {
   EMPTY_TRACKER_USE,
@@ -180,6 +181,26 @@ interface BeerpongStore {
   licence: string | null;
   /** Records a verified code and unlocks. */
   redeemLicence: (code: string) => void;
+  /**
+   * Cup designs that have been paid for, and the one on the table.
+   *
+   * Kept beside the coin-bought skins rather than inside them: those are earned
+   * and these are bought, and the two must not be able to turn into each other
+   * by way of a single list somebody edits.
+   */
+  ownedCupSkins: string[];
+  equippedCupSkin: string;
+  /**
+   * The codes that paid for them, by code.
+   *
+   * The same reason the camera's code is kept: with no accounts, the code is
+   * the receipt, and somebody with a new phone has to be able to read it off
+   * the old one and type it in.
+   */
+  cupLicences: Record<string, string[]>;
+  /** Records a verified code for a cup design, or for the whole set. */
+  redeemCupLicence: (code: string, designIds: string[]) => void;
+  equipCupSkin: (designId: string) => void;
   /** Tracked games used this week; see `lib/entitlement.ts`. */
   trackerUse: TrackerUse;
   /**
@@ -365,9 +386,28 @@ export const useBeerpongStore = create<BeerpongStore>()(
       pro: false,
       setPro: (value) => set({ pro: value }),
       licence: null,
+      ownedCupSkins: [DEFAULT_CUP_SKIN],
+      equippedCupSkin: DEFAULT_CUP_SKIN,
+      cupLicences: {},
       // Verification happens before this is called — see lib/shop.ts. The store
       // does not talk to the network.
       redeemLicence: (code) => set({ licence: code, pro: true }),
+
+      redeemCupLicence: (code, designIds) =>
+        set((s) => {
+          const owned = new Set(s.ownedCupSkins);
+          designIds.forEach((id) => owned.add(id));
+          return {
+            ownedCupSkins: [...owned],
+            cupLicences: { ...s.cupLicences, [code]: designIds },
+            // Put the new one on the table straight away: nobody buys a design
+            // in order to go and find a menu.
+            equippedCupSkin: designIds[0] ?? s.equippedCupSkin,
+          };
+        }),
+
+      equipCupSkin: (designId) =>
+        set((s) => (s.ownedCupSkins.includes(designId) ? { equippedCupSkin: designId } : {})),
       trackerUse: EMPTY_TRACKER_USE,
       beginTrackedGame: () => {
         const now = new Date();
@@ -798,6 +838,9 @@ export const useBeerpongStore = create<BeerpongStore>()(
         proNotifyRequested: state.proNotifyRequested,
         pro: state.pro,
         licence: state.licence,
+        ownedCupSkins: state.ownedCupSkins,
+        equippedCupSkin: state.equippedCupSkin,
+        cupLicences: state.cupLicences,
         trackerUse: state.trackerUse,
         lucky: state.lucky,
         stats: state.stats,

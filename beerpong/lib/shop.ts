@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 
+import { PRO_ITEM } from './catalogue';
 import { ONLINE_AVAILABLE, ONLINE_SERVER_URL } from './onlineConfig';
 import {
   DEFAULT_CURRENCY,
@@ -48,6 +49,13 @@ export interface ShopInfo {
   closedBecause: ShopClosedReason;
   /** Which server settings are absent, by name, when the answer was 'no-keys'. */
   missing: string[];
+  /**
+   * What each thing costs, as the server has it.
+   *
+   * The app has the same list in `lib/catalogue.ts` and uses it when the server
+   * has not answered yet, but the server's word wins: it is the one charging.
+   */
+  prices: Record<string, number>;
 }
 
 export const SHOP_CLOSED: ShopInfo = {
@@ -56,6 +64,7 @@ export const SHOP_CLOSED: ShopInfo = {
   currency: DEFAULT_CURRENCY,
   closedBecause: 'no-server',
   missing: [],
+  prices: {},
 };
 
 /**
@@ -83,6 +92,14 @@ export async function fetchShop(): Promise<ShopInfo> {
       // An older server does not send this. Then the message names both, which
       // is what it said before and is still true.
       missing: Array.isArray(data.missing) ? data.missing.filter((n) => typeof n === 'string') : [],
+      prices: Object.fromEntries(
+        (Array.isArray((data as { items?: unknown }).items)
+          ? ((data as { items: { id?: unknown; amount?: unknown }[] }).items ?? [])
+          : []
+        )
+          .filter((entry) => typeof entry.id === 'string' && typeof entry.amount === 'number')
+          .map((entry) => [entry.id as string, entry.amount as number])
+      ),
     };
   } catch {
     return { ...SHOP_CLOSED, closedBecause: 'unreachable' };
@@ -97,14 +114,15 @@ export const SHOP_SERVER_URL = ONLINE_SERVER_URL;
  * build needs because Pages serves it under a sub-path.
  */
 export async function startCheckout(
-  path: string
+  path: string,
+  item: string = PRO_ITEM
 ): Promise<{ url: string; sessionId: string } | null> {
   if (!ONLINE_AVAILABLE) return null;
   try {
     const response = await fetch(`${ONLINE_SERVER_URL}/checkout`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ path }),
+      body: JSON.stringify({ path, item }),
     });
     if (!response.ok) return null;
     const data = (await response.json()) as { url?: string; sessionId?: string };
@@ -115,29 +133,44 @@ export async function startCheckout(
   }
 }
 
-/** Asks the server whether that session was paid, and for the code if it was. */
-export async function claimLicence(sessionId: string): Promise<string | null> {
+/**
+ * Asks the server whether that session was paid, and for the code if it was.
+ *
+ * Comes back with *what* was bought as well, because the app cannot know: the
+ * browser has been away at Stripe and all it brought home is a session id. The
+ * server reads the item off the session rather than off the address bar.
+ */
+export async function claimLicence(
+  sessionId: string
+): Promise<{ licence: string; item: string } | null> {
   if (!ONLINE_AVAILABLE) return null;
   try {
     const response = await fetch(
       `${ONLINE_SERVER_URL}/licence?session=${encodeURIComponent(sessionId)}`
     );
     if (!response.ok) return null;
-    const data = (await response.json()) as { paid?: boolean; licence?: string };
-    return data.paid && typeof data.licence === 'string' ? data.licence : null;
+    const data = (await response.json()) as { paid?: boolean; licence?: string; item?: string };
+    if (!data.paid || typeof data.licence !== 'string') return null;
+    return { licence: data.licence, item: typeof data.item === 'string' ? data.item : PRO_ITEM };
   } catch {
     return null;
   }
 }
 
-/** Checks a code somebody typed in — a second phone, or a replacement one. */
-export async function verifyLicence(code: string): Promise<boolean> {
+/**
+ * Checks a code somebody typed in — a second phone, or a replacement one.
+ *
+ * `item` says what the code is claimed to open, and the answer depends on it:
+ * a code minted for a €1.99 cup design does not verify against the camera
+ * unlock, because its check digits were computed over a different item.
+ */
+export async function verifyLicence(code: string, item: string = PRO_ITEM): Promise<boolean> {
   if (!ONLINE_AVAILABLE || !looksLikeLicence(code)) return false;
   try {
     const response = await fetch(`${ONLINE_SERVER_URL}/licence/verify`, {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ licence: normaliseLicence(code) }),
+      body: JSON.stringify({ licence: normaliseLicence(code), item }),
     });
     if (!response.ok) return false;
     const data = (await response.json()) as { ok?: boolean };

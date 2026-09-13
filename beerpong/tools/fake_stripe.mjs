@@ -84,6 +84,13 @@ const server = createServer(async (request, response) => {
       cancelUrl: form.get('cancel_url') ?? '',
       amount: listed ? listed.unit_amount : Number(form.get('line_items[0][price_data][unit_amount]') ?? 0),
       currency: listed ? listed.currency : (form.get('line_items[0][price_data][currency]') ?? ''),
+      // Read back when the code is claimed. The Worker trusts this rather than
+      // the query string, so a €1.99 session cannot ask for a €4.99 code.
+      metadata: Object.fromEntries(
+        [...form.entries()]
+          .filter(([key]) => key.startsWith('metadata['))
+          .map(([key, value]) => [key.slice('metadata['.length, -1), value])
+      ),
       // Kept verbatim so the test can check what was actually asked for —
       // the metadata and the statement descriptor matter when one Stripe
       // account sells more than one thing.
@@ -118,6 +125,7 @@ const server = createServer(async (request, response) => {
       payment_status: session.paid ? 'paid' : 'unpaid',
       amount_total: session.amount,
       currency: session.currency,
+      metadata: session.metadata,
     });
   }
 
