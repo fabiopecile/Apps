@@ -46,6 +46,8 @@ export interface ShopInfo {
   amount: number;
   currency: string;
   closedBecause: ShopClosedReason;
+  /** Which server settings are absent, by name, when the answer was 'no-keys'. */
+  missing: string[];
 }
 
 export const SHOP_CLOSED: ShopInfo = {
@@ -53,6 +55,7 @@ export const SHOP_CLOSED: ShopInfo = {
   amount: DEFAULT_PRICE_CENTS,
   currency: DEFAULT_CURRENCY,
   closedBecause: 'no-server',
+  missing: [],
 };
 
 /**
@@ -77,6 +80,9 @@ export async function fetchShop(): Promise<ShopInfo> {
       amount: typeof data.amount === 'number' ? data.amount : DEFAULT_PRICE_CENTS,
       currency: typeof data.currency === 'string' ? data.currency : DEFAULT_CURRENCY,
       closedBecause: enabled ? null : 'no-keys',
+      // An older server does not send this. Then the message names both, which
+      // is what it said before and is still true.
+      missing: Array.isArray(data.missing) ? data.missing.filter((n) => typeof n === 'string') : [],
     };
   } catch {
     return { ...SHOP_CLOSED, closedBecause: 'unreachable' };

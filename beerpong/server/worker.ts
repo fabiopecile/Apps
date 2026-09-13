@@ -212,7 +212,17 @@ async function shopInfo(env: Env): Promise<Response> {
   // screen that cannot say what it costs.
   const fromCatalog = open ? await catalogPrice(env) : null;
   const { amount, currency } = fromCatalog ?? priceOf(env);
-  return json({ enabled: open, amount, currency });
+  // Which of the two is absent, by name. Two keys mean two ways to be half
+  // configured, and from outside both look the same. This says whether a name
+  // is set, never anything about its value — the difference between fixing it
+  // in ten seconds and hunting through a dashboard for an evening.
+  const missing = open
+    ? []
+    : [
+        env.STRIPE_SECRET_KEY ? null : 'STRIPE_SECRET_KEY',
+        env.LICENCE_SECRET ? null : 'LICENCE_SECRET',
+      ].filter((name): name is string => name !== null);
+  return json({ enabled: open, amount, currency, missing });
 }
 
 async function hmac(secret: string, message: string): Promise<Uint8Array> {
