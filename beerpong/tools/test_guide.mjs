@@ -35,6 +35,8 @@ for (const name of [
   'cupGeometry',
   'cupSkins',
   'cupShop',
+  'opponents',
+  'knockout',
   'catalogue',
   'competition',
   'entitlement',
@@ -144,6 +146,7 @@ check('it covers every part of the app', () => {
     'stripe',
     'becher-design',
     'turnier',
+    'einsatz',
     'pass & play',
     'sprache',
   ]) {

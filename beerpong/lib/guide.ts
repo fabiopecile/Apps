@@ -6,6 +6,7 @@ import { CUP_BUNDLE_CENTS, CUP_PRICE_CENTS } from './catalogue';
 import { DEFAULT_PRICE_CENTS } from './licence';
 import { COIN_CUP_DESIGNS, PAID_CUP_DESIGNS } from './cupSkins';
 import { WEEKLY_OFFER_SIZE } from './cupShop';
+import { KNOCKOUT_SIZES, KNOCKOUT_STAKES } from './knockout';
 import { WEEKEND_MATCHES, WEEKEND_UNLOCK_DIVISION } from './competition';
 import {
   LUCKY_CUP_COINS,
@@ -387,11 +388,19 @@ export const GUIDE: GuideChapter[] = [
         },
       },
       {
-        de: 'Turnier',
-        en: 'Tournament',
+        de: 'Turnier (Arcade, mit Einsatz)',
+        en: 'Knockout (arcade, with a stake)',
         body: {
-          de: 'Für eine ganze Runde: Teams eintragen, die App macht den Baum und führt euch durch die Partien. Zu finden im Kamera-Modus.',
-          en: 'For a whole party: enter the teams, the app builds the bracket and walks you through the ties. Found in the camera mode.',
+          de: `Im Arcade-Hub. Du zahlst einen Einsatz (${KNOCKOUT_STAKES.join(', ')} Coins) und wählst ein Feld aus ${KNOCKOUT_SIZES.join(' oder ')} Teams. Jede Runde ist ein echtes Match gegen einen Gegner, der von Runde zu Runde härter wird — das Feld wird vor dem Bezahlen ausgelost, du siehst also, wer im Finale wartet. Gewinnst du alles, bekommst du den ganzen Topf: **Einsatz mal Teamanzahl**. Verlierst du eine Runde, ist der Einsatz weg. **Ein Match, das du mittendrin verlässt, zählt als Niederlage** — sonst könnte man jede Runde so lange wiederholen, bis sie passt. Der Topf ist bewusst knapp berechnet: Wer die Hälfte seiner Spiele gewinnt, kommt auf Dauer ungefähr auf null raus.`,
+          en: `In the arcade hub. You pay a stake (${KNOCKOUT_STAKES.join(', ')} coins) and pick a field of ${KNOCKOUT_SIZES.join(' or ')} teams. Every round is a real match against an opponent who gets harder each time — the field is drawn before you pay, so you can see who is waiting in the final. Win it all and the whole pot is yours: **the stake times the number of teams**. Lose a round and the stake is gone. **A match you walk out of counts as a loss** — otherwise any round could be replayed until it went your way. The pot is deliberately tight: winning half your matches comes out roughly level in the long run.`,
+        },
+      },
+      {
+        de: 'Turnier (Party, am echten Tisch)',
+        en: 'Tournament (party, at a real table)',
+        body: {
+          de: 'Für eine ganze Runde: Teams eintragen, die App macht den Baum und führt euch durch die Partien. Zu finden im Kamera-Modus. Hier gibt es **keine Coins** — die Sieger trägt jemand von Hand ein, und ein Preis, den man sich antippen kann, wäre keiner.',
+          en: 'For a whole party: enter the teams, the app builds the bracket and walks you through the ties. Found in the camera mode. There are **no coins** in this one — winners are entered by hand, and a prize you can simply tap for yourself is not a prize.',
         },
       },
     ],
