@@ -966,6 +966,39 @@ nicht.
 `npm run test:free` prüft die Regeln — drei Spiele, Wochenwechsel am Montag,
 kein Limit für Zahlende, und eine uralte gespeicherte Woche sperrt niemanden aus.
 
+## Die Anleitung in der App
+
+Unter **Profil → Anleitung** steht alles, was die App kann: zehn Kapitel,
+57 Abschnitte, aufklappbar, in Deutsch und Englisch. Kamera von Hand und
+automatisch, das Aufstellen des Handys, Highlights, alle Arcade-Regeln und
+-Modi, Coins und Statistiken, beide Kaufsachen, der Spielstand-Code, die
+Einstellungen — und ein eigenes Kapitel **„Was die App nicht kann"**.
+
+Zwei Entscheidungen dahinter:
+
+**Das Onboarding bleibt drei Folien.** Eine App, die vor dem ersten Wurf zehn
+Kapitel lesen lässt, wird geschlossen. Auf der letzten Folie steht ein Link zur
+Anleitung, und im Profil steht sie dauerhaft.
+
+**Jede Einschränkung steht bei ihrer Funktion**, nicht in einer Fußnote. Dass
+die Erkennung nur im Web läuft, steht im Kamera-Kapitel. Dass man online
+schummeln könnte, im Online-Abschnitt. Dass Becher-Designs nichts am Spiel
+ändern, beim Preis.
+
+### Sie kann nicht mit dem Code auseinanderlaufen
+
+Alle Zahlen kommen per Import aus dem Programm — Freispiele pro Woche, Bälle
+pro Zug, Becher in der Verlängerung, Preise, Lucky-Shot-Belohnungen,
+Highlight-Sekunden. Eine Anleitung, die „drei Spiele pro Woche" sagt, während
+der Code vier meint, ist schlimmer als keine.
+
+Was als Satz ausgeschrieben ist, prüft `npm run test:guide` gegen die Quelle:
+Coins pro Treffer, Wurf, Sieg und Niederlage werden aus `lib/store.ts` gelesen,
+die XP ebenso, das Abtastintervall aus `AutoDetect.tsx`, die Kamerahöhe aus dem
+Winkel-Bench. Dazu: beide Sprachen vorhanden, keine Textstelle zweimal
+dieselbe (das wäre eine vergessene Übersetzung), keine Platzhalter, und eine
+Liste von Themen, die vorkommen müssen — ein still gelöschtes Kapitel fällt auf.
+
 ## Zurück heißt zurück ins Hauptmenü
 
 Ein einfaches `back()` führte aus einem Match dorthin zurück, wo es gestartet
