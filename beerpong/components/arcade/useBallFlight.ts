@@ -17,7 +17,7 @@ import { GRAVITY, RESTITUTION, type Flight } from '@/lib/throwPhysics';
  * true-to-scale ball is a speck at the far end of the table, and you need to be
  * able to follow it.
  */
-export const BALL_SIZE = 25;
+export { BALL_WIDTH as BALL_SIZE } from '@/lib/arcadeLayout';
 
 export interface BallPoint {
   /** Where the ball is on the table. */

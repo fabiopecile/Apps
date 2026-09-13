@@ -653,7 +653,10 @@ export default function MatchScreen() {
       resolvePlayerTurn(false, opponentAlive.filter(Boolean).length);
       return;
     }
-    setMissNote(null);
+    // A bounce takes the cup it went in and the nearest one still standing, so
+    // say so: two cups going at once is otherwise read as the game counting one
+    // the ball never touched.
+    setMissNote(result.bounce ? t('match.bounceScored') : null);
     myCups.current += 1;
     // Where on the rack it fell, for the heatmap. Only your own throws: the
     // point of it is your aim, not theirs.

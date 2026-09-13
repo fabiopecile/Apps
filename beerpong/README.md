@@ -475,6 +475,13 @@ gemeint: der Raum ruft dieselben Funktionen aus `lib/turnRules.ts` auf, die das
 Handy offline aufruft. Zwei Kopien derselben Regeln wären zwei Kopien, die
 auseinanderlaufen — und genau diese Regel war schon einmal falsch.
 
+Die Kamera zeigt dabei den ganzen Tisch, solange die andere Seite wirft. Vorher
+stand sie näher an deinem Rack, und der gegnerische Ball startet hinter *deren*
+Rack und steigt — die erste Hälfte seines Fluges lag damit über dem oberen
+Bildrand, und der Ball tauchte auf halber Strecke einfach auf. Gemeldet als
+„beim Online sehe ich nicht, wo der Gegner hinschießt", und es galt genauso für
+die Würfe des Computers.
+
 Über die Leitung geht ein einziger Punkt pro Wurf: **wo der Ball aufgekommen
 ist**. Beide Seiten bauen die Flugbahn mit derselben Funktion daraus, also ist
 der Ball, den du fliegen siehst, derselbe Ball, den die andere Seite gesehen
@@ -1084,6 +1091,44 @@ von 6 auf 12 zieht.
 Rack auf, behält 60 % seiner Aufwärtsgeschwindigkeit und springt flach in den
 Becher. Wo er aufsetzen muss, ergibt sich aus dieser Zahl: der zweite Hüpfer
 ist genau 60 % so lang wie der erste.
+
+**Und der Becher ist jetzt so groß, wie er aussieht.** Gemeldet wurde es so:
+„Wenn ich auf Bounce ×2 klicke, zählt es auch, wenn ich nur den Becher treffe
+und nicht in den Becher." Nachgemessen stimmte genau das — und nicht nur beim
+Bounce:
+
+| | |
+|---|---|
+| gezeichneter Becher, Außenrand | 23,0 Punkte |
+| gezeichneter Becher, innen | 22,0 |
+| Ball, Radius | 12,5 |
+| **zählte als Treffer** | **23,9** |
+
+Der Fangkreis war *größer als der Becher*. Ein Ball, der mit dem halben
+Durchmesser neben dem Becher aufkam, zählte — und weil zehn solche Kreise
+einander überlappen (die Becher stehen 48 Punkte auseinander), war das ganze
+Rack eine einzige durchgehende Trefferfläche. Ein Wurf mitten die Bahn hoch,
+ohne auf irgendetwas zu zielen, ging fast immer rein. Beim Bounce fiel es auf,
+weil der flach und langsam fliegt: da sieht man, wo er hingeht.
+
+Jetzt entscheiden die drei gezeichneten Größen. Der Ball darf sich zur Hälfte
+über den Rand schieben — das fängt ein echter Becher auch — und damit zählt er
+ab **15,7** statt 23,9 Punkten. Berührt (und abgeprallt) ist er ab 35,5, also
+genau dann, wenn er den Becher wirklich anfasst.
+
+Damit das Spiel nicht plötzlich brutal wird, sind Streuung und Wurfhilfe
+dagegen neu vermessen (`tools/bench_cup_mouth.mjs`): Ein Wisch, der **auf einen
+Becher zielt**, geht weiterhin in etwa 87 % rein — vorher 88 %. Was wegfällt,
+ist die Belohnung fürs Nicht-Zielen. Die hintere Reihe ist jetzt auch ehrlich
+schwerer als die vordere (85 % statt 94 %), weil die Nachbarbecher einen
+Fehlwurf nicht mehr auffangen.
+
+Dabei kam ein zweiter Fehler mit heraus: Die Wurfhilfe zog die *Weite* auf
+denjenigen Becher, der dem Landepunkt am nächsten lag — auch wenn der seitlich
+versetzt stand. Auf einem Dreieck landete der Ball dadurch regelmäßig in der
+richtigen Tiefe für einen Becher der hinteren Reihe und genau zwischen zwei
+Bechern. Sie zieht jetzt nur noch auf Becher, die wirklich auf der Wurflinie
+liegen — Stärke wird geholfen, Richtung nie.
 
 ### Was du siehst, ist was gezählt wird
 
