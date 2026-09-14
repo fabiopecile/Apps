@@ -290,6 +290,9 @@ const SCRATCH = {
   quaternion: new THREE.Quaternion(),
   scale: new THREE.Vector3(),
   euler: new THREE.Euler(),
+  /** The quarter turn that lays a flat disc down on the table. */
+  lieDown: new THREE.Euler(-Math.PI / 2, 0, 0),
+  flat: new THREE.Quaternion(),
 };
 
 function InstancedCups({
@@ -362,14 +365,24 @@ function InstancedCups({
       SCRATCH.matrix.compose(SCRATCH.position, SCRATCH.quaternion, SCRATCH.scale);
       body.setMatrixAt(i, SCRATCH.matrix);
 
-      // The beer rides with the cup; the shadow stays flat on the felt and
-      // just fades away by shrinking.
+      // The beer: laid flat first, then tilted along with the cup.
+      //
+      // Both halves are needed and the first one was missing. A `circleGeometry`
+      // is built standing up, in the XY plane, so without the quarter turn the
+      // beer stands on edge inside the cup like a coin in a slot — and from this
+      // camera that reads as a scoop of ice cream sitting on top, which is
+      // exactly how it was reported. The shadow below has always had its turn;
+      // this one was lost when the cups became instances, because a lone mesh
+      // carries its rotation as a prop and an instance carries it in the matrix.
+      SCRATCH.flat.setFromEuler(SCRATCH.lieDown);
+      SCRATCH.quaternion.multiply(SCRATCH.flat);
       SCRATCH.position.set(x, beer.y * shrink - f * 0.06, z);
       SCRATCH.matrix.compose(SCRATCH.position, SCRATCH.quaternion, SCRATCH.scale);
       surfaces.current?.setMatrixAt(i, SCRATCH.matrix);
 
-      SCRATCH.euler.set(-Math.PI / 2, 0, 0);
-      SCRATCH.quaternion.setFromEuler(SCRATCH.euler);
+      // The shadow stays on the felt whatever the cup does, and fades by
+      // shrinking.
+      SCRATCH.quaternion.setFromEuler(SCRATCH.lieDown);
       SCRATCH.position.set(x, 0.004, z);
       SCRATCH.scale.setScalar(shrink);
       SCRATCH.matrix.compose(SCRATCH.position, SCRATCH.quaternion, SCRATCH.scale);
