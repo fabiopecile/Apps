@@ -74,7 +74,8 @@
     "test:knockout": "node tools/test_knockout.mjs",
     "test:ghosts": "node tools/test_ghosts.mjs",
     "test:party": "node tools/test_party.mjs",
-    "test:qr": "node tools/test_qr.mjs"
+    "test:qr": "node tools/test_qr.mjs",
+    "test:reel": "node tools/test_reel.mjs"
   },
   "private": true
 }

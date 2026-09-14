@@ -968,6 +968,24 @@ const STRINGS = {
   'skins.buy': { de: '{cost} Coins', en: '{cost} coins' },
   'skins.cups': { de: 'Becher', en: 'Cups' },
 
+  'reel.title': { de: 'Video des Abends', en: 'The evening, in one video' },
+  'reel.cardTitle': { de: 'BEERPONG', en: 'BEERPONG' },
+  'reel.body': {
+    de: 'Aus {clips} Clips wird ein Video — jeweils die letzten Sekunden, in denen der Becher fällt. Das dauert etwa {seconds} Sekunden, weil die Clips dafür einmal abgespielt und neu aufgenommen werden müssen. Das Handy muss dabei an bleiben und dieser Bildschirm offen.',
+    en: 'One video out of {clips} clips — the last seconds of each, where the cup goes down. It takes about {seconds} seconds, because the clips have to be played through and re-recorded. Keep the phone awake and this screen open while it runs.',
+  },
+  'reel.make': { de: 'Video schneiden', en: 'Cut the video' },
+  'reel.again': { de: 'Neu schneiden', en: 'Cut it again' },
+  'reel.building': { de: 'Clip {clip} von {of} …', en: 'Clip {clip} of {of}…' },
+  'reel.saveHow': {
+    de: 'Zum Speichern oder Teilen: lange auf das Video tippen → „Video sichern". Es heißt {name}.',
+    en: 'To save or share it: press and hold the video → "Save video". It is called {name}.',
+  },
+  'reel.failed': {
+    de: 'Hat nicht geklappt. Meistens liegt es daran, dass der Bildschirm zwischendurch aus war — noch einmal probieren und das Handy wach lassen.',
+    en: 'That did not work. Usually it means the screen went off part-way through — try again and keep the phone awake.',
+  },
+
   'party.title': { de: 'Live-Anzeige', en: 'Live scoreboard' },
   'party.hubTitle': { de: 'Anzeige teilen', en: 'Share the score' },
   'party.how': {

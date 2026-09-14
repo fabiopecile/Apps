@@ -9,6 +9,7 @@ import { WEEKLY_OFFER_SIZE } from './cupShop';
 import { KNOCKOUT_SIZES, KNOCKOUT_STAKES } from './knockout';
 import { GHOST_MIN_THROWS } from './ghosts';
 import { PARTY_WATCHER_LIMIT } from './partyProtocol';
+import { REEL_CLIPS, REEL_SECONDS_PER_CLIP } from './reelShared';
 import { WEEKEND_MATCHES, WEEKEND_UNLOCK_DIVISION } from './competition';
 import {
   LUCKY_CUP_COINS,
@@ -247,6 +248,14 @@ export const GUIDE: GuideChapter[] = [
         body: {
           de: 'Das Film-Symbol 🎞 oben im Kamera-Modus. Von dort kannst du einen Clip auch teilen.',
           en: 'The film icon 🎞 at the top of the camera mode. From there a clip can also be shared.',
+        },
+      },
+      {
+        de: 'Ein Video vom ganzen Abend',
+        en: 'One video of the whole evening',
+        body: {
+          de: `Unten in der Clip-Liste: „Video schneiden". Aus den letzten ${REEL_CLIPS} Clips wird **eine** Videodatei, jeweils die letzten ${REEL_SECONDS_PER_CLIP} Sekunden — also genau der Wurf und der fallende Becher — mit einer Startkarte davor. Fertig zum Teilen, wie jedes andere Video. Das dauert ungefähr so lange, wie das Video am Ende läuft, und der Grund ist ehrlich gesagt technisch: Videodateien lassen sich nicht einfach aneinanderhängen, also werden die Clips einmal abgespielt und dabei neu aufgenommen. Das Handy muss dabei wach bleiben und der Bildschirm offen. Danach: lange auf das Video tippen → „Video sichern".`,
+          en: `At the bottom of the clip list: "Cut the video". The last ${REEL_CLIPS} clips become **one** video file, ${REEL_SECONDS_PER_CLIP} seconds of each — the throw and the cup going down — with a title card in front. Ready to share like any other video. It takes about as long as the finished video runs, and the reason is frankly technical: video files cannot simply be stuck together, so the clips are played through once and re-recorded as they go. Keep the phone awake and the screen open while it runs. Afterwards: press and hold the video → "Save video".`,
         },
       },
       {

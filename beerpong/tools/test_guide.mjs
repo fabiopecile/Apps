@@ -39,6 +39,7 @@ for (const name of [
   'knockout',
   'ghosts',
   'partyProtocol',
+  'reelShared',
   'catalogue',
   'competition',
   'entitlement',
@@ -169,6 +170,7 @@ check('it covers every part of the app', () => {
     'einsatz',
     'echte gegner',
     'live-anzeige',
+    'video schneiden',
     'pass & play',
     'sprache',
   ]) {

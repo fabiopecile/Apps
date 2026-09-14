@@ -613,6 +613,18 @@ npm run test:room     # zwei Spieler gegen den laufenden Server
 npm run test:party    # Live-Anzeige: ein Zähl-Handy, mehrere Zuschauer
 ```
 
+Das Video des Abends lässt sich nur im Browser prüfen — es wird dort geschnitten
+und die Frage ist, ob am Ende eine Datei herauskommt, die ein Player öffnet.
+Dafür gibt es `npm run test:reel`. Der Test braucht einen Browser zum Steuern,
+der absichtlich keine Abhängigkeit dieses Projekts ist (er lädt sich selbst ein
+Chromium herunter), und überspringt sich sauber, solange nichts da ist:
+
+```bash
+npm i -D playwright && npx playwright install chromium
+npx expo start --web       # in einem zweiten Terminal
+npm run test:reel
+```
+
 `npm run test:online` prüft die Regeln ohne Netz — vor allem die Richtung jeder
 Meldung, denn eine vertauschte Richtung fällt beim Spielen erst am letzten
 Becher auf. `npm run test:room` prüft alles, was die Regeln nicht wissen können:
