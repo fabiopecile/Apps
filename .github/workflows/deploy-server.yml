@@ -23,7 +23,18 @@ on:
     branches: [main]
     paths:
       - 'beerpong/server/**'
+      # Die Dateien, die der Worker aus der App mitbenutzt. Sie müssen hier
+      # einzeln stehen, weil eine Änderung daran den Server sonst NICHT neu
+      # veröffentlicht — und dann widersprechen sich App und Server, was der
+      # ganze Grund ist, warum sie sich diese Dateien überhaupt teilen: gleiche
+      # Preise, gleiche Codes, gleiche Regeln.
+      # Zu ermitteln mit:  grep -o "\.\./lib/[a-zA-Z]*" beerpong/server/worker.ts
       - 'beerpong/lib/onlineProtocol.ts'
+      - 'beerpong/lib/partyProtocol.ts'
+      - 'beerpong/lib/catalogue.ts'
+      - 'beerpong/lib/cupSkins.ts'
+      - 'beerpong/lib/licence.ts'
+      - 'beerpong/lib/saveCode.ts'
       - '.github/workflows/deploy-server.yml'
   workflow_dispatch:
 
