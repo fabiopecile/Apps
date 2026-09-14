@@ -48,6 +48,7 @@ import { useBallFlight } from '@/components/arcade/useBallFlight';
 import {
   AI_PRESETS,
   WEEKEND_MATCHES,
+  opponentRackColour,
   generateOnlineOpponent,
   getDivision,
   type AiDifficulty,
@@ -933,7 +934,12 @@ export default function MatchScreen() {
           <Table3D
             width={tableWidth}
             racks={[
-              { cups: opponentCups, aliveFlags: opponentAlive, colour: setup.color },
+              {
+                cups: opponentCups,
+                aliveFlags: opponentAlive,
+                // Never the player's own neon; see `opponentRackColour`.
+                colour: opponentRackColour(setup.color),
+              },
               {
                 cups: playerCups,
                 aliveFlags: playerAlive,

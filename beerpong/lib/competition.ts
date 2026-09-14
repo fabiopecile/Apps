@@ -83,6 +83,71 @@ export const AI_PRESETS: Record<AiDifficulty, AiPreset> = {
   },
 };
 
+/**
+ * The colour the far rack is painted, given whatever colour the opponent goes
+ * by elsewhere.
+ *
+ * There is one rule and it beats everything else: you have to be able to tell
+ * at a glance which rack is yours. Several opponents fail that outright — the
+ * easy computer is `#39FF14`, which *is* the player's neon, and so is division
+ * 7; division 6 is a shade off it. Playing those, both ends of the table are
+ * the same green, and the screenshot of it is genuinely hard to read.
+ *
+ * So a colour too near the player's is swapped for one that is not. The badge
+ * and the header still show the opponent's real colour — this is only about the
+ * cups, where the confusion is.
+ */
+const PLAYER_RACK_COLOUR = '#39FF14';
+/** Warm, and as far from a green table as the palette goes. */
+const SUBSTITUTE_RACK_COLOUR = '#FFC94A';
+
+function channels(hex: string): [number, number, number] {
+  const clean = hex.replace('#', '');
+  return [
+    parseInt(clean.slice(0, 2), 16),
+    parseInt(clean.slice(2, 4), 16),
+    parseInt(clean.slice(4, 6), 16),
+  ];
+}
+
+/**
+ * How far apart two colours look, with the channels weighted rather than
+ * counted equally.
+ *
+ * The weights matter because of what they do to *this* palette, and the numbers
+ * are worth writing down. Straight RGB distance puts the two greens
+ * (`#00FF66` against the player's `#39FF14`) at 100 and division 10's grey —
+ * which is unmistakably another team — at 163. That is a 63-point gap to fit a
+ * threshold into. Weighted, the same pairs come out at 163 and 328: the same
+ * ordering, with more than twice the room. A threshold picked in the middle of
+ * the wide gap is one that survives somebody adding a colour later.
+ */
+export function colourDistance(a: string, b: string): number {
+  const [ar, ag, ab] = channels(a);
+  const [br, bg, bb] = channels(b);
+  return Math.sqrt(
+    2 * (ar - br) ** 2 + 4 * (ag - bg) ** 2 + 3 * (ab - bb) ** 2
+  );
+}
+
+/**
+ * Below this, two racks read as the same colour across a phone screen.
+ *
+ * Set from the actual palette rather than picked: the offenders come out at 0
+ * (the easy computer and division 7, which *are* the player's neon) and 163
+ * (division 6's `#00FF66`, a different green on a swatch and the same green on
+ * a far-away cup). The nearest colour that genuinely reads as another team is
+ * division 10's grey at 328, so anywhere between 164 and 327 does the job; 200
+ * sits clear of both ends.
+ */
+export const RACK_COLOUR_MIN_DISTANCE = 200;
+
+export function opponentRackColour(colour: string): string {
+  return colourDistance(colour, PLAYER_RACK_COLOUR) < RACK_COLOUR_MIN_DISTANCE
+    ? SUBSTITUTE_RACK_COLOUR
+    : colour;
+}
+
 export interface Division {
   id: number; // 10 = entry, 1 = elite
   rankKey: TranslationKey;
