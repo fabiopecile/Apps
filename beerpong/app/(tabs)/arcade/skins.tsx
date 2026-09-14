@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,14 +9,22 @@ import { Reveal } from '@/components/ui/Reveal';
 import { CountUp } from '@/components/ui/CountUp';
 import { Card } from '@/components/ui/Card';
 import { GlowButton } from '@/components/ui/GlowButton';
+import { SectionLabel } from '@/components/ui/SectionLabel';
 import { BallArt } from '@/components/arcade/BallArt';
+import { CupPreview } from '@/components/arcade/CupPreview';
+import { COIN_CUP_DESIGNS } from '@/lib/cupSkins';
+import { hoursUntilRotation, weeklyOffer, weeksUntilOffered } from '@/lib/cupShop';
+import { useFeedback } from '@/lib/feedback';
 import { SKINS, type SkinType } from '@/lib/skins';
 import { useBeerpongStore } from '@/lib/store';
 import { useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
+/** Balls and tables are bought once; cups come round week by week. */
+type Shelf = SkinType | 'cup';
+
 export default function SkinsScreen() {
-  const [filter, setFilter] = useState<SkinType>('ball');
+  const [filter, setFilter] = useState<Shelf>('ball');
   const coins = useBeerpongStore((s) => s.coins);
   const ownedSkinIds = useBeerpongStore((s) => s.ownedSkinIds);
   const equippedBall = useBeerpongStore((s) => s.arcade.equippedBall);
@@ -45,20 +53,24 @@ export default function SkinsScreen() {
         </View>
 
         <View style={styles.filterRow}>
-          {(['ball', 'table'] as SkinType[]).map((type) => (
+          {(['ball', 'table', 'cup'] as Shelf[]).map((type) => (
             <Pressable
               key={type}
               onPress={() => setFilter(type)}
               style={[styles.filterButton, filter === type && styles.filterButtonActive]}
             >
               <Text style={[styles.filterText, filter === type && styles.filterTextActive]}>
-                {type === 'ball' ? t('skins.balls') : t('skins.tables')}
+                {type === 'ball'
+                  ? t('skins.balls')
+                  : type === 'table'
+                    ? t('skins.tables')
+                    : t('skins.cups')}
               </Text>
             </Pressable>
           ))}
         </View>
 
-        <FlatList
+        {filter === 'cup' ? <CupShelf /> : <FlatList
           data={skins}
           keyExtractor={(s) => s.id}
           numColumns={2}
@@ -124,9 +136,139 @@ export default function SkinsScreen() {
             );
           }}
           ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
-        />
+        />}
       </SafeAreaView>
     </View>
+  );
+}
+
+/**
+ * The rotating cup shelf.
+ *
+ * Three designs are on offer, the rest are shown greyed out with when they come
+ * back. That second list is the whole point of the feature: an empty shop after
+ * you have bought this week's three gives you no reason to keep earning, and a
+ * shelf of things you can see but not have yet gives you twelve.
+ *
+ * The countdown is worked out from the date on every render rather than kept on
+ * a timer — it is measured in hours and days, and a screen that is open long
+ * enough for it to tick is a screen nobody is looking at.
+ */
+function CupShelf() {
+  const t = useT();
+  const feedback = useFeedback();
+  const coins = useBeerpongStore((s) => s.coins);
+  const owned = useBeerpongStore((s) => s.ownedCupSkins);
+  const equipped = useBeerpongStore((s) => s.equippedCupSkin);
+  const buyCupDesign = useBeerpongStore((s) => s.buyCupDesign);
+  const equipCupSkin = useBeerpongStore((s) => s.equipCupSkin);
+
+  const now = new Date();
+  const offer = useMemo(() => weeklyOffer(now), [now.toDateString()]);
+  const hours = hoursUntilRotation(now);
+  const rest = COIN_CUP_DESIGNS.filter((design) => !offer.some((o) => o.id === design.id));
+
+  return (
+    <ScrollView contentContainerStyle={styles.grid} showsVerticalScrollIndicator={false}>
+      <SectionLabel>{t('skins.weekly')}</SectionLabel>
+      <Text style={styles.rotation}>
+        {hours >= 48
+          ? t('skins.rotationDays', { days: Math.round(hours / 24) })
+          : t('skins.rotationHours', { hours })}
+      </Text>
+
+      <View style={styles.cupRow}>
+        {offer.map((design, index) => {
+          const isOwned = owned.includes(design.id);
+          const isOn = equipped === design.id;
+          const cost = design.coins ?? 0;
+          return (
+            <Reveal key={design.id} index={index} style={styles.cupCardWrap}>
+              <Card style={styles.cupCard} highlighted={isOn}>
+                <View
+                  style={[
+                    styles.cupSwatch,
+                    { borderColor: design.accent },
+                    glow(isOn ? 'medium' : 'soft', design.accent),
+                  ]}
+                >
+                  <CupPreview design={design} size={42} />
+                </View>
+                <Text style={styles.skinName}>{design.name}</Text>
+                {isOn ? (
+                  <View style={styles.equippedBadge}>
+                    <Ionicons name="checkmark-circle" size={14} color={colors.neon} />
+                    <Text style={styles.equippedText}>{t('skins.active')}</Text>
+                  </View>
+                ) : isOwned ? (
+                  <GlowButton
+                    label={t('skins.equip')}
+                    variant="outline"
+                    size="sm"
+                    onPress={() => {
+                      feedback.tap();
+                      equipCupSkin(design.id);
+                    }}
+                  />
+                ) : (
+                  <GlowButton
+                    label={t('skins.buy', { cost })}
+                    variant={coins >= cost ? 'filled' : 'ghost'}
+                    size="sm"
+                    disabled={coins < cost}
+                    onPress={() => {
+                      if (buyCupDesign(design.id)) feedback.reward();
+                    }}
+                  />
+                )}
+              </Card>
+            </Reveal>
+          );
+        })}
+      </View>
+
+      <Text style={styles.note}>{t('skins.cupsNote')}</Text>
+
+      <SectionLabel>{t('skins.collection')}</SectionLabel>
+      <View style={styles.cupRow}>
+        {rest.map((design) => {
+          const isOwned = owned.includes(design.id);
+          const weeks = weeksUntilOffered(design.id, now);
+          return (
+            <View key={design.id} style={styles.cupCardWrap}>
+              <Card style={[styles.cupCard, !isOwned && styles.cupCardDim]}>
+                <View style={[styles.cupSwatch, { borderColor: colors.borderFaint }]}>
+                  <CupPreview design={design} size={42} />
+                </View>
+                <Text style={styles.skinName}>{design.name}</Text>
+                {isOwned ? (
+                  equipped === design.id ? (
+                    <View style={styles.equippedBadge}>
+                      <Ionicons name="checkmark-circle" size={14} color={colors.neon} />
+                      <Text style={styles.equippedText}>{t('skins.active')}</Text>
+                    </View>
+                  ) : (
+                    <GlowButton
+                      label={t('skins.equip')}
+                      variant="outline"
+                      size="sm"
+                      onPress={() => {
+                        feedback.tap();
+                        equipCupSkin(design.id);
+                      }}
+                    />
+                  )
+                ) : (
+                  <Text style={styles.soon}>
+                    {weeks <= 1 ? t('skins.soonNext') : t('skins.soon', { weeks })}
+                  </Text>
+                )}
+              </Card>
+            </View>
+          );
+        })}
+      </View>
+    </ScrollView>
   );
 }
 
@@ -251,5 +393,50 @@ const styles = StyleSheet.create({
     fontFamily: fonts.label,
     fontSize: 12,
     color: colors.neon,
+  },
+  // Three to a row rather than the two the balls use: a cup is tall and thin,
+  // and the week's offer is three, so it wants to be one line.
+  cupRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  cupCardWrap: {
+    width: '31%',
+    flexGrow: 1,
+  },
+  cupCard: {
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.xs,
+  },
+  cupCardDim: {
+    opacity: 0.45,
+  },
+  cupSwatch: {
+    borderWidth: 1.5,
+    borderRadius: radius.sm,
+    padding: spacing.xs,
+    backgroundColor: colors.backgroundElevated,
+  },
+  rotation: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    color: colors.gold,
+    marginBottom: spacing.sm,
+  },
+  note: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 11,
+    color: colors.textMuted,
+    lineHeight: 16,
+    marginBottom: spacing.md,
+  },
+  soon: {
+    fontFamily: fonts.label,
+    fontSize: 11,
+    color: colors.textMuted,
+    paddingVertical: 6,
   },
 });

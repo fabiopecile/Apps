@@ -14,6 +14,7 @@ export default function CameraStackLayout() {
       <Stack.Screen name="online" />
       <Stack.Screen name="room" />
       <Stack.Screen name="highlights" />
+      <Stack.Screen name="party" />
     </Stack>
   );
 }

@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_BALL_SKIN, DEFAULT_TABLE_SKIN, SKINS } from './skins';
 import { DEFAULT_CUP_SKIN } from './cupSkins';
+import { coinPrice, weeklyOffer } from './cupShop';
 import { LEAGUE_OPPONENTS } from './opponents';
 import {
   EMPTY_TRACKER_USE,
@@ -33,6 +34,15 @@ import {
   propagate,
   type Tournament,
 } from './tournament';
+import { foldGame, type Ghost, type TrackedSide } from './ghosts';
+import {
+  KNOCKOUT_SIZES,
+  KNOCKOUT_STAKES,
+  reportRound,
+  startRun,
+  type KnockoutResult,
+  type KnockoutRun,
+} from './knockout';
 import {
   ENTRY_DIVISION,
   TOP_DIVISION,
@@ -200,6 +210,8 @@ interface BeerpongStore {
   cupLicences: Record<string, string[]>;
   /** Records a verified code for a cup design, or for the whole set. */
   redeemCupLicence: (code: string, designIds: string[]) => void;
+  /** Spends coins on one of this week's designs. False if it cannot be had. */
+  buyCupDesign: (designId: string) => boolean;
   equipCupSkin: (designId: string) => void;
   /** Tracked games used this week; see `lib/entitlement.ts`. */
   trackerUse: TrackerUse;
@@ -255,6 +267,34 @@ interface BeerpongStore {
   cameraHit: () => void;
   cameraMiss: () => void;
   cameraResetGame: () => void;
+
+  /**
+   * The arcade tournament in progress, if any. See `lib/knockout.ts` — it is a
+   * paid-for bracket played out match by match, not the party bracket above.
+   */
+  knockout: KnockoutRun | null;
+  /** Pays the stake and draws the field. False if it cannot be afforded. */
+  knockoutStart: (stake: number, teams: number) => boolean;
+  /** Marks the current round as out being played. */
+  knockoutBeginMatch: () => void;
+  /** Settles a round and pays the pot on a won final. */
+  knockoutReport: (won: boolean) => KnockoutResult | null;
+  /** Ends a run whose match was abandoned. True if there was one. */
+  knockoutForfeitPending: () => boolean;
+  /** Abandons a run deliberately; the stake stays spent. */
+  knockoutGiveUp: () => void;
+
+  /**
+   * Opponents built from real games at a real table; see `lib/ghosts.ts`.
+   *
+   * Written only by `recordTrackedGame`, which the camera screen calls once a
+   * game has actually finished — there is no way to add one by hand, because a
+   * ghost that was typed in rather than measured is just an opponent with
+   * somebody's name on it.
+   */
+  ghosts: Ghost[];
+  /** Folds both teams of a finished tracked game into the ghost record. */
+  recordTrackedGame: (sides: TrackedSide[], at: number) => void;
 
   tournament: Tournament | null;
   tournamentStart: (teams: string[]) => void;
@@ -406,6 +446,31 @@ export const useBeerpongStore = create<BeerpongStore>()(
           };
         }),
 
+      /**
+       * A design bought with coins rather than money.
+       *
+       * It lands in the same `ownedCupSkins` as a bought one, which is right:
+       * once it is yours the game should not care how. What it must never do is
+       * go the other way — `coinPrice` returns null for anything that is not in
+       * the coin list, so a country cannot be had for coins however the id is
+       * spelled, and the week's offer is checked as well so last month's
+       * design cannot be bought out of season.
+       */
+      buyCupDesign: (designId) => {
+        const cost = coinPrice(designId);
+        if (cost === null) return false;
+        const state = get();
+        if (state.ownedCupSkins.includes(designId)) return true;
+        if (!weeklyOffer(new Date()).some((design) => design.id === designId)) return false;
+        if (state.coins < cost) return false;
+        set((s) => ({
+          coins: s.coins - cost,
+          ownedCupSkins: [...s.ownedCupSkins, designId],
+          equippedCupSkin: designId,
+        }));
+        return true;
+      },
+
       equipCupSkin: (designId) =>
         set((s) => (s.ownedCupSkins.includes(designId) ? { equippedCupSkin: designId } : {})),
       trackerUse: EMPTY_TRACKER_USE,
@@ -474,6 +539,10 @@ export const useBeerpongStore = create<BeerpongStore>()(
           },
         })),
 
+      ghosts: [],
+      recordTrackedGame: (sides, at) =>
+        set((s) => ({ ghosts: foldGame(s.ghosts, sides, at) })),
+
       tournament: null,
 
       tournamentStart: (teams) =>
@@ -499,6 +568,52 @@ export const useBeerpongStore = create<BeerpongStore>()(
         }),
 
       tournamentReset: () => set({ tournament: null }),
+
+      knockout: null,
+
+      knockoutStart: (stake, teams) => {
+        const state = get();
+        if (state.knockout) return false;
+        if (!KNOCKOUT_STAKES.includes(stake as (typeof KNOCKOUT_STAKES)[number])) return false;
+        if (!KNOCKOUT_SIZES.includes(teams as (typeof KNOCKOUT_SIZES)[number])) return false;
+        if (state.coins < stake) return false;
+        set((s) => ({
+          coins: s.coins - stake,
+          knockout: startRun(stake, teams, Date.now()),
+        }));
+        return true;
+      },
+
+      knockoutBeginMatch: () =>
+        set((s) => (s.knockout ? { knockout: { ...s.knockout, pending: true } } : {})),
+
+      knockoutReport: (won) => {
+        const run = get().knockout;
+        if (!run) return null;
+        const result = reportRound(run, won);
+        set((s) => ({
+          knockout: result.run,
+          coins: s.coins + result.coins,
+        }));
+        return result;
+      },
+
+      /**
+       * Resolves a match that was walked out of.
+       *
+       * Called by the tournament screen when it finds a run with a match still
+       * marked as being played. Without it, the way to win any bracket is to
+       * quit whenever a final is going badly and start it again.
+       */
+      knockoutForfeitPending: () => {
+        const run = get().knockout;
+        if (!run?.pending) return false;
+        set({ knockout: null });
+        return true;
+      },
+
+      /** Walks away from a run on purpose. The stake is not refunded. */
+      knockoutGiveUp: () => set({ knockout: null }),
 
       tracker: makeTracker(DEFAULT_START_CUPS),
 
@@ -852,6 +967,8 @@ export const useBeerpongStore = create<BeerpongStore>()(
         camera: state.camera,
         tracker: state.tracker,
         tournament: state.tournament,
+        knockout: state.knockout,
+        ghosts: state.ghosts,
         daily: state.daily,
         claimedAchievements: state.claimedAchievements,
         claimedSeasonTiers: state.claimedSeasonTiers,

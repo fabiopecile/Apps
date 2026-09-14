@@ -43,3 +43,9 @@ export function roomSocketUrl(code: string, options: RoomUrlOptions): string {
 export function healthUrl(): string {
   return `${ONLINE_SERVER_URL}/health`;
 }
+
+/** The party scoreboard: one host, any number of people watching. */
+export function partySocketUrl(code: string, hosting: boolean): string {
+  const base = ONLINE_SERVER_URL.replace(/^http/, 'ws');
+  return `${base}/party/${code}${hosting ? '?host=1' : ''}`;
+}

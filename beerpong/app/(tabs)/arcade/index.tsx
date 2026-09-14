@@ -24,6 +24,7 @@ import {
   type AchievementStats,
 } from '@/lib/progression';
 import { canPlayLucky } from '@/lib/luckyShot';
+import { opponentById, roundKey } from '@/lib/knockout';
 import { ONLINE_AVAILABLE } from '@/lib/onlineConfig';
 import { selectCareerProgress, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
@@ -36,6 +37,8 @@ export default function ArcadeHubScreen() {
   const coins = useBeerpongStore((s) => s.coins);
   const rivals = useBeerpongStore((s) => s.rivals);
   const weekend = useBeerpongStore((s) => s.weekend);
+  const knockout = useBeerpongStore((s) => s.knockout);
+  const ghosts = useBeerpongStore((s) => s.ghosts);
   const aiDifficulty = useBeerpongStore((s) => s.aiDifficulty);
   const daily = useBeerpongStore((s) => s.daily);
   const ownedSkinIds = useBeerpongStore((s) => s.ownedSkinIds);
@@ -159,6 +162,36 @@ export default function ArcadeHubScreen() {
               index={4}
               locked={!weekendUnlocked}
             />
+
+            <ModeCard
+              icon="trophy"
+              title={t('knockout.title')}
+              subtitle={
+                knockout
+                  ? t('knockout.next', {
+                      round: t(`knockout.round.${roundKey(knockout.teams, knockout.round)}`),
+                      name: opponentById(knockout.opponentIds[knockout.round - 1]).nickname,
+                    })
+                  : t('knockout.tagline')
+              }
+              accent={knockout ? colors.gold : colors.neonAlt}
+              href="/(tabs)/arcade/knockout"
+              index={5}
+              badge={knockout ? 1 : undefined}
+            />
+
+            {/* Only once there is somebody to play. An empty list dressed up as
+                a mode is a promise the app has not kept yet. */}
+            {ghosts.length > 0 ? (
+              <ModeCard
+                icon="people"
+                title={t('ghost.title')}
+                subtitle={t('ghost.hubSubtitle', { count: ghosts.length })}
+                accent={colors.neonAlt}
+                href="/(tabs)/arcade/ghosts"
+                index={5}
+              />
+            ) : null}
           </View>
 
           <View style={styles.section}>
