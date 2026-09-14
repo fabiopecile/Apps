@@ -319,15 +319,35 @@ function InstancedCups({
     fallen.current = cups.map((cup) => (rack.aliveFlags[cup.index] ? 0 : 1));
   }
 
+  /**
+   * True until every cup has finished moving, and again whenever one starts.
+   *
+   * This is the difference between a still rack costing nothing and costing a
+   * buffer upload a frame. Twenty instance matrices per mesh, three meshes, two
+   * racks — six buffers going to the graphics card sixty times a second for a
+   * table where nothing is happening. On the machine this was measured on, with
+   * software rendering, that is free; on a phone the driver has to either wait
+   * for the card to finish reading the old copy or quietly make a new one, and
+   * it does that every frame. It was measured fast here and reported as slower
+   * on an actual phone, which is exactly the shape of mistake this is.
+   */
+  const settling = useRef(true);
+
   useFrame((_, delta) => {
     const body = bodies.current;
     if (!body) return;
+    // A rack where nothing is falling is already on the card, correctly.
+    if (!settling.current && cups.every((cup, i) => (rack.aliveFlags[cup.index] ? 0 : 1) === fallen.current[i])) {
+      return;
+    }
     const step = delta * 3.4;
+    let moved = false;
 
     cups.forEach((cup, i) => {
       const target = rack.aliveFlags[cup.index] ? 0 : 1;
       const now = fallen.current[i] ?? 0;
       const f = now + Math.max(-step, Math.min(step, target - now));
+      if (f !== now || f !== target) moved = true;
       fallen.current[i] = f;
 
       const x = wx(cup.x, width);
@@ -356,6 +376,7 @@ function InstancedCups({
       shadows.current?.setMatrixAt(i, SCRATCH.matrix);
     });
 
+    settling.current = moved;
     body.instanceMatrix.needsUpdate = true;
     if (surfaces.current) surfaces.current.instanceMatrix.needsUpdate = true;
     if (shadows.current) shadows.current.instanceMatrix.needsUpdate = true;
