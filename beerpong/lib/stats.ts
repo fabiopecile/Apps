@@ -19,7 +19,15 @@ export const MATCH_HISTORY = 30;
 /** How many count as "current form". */
 export const FORM_LENGTH = 10;
 
-export type StatsMode = 'offline' | 'rivals' | 'weekend' | 'passplay' | 'lucky' | 'tracker';
+export type StatsMode =
+  | 'offline'
+  | 'rivals'
+  | 'weekend'
+  | 'passplay'
+  | 'knockout'
+  | 'ghost'
+  | 'lucky'
+  | 'tracker';
 
 export interface MatchRecord {
   at: number;

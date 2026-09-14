@@ -4,7 +4,12 @@ import { BALLS_PER_TURN } from './turnRules';
 import { OVERTIME_CUP_COUNT } from './arcadeLayout';
 import { CUP_BUNDLE_CENTS, CUP_PRICE_CENTS } from './catalogue';
 import { DEFAULT_PRICE_CENTS } from './licence';
-import { PAID_CUP_DESIGNS } from './cupSkins';
+import { COIN_CUP_DESIGNS, PAID_CUP_DESIGNS } from './cupSkins';
+import { WEEKLY_OFFER_SIZE } from './cupShop';
+import { KNOCKOUT_SIZES, KNOCKOUT_STAKES } from './knockout';
+import { GHOST_MIN_THROWS } from './ghosts';
+import { PARTY_WATCHER_LIMIT } from './partyProtocol';
+import { REEL_CLIPS, REEL_SECONDS_PER_CLIP } from './reelShared';
 import { WEEKEND_MATCHES, WEEKEND_UNLOCK_DIVISION } from './competition';
 import {
   LUCKY_CUP_COINS,
@@ -246,6 +251,14 @@ export const GUIDE: GuideChapter[] = [
         },
       },
       {
+        de: 'Ein Video vom ganzen Abend',
+        en: 'One video of the whole evening',
+        body: {
+          de: `Unten in der Clip-Liste: „Video schneiden". Aus den letzten ${REEL_CLIPS} Clips wird **eine** Videodatei, jeweils die letzten ${REEL_SECONDS_PER_CLIP} Sekunden — also genau der Wurf und der fallende Becher — mit einer Startkarte davor. Fertig zum Teilen, wie jedes andere Video. Das dauert ungefähr so lange, wie das Video am Ende läuft, und der Grund ist ehrlich gesagt technisch: Videodateien lassen sich nicht einfach aneinanderhängen, also werden die Clips einmal abgespielt und dabei neu aufgenommen. Das Handy muss dabei wach bleiben und der Bildschirm offen. Danach: lange auf das Video tippen → „Video sichern".`,
+          en: `At the bottom of the clip list: "Cut the video". The last ${REEL_CLIPS} clips become **one** video file, ${REEL_SECONDS_PER_CLIP} seconds of each — the throw and the cup going down — with a title card in front. Ready to share like any other video. It takes about as long as the finished video runs, and the reason is frankly technical: video files cannot simply be stuck together, so the clips are played through once and re-recorded as they go. Keep the phone awake and the screen open while it runs. Afterwards: press and hold the video → "Save video".`,
+        },
+      },
+      {
         de: 'Wo die Clips liegen',
         en: 'Where the clips live',
         body: {
@@ -386,11 +399,35 @@ export const GUIDE: GuideChapter[] = [
         },
       },
       {
-        de: 'Turnier',
-        en: 'Tournament',
+        de: 'Echte Gegner aus dem Kamera-Modus',
+        en: 'Real opponents from camera mode',
         body: {
-          de: 'Für eine ganze Runde: Teams eintragen, die App macht den Baum und führt euch durch die Partien. Zu finden im Kamera-Modus.',
-          en: 'For a whole party: enter the teams, the app builds the bracket and walks you through the ties. Found in the camera mode.',
+          de: `Das Einzige in der App, das ohne die Kamera nicht ginge. Die Kamera zählt bei jedem echten Spiel mit, wie oft jedes Team trifft. Ist ein Spiel zu Ende, landen **beide** Teams unter „Echte Gegner" im Arcade-Hub — und ab ${GHOST_MIN_THROWS} Würfen kannst du gegen die Trefferquote dieser Person spielen. Auf jeder Karte stehen die Zahlen, aus denen sie gebaut ist: Becher, Würfe, Prozent, Spiele. Zwei Dinge, die es ausdrücklich **nicht** ist: Es ist kein Online-Spiel — die andere Person spielt nicht mit und ihr Handy weiß nichts davon —, und es ist kein Abbild von ihr, sondern nur ihre Quote und ihr Name. Und die Quote ist selbst bei ${GHOST_MIN_THROWS} Würfen noch ungenau: Wer in Wahrheit 30 % trifft, liegt da irgendwo zwischen 15 % und 45 %. Mit jedem Spiel wird sie schärfer.`,
+          en: `The one thing in the app that could not exist without the camera. It counts how often each team scores in every real game, and when a game ends **both** teams appear under "Real opponents" in the arcade hub — from ${GHOST_MIN_THROWS} throws you can play against that person's hit rate. Each card shows the numbers it was built from: cups, throws, percentage, games. Two things it explicitly is **not**: an online match — they are not playing and their phone knows nothing about it — and a copy of them, rather than their rate and their name. And the rate is still rough at ${GHOST_MIN_THROWS} throws: a true 30% shooter lands anywhere between 15% and 45%. Every game sharpens it.`,
+        },
+      },
+      {
+        de: 'Turnier (Arcade, mit Einsatz)',
+        en: 'Knockout (arcade, with a stake)',
+        body: {
+          de: `Im Arcade-Hub. Du zahlst einen Einsatz (${KNOCKOUT_STAKES.join(', ')} Coins) und wählst ein Feld aus ${KNOCKOUT_SIZES.join(' oder ')} Teams. Jede Runde ist ein echtes Match gegen einen Gegner, der von Runde zu Runde härter wird — das Feld wird vor dem Bezahlen ausgelost, du siehst also, wer im Finale wartet. Gewinnst du alles, bekommst du den ganzen Topf: **Einsatz mal Teamanzahl**. Verlierst du eine Runde, ist der Einsatz weg. **Ein Match, das du mittendrin verlässt, zählt als Niederlage** — sonst könnte man jede Runde so lange wiederholen, bis sie passt. Der Topf ist bewusst knapp berechnet: Wer die Hälfte seiner Spiele gewinnt, kommt auf Dauer ungefähr auf null raus.`,
+          en: `In the arcade hub. You pay a stake (${KNOCKOUT_STAKES.join(', ')} coins) and pick a field of ${KNOCKOUT_SIZES.join(' or ')} teams. Every round is a real match against an opponent who gets harder each time — the field is drawn before you pay, so you can see who is waiting in the final. Win it all and the whole pot is yours: **the stake times the number of teams**. Lose a round and the stake is gone. **A match you walk out of counts as a loss** — otherwise any round could be replayed until it went your way. The pot is deliberately tight: winning half your matches comes out roughly level in the long run.`,
+        },
+      },
+      {
+        de: 'Live-Anzeige für alle am Tisch',
+        en: 'A live scoreboard for the whole table',
+        body: {
+          de: `Im Kamera-Modus oben das QR-Symbol. Das Handy, das mitzählt, zeigt einen Code; alle anderen halten ihre Kamera drauf, öffnen den Link und sehen den Spielstand live auf dem eigenen Handy — ohne etwas zu installieren und ohne Anmeldung. Bis zu ${PARTY_WATCHER_LIMIT} Leute gleichzeitig. Gezählt wird weiter **nur auf dem einen Handy**: Wer zuschaut, kann nichts ändern, und das ist die einzige Aufteilung, die stimmen kann — nur das eine Handy schaut auf den Tisch. Wer mitten im Abend dazukommt, sieht sofort den aktuellen Stand. Geht das zählende Handy weg, bleibt der letzte Stand stehen und die Anzeige sagt es. Braucht die Server-Adresse, dieselbe wie der Online-Modus.`,
+          en: `The QR icon at the top of camera mode. The phone doing the counting shows a code; everyone else points a camera at it, opens the link and watches the score on their own phone — nothing to install, no sign-up. Up to ${PARTY_WATCHER_LIMIT} people at once. The counting still happens **on that one phone only**: watchers can change nothing, which is the only arrangement that can be true since only that phone is pointed at the table. Somebody who joins halfway through sees the current score straight away. If the counting phone goes, the last score stays up and the page says so. Needs the server address, the same one the online mode uses.`,
+        },
+      },
+      {
+        de: 'Turnier (Party, am echten Tisch)',
+        en: 'Tournament (party, at a real table)',
+        body: {
+          de: 'Für eine ganze Runde: Teams eintragen, die App macht den Baum und führt euch durch die Partien. Zu finden im Kamera-Modus. Hier gibt es **keine Coins** — die Sieger trägt jemand von Hand ein, und ein Preis, den man sich antippen kann, wäre keiner.',
+          en: 'For a whole party: enter the teams, the app builds the bracket and walks you through the ties. Found in the camera mode. There are **no coins** in this one — winners are entered by hand, and a prize you can simply tap for yourself is not a prize.',
         },
       },
     ],
@@ -429,6 +466,14 @@ export const GUIDE: GuideChapter[] = [
         body: {
           de: 'Bälle und Tische, bezahlt mit Coins. Der teuerste kostet etwa zwei Wochen Spielen — absichtlich, weil etwas übrig bleiben muss, worauf man hinspielt.',
           en: 'Balls and tables, paid for with coins. The dearest costs about a fortnight of playing — deliberately, because something has to be left to play towards.',
+        },
+      },
+      {
+        de: 'Becher-Designs der Woche',
+        en: 'The week’s cup designs',
+        body: {
+          de: `Unter **Skins → Becher** stehen jede Woche ${WEEKLY_OFFER_SIZE} Becher-Designs für Coins zum Kauf. Insgesamt gibt es ${COIN_CUP_DESIGNS.length}, jedes ist alle ${COIN_CUP_DESIGNS.length / WEEKLY_OFFER_SIZE} Wochen einmal dran — was du diese Woche nicht kaufst, kommt wieder. Unter dem Angebot siehst du die ganze Sammlung mit dem Hinweis, wann das jeweilige Design das nächste Mal im Angebot ist. Gewechselt wird in der Nacht auf Montag, und zwar für alle gleichzeitig: Zwei Leute am selben Tisch sehen immer dasselbe Angebot. Das sind Muster — Carbon, Camo, Sonnenuntergang. Die **Länderflaggen** sind etwas anderes und gibt es weiterhin nur im Becher-Shop für echtes Geld.`,
+          en: `Under **Skins → Cups**, ${WEEKLY_OFFER_SIZE} cup designs are on offer for coins each week. There are ${COIN_CUP_DESIGNS.length} in all and each comes round once every ${COIN_CUP_DESIGNS.length / WEEKLY_OFFER_SIZE} weeks, so one you skip this week is not gone. Below the offer is the whole collection, each with when it is next up. It changes overnight on Monday, and for everybody at once: two people at the same table always see the same three. These are patterns — carbon, camouflage, sunset. The **country flags** are a separate thing and stay in the cup shop, for money.`,
         },
       },
       {

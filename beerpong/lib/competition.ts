@@ -2,7 +2,13 @@ import type { TranslationKey } from './i18n';
 import type { AimStrategy } from './opponentAi';
 
 export type AiDifficulty = 'easy' | 'medium' | 'hard' | 'pro';
-export type MatchMode = 'offline' | 'rivals' | 'weekend' | 'passplay';
+export type MatchMode =
+  | 'offline'
+  | 'rivals'
+  | 'weekend'
+  | 'passplay'
+  | 'knockout'
+  | 'ghost';
 
 export interface AiPreset {
   id: AiDifficulty;

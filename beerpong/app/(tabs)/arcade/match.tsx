@@ -54,6 +54,8 @@ import {
   type MatchMode,
 } from '@/lib/competition';
 import { LEAGUE_OPPONENTS } from '@/lib/opponents';
+import { difficultyForRound, opponentById, roundKey } from '@/lib/knockout';
+import { findGhost, ghostSkill } from '@/lib/ghosts';
 
 /**
  * Screen points per table point at the ball's resting depth.
@@ -106,9 +108,13 @@ interface Celebration {
 }
 
 export default function MatchScreen() {
-  const params = useLocalSearchParams<{ mode?: string; difficulty?: string }>();
+  const params = useLocalSearchParams<{ mode?: string; difficulty?: string; ghost?: string }>();
   const mode: MatchMode =
-    params.mode === 'rivals' || params.mode === 'weekend' || params.mode === 'passplay'
+    params.mode === 'rivals' ||
+    params.mode === 'weekend' ||
+    params.mode === 'passplay' ||
+    params.mode === 'knockout' ||
+    params.mode === 'ghost'
       ? params.mode
       : 'offline';
   const isPassPlay = mode === 'passplay';
@@ -217,6 +223,10 @@ export default function MatchScreen() {
   const rivals = useBeerpongStore((s) => s.rivals);
   const trackerTeams = useBeerpongStore((s) => s.tracker.teams);
   const weekend = useBeerpongStore((s) => s.weekend);
+  const knockout = useBeerpongStore((s) => s.knockout);
+  const ghosts = useBeerpongStore((s) => s.ghosts);
+  const ghost = params.ghost ? findGhost(ghosts, params.ghost) : null;
+  const knockoutReport = useBeerpongStore((s) => s.knockoutReport);
   const storedDifficulty = useBeerpongStore((s) => s.aiDifficulty);
   const arcadeRecordThrow = useBeerpongStore((s) => s.arcadeRecordThrow);
   const arcadeRecordMatch = useBeerpongStore((s) => s.arcadeRecordMatch);
@@ -269,6 +279,37 @@ export default function MatchScreen() {
         }),
       };
     }
+    if (mode === 'ghost' && ghost) {
+      const skill = ghostSkill(ghost);
+      return {
+        id: `ghost-${ghost.name}`,
+        name: ghost.name,
+        accuracy: skill.accuracy,
+        focus: skill.focus,
+        aim: skill.aim,
+        playerSkill: skill.playerSkill,
+        color: AI_PRESETS[skill.nearest].color,
+        badge: translate(language, 'ghost.badge'),
+      };
+    }
+    if (mode === 'knockout' && knockout) {
+      // The bracket named this opponent before a coin was staked, so it has to
+      // be this one: seeing Legend waiting in the final and then playing
+      // somebody else would make the whole entry decision a lie.
+      const level = difficultyForRound(knockout.teams, knockout.round);
+      const preset = AI_PRESETS[level];
+      const character = opponentById(knockout.opponentIds[knockout.round - 1]);
+      return {
+        id: character.id,
+        name: `${character.nickname} · ${translate(language, preset.labelKey)}`,
+        accuracy: preset.opponentAccuracy,
+        focus: preset.focus,
+        aim: preset.aim,
+        playerSkill: preset.playerSkill,
+        color: character.color,
+        badge: translate(language, `knockout.round.${roundKey(knockout.teams, knockout.round)}`),
+      };
+    }
     if (isPassPlay) {
       return {
         id: 'passplay',
@@ -297,7 +338,7 @@ export default function MatchScreen() {
           : divisionName(language, getDivision(rivals.division)),
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, difficulty, rivals.division, matchSeed, isPassPlay, language]);
+  }, [mode, difficulty, rivals.division, matchSeed, isPassPlay, language, ghost, knockout]);
 
   const ballSkin = SKINS.find((s) => s.id === arcade.equippedBall) ?? SKINS[0];
   const myCupDesign = cupDesign(equippedCupSkin);
@@ -484,6 +525,33 @@ export default function MatchScreen() {
             coins: result.coins,
           }),
           badgeLabel: `${result.wins}`,
+          color: colors.gold,
+        });
+      }
+    } else if (mode === 'knockout') {
+      const result = knockoutReport(won);
+      arcadeRecordMatch(setup.id, won);
+      keepRecord();
+      // The run is over either way once the final is played, and over on any
+      // loss — so this screen never offers "next match" for a knockout. The
+      // tournament screen is where the bracket lives.
+      setRunFinished(result?.finished ?? true);
+      setResultNote(
+        result?.champion
+          ? t('knockout.wonPot', { coins: result.coins })
+          : won
+            ? t('knockout.throughTo', {
+                round: t(`knockout.round.${roundKey(knockout!.teams, knockout!.round + 1)}`),
+              })
+            : t('knockout.knockedOut', { stake: knockout?.stake ?? 0 })
+      );
+      if (result?.champion) {
+        addCelebration({
+          kind: 'trophy',
+          icon: 'trophy',
+          title: t('knockout.champion'),
+          subtitle: t('knockout.championSub', { coins: result.coins }),
+          badgeLabel: `${knockout?.teams ?? 4}`,
           color: colors.gold,
         });
       }
@@ -1082,7 +1150,17 @@ export default function MatchScreen() {
             </Text>
             <Text style={styles.resultBody}>{resultNote}</Text>
             <View style={styles.resultButtons}>
-              {mode === 'weekend' && runFinished ? null : (
+              {mode === 'knockout' ? (
+                // Never "next match" here: the next round is a different
+                // opponent from a bracket that lives on its own screen, and
+                // this button would otherwise re-run the round just played.
+                <GlowButton
+                  label={t('knockout.backToBracket')}
+                  size="sm"
+                  onPress={() => router.replace('/arcade/knockout')}
+                  style={styles.resultButton}
+                />
+              ) : mode === 'weekend' && runFinished ? null : (
                 <GlowButton
                   label={t('weekend.nextMatch')}
                   size="sm"

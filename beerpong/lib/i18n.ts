@@ -966,6 +966,173 @@ const STRINGS = {
   'skins.active': { de: 'Aktiv', en: 'Active' },
   'skins.equip': { de: 'Ausrüsten', en: 'Equip' },
   'skins.buy': { de: '{cost} Coins', en: '{cost} coins' },
+  'skins.cups': { de: 'Becher', en: 'Cups' },
+
+  'reel.title': { de: 'Video des Abends', en: 'The evening, in one video' },
+  'reel.cardTitle': { de: 'BEERPONG', en: 'BEERPONG' },
+  'reel.body': {
+    de: 'Aus {clips} Clips wird ein Video — jeweils die letzten Sekunden, in denen der Becher fällt. Das dauert etwa {seconds} Sekunden, weil die Clips dafür einmal abgespielt und neu aufgenommen werden müssen. Das Handy muss dabei an bleiben und dieser Bildschirm offen.',
+    en: 'One video out of {clips} clips — the last seconds of each, where the cup goes down. It takes about {seconds} seconds, because the clips have to be played through and re-recorded. Keep the phone awake and this screen open while it runs.',
+  },
+  'reel.make': { de: 'Video schneiden', en: 'Cut the video' },
+  'reel.again': { de: 'Neu schneiden', en: 'Cut it again' },
+  'reel.building': { de: 'Clip {clip} von {of} …', en: 'Clip {clip} of {of}…' },
+  'reel.saveHow': {
+    de: 'Zum Speichern oder Teilen: lange auf das Video tippen → „Video sichern". Es heißt {name}.',
+    en: 'To save or share it: press and hold the video → "Save video". It is called {name}.',
+  },
+  'reel.failed': {
+    de: 'Hat nicht geklappt. Meistens liegt es daran, dass der Bildschirm zwischendurch aus war — noch einmal probieren und das Handy wach lassen.',
+    en: 'That did not work. Usually it means the screen went off part-way through — try again and keep the phone awake.',
+  },
+
+  'party.title': { de: 'Live-Anzeige', en: 'Live scoreboard' },
+  'party.hubTitle': { de: 'Anzeige teilen', en: 'Share the score' },
+  'party.how': {
+    de: 'Handykamera drauf halten, Link öffnen — fertig. Wer den Code scannt, sieht den Spielstand live auf dem eigenen Handy. Nichts zu installieren, nichts anzumelden.',
+    en: 'Point a phone camera at it and open the link. Whoever scans it sees the score live on their own phone. Nothing to install, nothing to sign into.',
+  },
+  'party.connecting': { de: 'Verbinde …', en: 'Connecting…' },
+  'party.watching1': { de: '1 Person schaut zu', en: '1 person watching' },
+  'party.watchingN': { de: '{count} Personen schauen zu', en: '{count} people watching' },
+  'party.honest': {
+    de: 'Gezählt wird weiter nur auf diesem Handy. Die anderen sehen zu und können nichts ändern — das ist die einzige Aufteilung, die stimmen kann, weil nur dieses Handy auf den Tisch schaut.',
+    en: 'The counting still happens only on this phone. The others watch and can change nothing — the only arrangement that can be true, since this is the phone pointed at the table.',
+  },
+  'party.nativeNote': {
+    de: 'In der installierten App zeigt der Code auf die App selbst: Wer sie schon hat, landet direkt in der Anzeige. Wer nicht, braucht die Web-Adresse. Am zuverlässigsten ist es, die Anzeige aus der Web-Version zu teilen.',
+    en: 'In the installed app the code points at the app itself, so it opens for anybody who already has it and does nothing for anybody who does not. Sharing from the web version is the reliable way.',
+  },
+  'party.noServer': { de: 'Kein Server eingerichtet', en: 'No server configured' },
+  'party.noServerBody': {
+    de: 'Die Live-Anzeige braucht die Server-Adresse (EXPO_PUBLIC_ONLINE_URL) — dieselbe wie der Online-Modus. Siehe README.',
+    en: 'The live scoreboard needs the server address (EXPO_PUBLIC_ONLINE_URL) — the same one the online mode uses. See the README.',
+  },
+  'party.live': { de: 'Live', en: 'Live' },
+  'party.hostGone': { de: 'Zähl-Handy weg', en: 'The scoring phone has gone' },
+  'party.full': { de: 'Zu viele Zuschauer', en: 'Too many watchers' },
+  'party.badCode': { de: 'Code passt nicht', en: 'Not a code' },
+  'party.badCodeBody': {
+    de: 'Dieser Link führt nirgendwo hin. Scanne den Code noch einmal vom Handy, das mitzählt.',
+    en: 'This link goes nowhere. Scan the code again from the phone that is counting.',
+  },
+  'party.waiting': {
+    de: 'Warte auf den Spielstand vom Handy, das mitzählt.',
+    en: 'Waiting for the score from the phone that is counting.',
+  },
+  'party.record': {
+    de: '{hits}/{throws} · {percent}%',
+    en: '{hits}/{throws} · {percent}%',
+  },
+  'party.turn': { de: 'ist dran', en: 'to throw' },
+  'party.won': { de: 'Gewonnen', en: 'Won' },
+  'party.watcherNote': {
+    de: 'Du schaust nur zu. Gezählt wird am Tisch.',
+    en: 'You are watching. The counting happens at the table.',
+  },
+  'party.openApp': { de: 'App öffnen', en: 'Open the app' },
+
+  'ghost.title': { de: 'Echte Gegner', en: 'Real opponents' },
+  'ghost.badge': { de: 'Aus echten Spielen', en: 'From real games' },
+  'ghost.tagline': {
+    de: 'Spiele gegen die Trefferquote von Leuten am echten Tisch',
+    en: 'Play the hit rate of people at a real table',
+  },
+  'ghost.explain': {
+    // No **bold** here: that markup is the manual's, and only the manual
+    // renders it. On this screen it would show as literal asterisks, which is
+    // what the first screenshot of it did.
+    de: 'Die Kamera zählt bei jedem echten Spiel mit, wie oft jedes Team trifft. Daraus wird hier ein Arcade-Gegner, der genauso oft trifft wie die Person am Tisch. Das ist kein Abbild der Person — nur ihre Quote und ihr Name. Und es ist kein Online-Spiel: Die Person selbst spielt nicht mit, ihr Handy weiß nichts davon.',
+    en: 'The camera counts how often each team scores in every real game. That becomes an arcade opponent here who sinks cups as often as the person at the table did. It is not a copy of the person — only their rate and their name. It is not an online match either: they are not playing, and their phone knows nothing about it.',
+  },
+  'ghost.empty': {
+    de: 'Noch niemand da. Spiele ein Spiel im Kamera-Modus zu Ende, dann steht hier jedes Team, das mitgespielt hat.',
+    en: 'Nobody here yet. Finish a game in camera mode and every team that played will appear here.',
+  },
+  'ghost.record': {
+    de: '{hits}/{throws} Becher · {percent}% · {games} Spiele',
+    en: '{hits}/{throws} cups · {percent}% · {games} games',
+  },
+  'ghost.needsMore': {
+    de: 'Noch {left} Würfe, dann spielbar',
+    en: '{left} more throws and they can be played',
+  },
+  'ghost.why': {
+    de: 'Ab {min} Würfen — etwa zwei Spielen — wird jemand spielbar. Ehrlich dazu: Auch dann ist die Quote noch ungenau. Wer in Wahrheit 30 % trifft, landet nach {min} Würfen irgendwo zwischen 15 % und 45 %. Das wird mit jedem Spiel besser, und der Gegner wird mit.',
+    en: 'From {min} throws — about two games — somebody becomes playable. Honestly, though: the rate is still rough there. A true 30% shooter lands anywhere between 15% and 45% after {min} throws. It sharpens with every game, and so does the opponent.',
+  },
+  'ghost.play': { de: 'Gegen {name} spielen', en: 'Play {name}' },
+  'ghost.streak': { de: 'Beste Serie: {streak}', en: 'Best run: {streak}' },
+  'ghost.hubSubtitle': {
+    de: '{count} aus echten Spielen',
+    en: '{count} from real games',
+  },
+
+  'knockout.title': { de: 'Turnier', en: 'Knockout' },
+  'knockout.tagline': {
+    de: 'Einsatz zahlen, Bracket gewinnen, Topf mitnehmen',
+    en: 'Pay in, win the bracket, take the pot',
+  },
+  'knockout.round.final': { de: 'Finale', en: 'Final' },
+  'knockout.round.semi': { de: 'Halbfinale', en: 'Semi-final' },
+  'knockout.round.quarter': { de: 'Viertelfinale', en: 'Quarter-final' },
+  'knockout.size': { de: '{teams} Teams', en: '{teams} teams' },
+  'knockout.sizeNote': {
+    de: '{rounds} Runden · Topf {pot} Coins',
+    en: '{rounds} rounds · pot {pot} coins',
+  },
+  'knockout.stake': { de: 'Einsatz', en: 'Stake' },
+  'knockout.enter': { de: 'Für {stake} Coins antreten', en: 'Enter for {stake} coins' },
+  'knockout.tooPoor': { de: 'Nicht genug Coins', en: 'Not enough coins' },
+  'knockout.explain': {
+    de: 'Du zahlst den Einsatz einmal. Gewinnst du jede Runde bis zum Finale, bekommst du den ganzen Topf — das ist dein Einsatz mal Teamanzahl. Verlierst du eine Runde, ist der Einsatz weg. Die Gegner werden vorher ausgelost und stehen fest: Du siehst also, wer im Finale wartet, bevor du dich entscheidest.',
+    en: 'You pay the stake once. Win every round through to the final and the whole pot is yours — your stake times the number of teams. Lose a round and the stake is gone. The field is drawn before you decide, so you can see who is waiting in the final.',
+  },
+  'knockout.walkout': {
+    de: 'Ein abgebrochenes Match zählt als Niederlage. Wer aus einem Finale aussteigt, das schlecht läuft, hat das Turnier verloren — sonst könnte man jede Runde so lange wiederholen, bis sie passt.',
+    en: 'A match you walk out of counts as a loss. Quitting a final that is going badly loses the tournament — otherwise every round could simply be replayed until it went your way.',
+  },
+  'knockout.forfeited': {
+    de: 'Das letzte Turnier wurde mitten im Match verlassen und gilt als verloren.',
+    en: 'The last tournament was left mid-match and counts as lost.',
+  },
+  'knockout.running': { de: 'Laufendes Turnier', en: 'Tournament in progress' },
+  'knockout.next': { de: 'Jetzt: {round} gegen {name}', en: 'Now: {round} against {name}' },
+  'knockout.play': { de: '{round} spielen', en: 'Play the {round}' },
+  'knockout.give': { de: 'Aufgeben — Einsatz verfällt', en: 'Give up — the stake is lost' },
+  'knockout.bracket': { de: 'Das Feld', en: 'The field' },
+  'knockout.wonPot': { de: 'Turnier gewonnen · +{coins} Coins', en: 'Tournament won · +{coins} coins' },
+  'knockout.throughTo': { de: 'Weiter ins {round}', en: 'Through to the {round}' },
+  'knockout.knockedOut': {
+    de: 'Ausgeschieden · {stake} Coins Einsatz weg',
+    en: 'Knocked out · {stake} coins staked and lost',
+  },
+  'knockout.champion': { de: 'Turniersieg', en: 'Tournament won' },
+  'knockout.championSub': {
+    de: 'Das ganze Bracket gewonnen — {coins} Coins.',
+    en: 'The whole bracket — {coins} coins.',
+  },
+  'knockout.backToBracket': { de: 'Zum Turnier', en: 'Back to the bracket' },
+  'skins.weekly': { de: 'Diese Woche', en: 'This week' },
+  'skins.rotationHours': {
+    de: 'Neue Auswahl in {hours} Std.',
+    en: 'New selection in {hours} h',
+  },
+  'skins.rotationDays': {
+    de: 'Neue Auswahl in {days} Tagen',
+    en: 'New selection in {days} days',
+  },
+  'skins.cupsNote': {
+    de: 'Drei Designs pro Woche, für Coins. Alle zwölf kommen im Monat einmal dran — was du diese Woche verpasst, ist nicht weg. Die Länderflaggen gibt es weiterhin nur im Becher-Shop für echtes Geld.',
+    en: 'Three designs a week, for coins. All twelve come round once a month, so what you miss this week is not gone. The country flags stay in the cup shop, for money.',
+  },
+  'skins.collection': { de: 'Deine Sammlung', en: 'Your collection' },
+  'skins.soon': { de: 'In {weeks} Wochen', en: 'In {weeks} weeks' },
+  'skins.soonNext': { de: 'Nächste Woche', en: 'Next week' },
+  'skins.locked': {
+    de: 'Noch nicht im Angebot',
+    en: 'Not on offer yet',
+  },
 
   'skin.ball-classic': { de: 'Der Standardball. Immer verfügbar.', en: 'The default ball. Always available.' },
   'skin.ball-neon': { de: 'Leuchtet in sattem Neongrün.', en: 'Glows in deep neon green.' },
