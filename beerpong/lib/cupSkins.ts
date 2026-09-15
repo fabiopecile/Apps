@@ -387,18 +387,41 @@ export const EARNED_CUP_DESIGNS: CupDesign[] = [
     flag: '👑',
     accent: '#FFE27A',
     /**
-     * Gold on near-black, split down the middle rather than faded.
+     * A gold cup with a black ring under the rim.
      *
-     * It has to be unmistakable at the far end of a table and unmistakably
-     * *not* `cup-champion`, which is the 3200-coin gold fade — a reward that
-     * looks like something buyable is not a reward. A hard edge reads as
-     * deliberate where a gradient reads as pretty.
+     * Three findings went into this, all of them from rendering it on the
+     * table rather than reading the data:
+     *
+     * **Horizontal, not vertical.** Vertical stripes run *around* a cup, so
+     * where they end up facing is a matter of how the rack happens to be
+     * turned — two attempts came out with both black bands hidden round the
+     * side and the cup reading as plain gold. A band that runs round at one
+     * height is visible from wherever you are standing, which for a rack of
+     * ten cups seen at an angle is the only kind that can be relied on.
+     *
+     * **Deeper gold than the theme's `#FFD23D`.** That one came out cream on
+     * the felt: it is very light to begin with, and a lit surface only goes
+     * lighter. Austria's `#ED2939` beside it stayed unmistakably red, which is
+     * what said the renderer was fine and the pigment was wrong.
+     *
+     * **A dark band it needs, not decoration.** The beer is `#ffc542`, near
+     * enough to gold that an all-gold cup and its contents merged into one
+     * shape. The black ring is what gives it an edge again.
+     *
+     * Unmistakably *not* `cup-champion`, the 3200-coin gold fade: hard edges
+     * and flat colour where that one is a gradient. A reward that looks like
+     * something buyable is not a reward.
      */
     pattern: {
       kind: 'stripes',
-      direction: 'vertical',
-      colours: ['#0A0A0A', '#FFD23D', '#0A0A0A', '#FFE27A'],
-      weights: [3, 1, 3, 1],
+      direction: 'horizontal',
+      // Listed rim first. Measured, not assumed: a throwaway cup of four
+      // saturated bands was rendered in a real match and came out red, green,
+      // blue, white from the rim down, which settles both the order and the
+      // fact that the preview (which stacks the list top-first) already agrees
+      // with the table.
+      colours: ['#F0BE3A', '#0A0A0A', '#D99A12'],
+      weights: [2, 1, 10],
     },
   },
 ];
