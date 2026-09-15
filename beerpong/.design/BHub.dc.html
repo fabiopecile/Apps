@@ -1,0 +1,139 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Staatliches&family=Barlow+Semi+Condensed:wght@400;500;600;700&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #E23D2E; } a:hover { color: #F0A830; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #16120F; background-image: radial-gradient(130% 55% at 15% 0%, rgba(226, 61, 46, 0.18) 0%, rgba(22,18,15,0) 60%), radial-gradient(90% 40% at 100% 100%, rgba(240, 168, 48, 0.12) 0%, rgba(22,18,15,0) 65%); font-family: 'Barlow Semi Condensed', sans-serif; color: #F4EDE0; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- masthead, like a bar chalkboard -->
+  <div style="padding: 22px 22px 0 22px;">
+    <div style="display: flex; align-items: flex-start; gap: 12px;">
+      <div style="flex-grow: 1;">
+        <div style="font-family: Staatliches, sans-serif; font-size: 40px; line-height: 38px; letter-spacing: 1.5px; color: #F4EDE0;">BEER<span style="color: #E23D2E;">PONG</span></div>
+        <div style="display: flex; align-items: center; gap: 7px; margin-top: 7px;">
+          <div style="height: 2px; width: 26px; background: #F0A830;"></div>
+          <span style="font-size: 12px; letter-spacing: 2.2px; color: #A89887; font-weight: 600;">HAUS &middot; LEVEL 1</span>
+        </div>
+      </div>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 7px;">
+        <div style="display: flex; align-items: center; gap: 6px; height: 32px; padding: 0 13px; border-radius: 3px; background: #F0A830;">
+          <span style="font-family: Staatliches, sans-serif; font-size: 17px; color: #16120F; letter-spacing: 0.5px;">100</span>
+          <span style="font-size: 11px; letter-spacing: 1px; color: #6B4A12; font-weight: 700;">COINS</span>
+        </div>
+        <div style="width: 32px; height: 32px; border-radius: 3px; border: 1.5px solid rgba(244,237,224,0.25); display: flex; align-items: center; justify-content: center;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.6" stroke="#A89887" stroke-width="2"/><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6" stroke="#A89887" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- the hero: a poster panel, not a card -->
+  <div style="margin: 18px 22px 0 22px; position: relative; border-radius: 4px; background: #E23D2E; overflow: hidden;">
+    <svg style="position: absolute; right: -14px; bottom: -22px; opacity: 0.22;" width="170" height="170" viewBox="0 0 120 120" fill="none">
+      <path d="M28 22 L38 96 L82 96 L92 22 Z" fill="#16120F"/>
+      <ellipse cx="60" cy="22" rx="32" ry="10" fill="#16120F"/>
+    </svg>
+    <div style="position: relative; padding: 18px 20px 20px 20px;">
+      <div style="font-size: 11px; letter-spacing: 2.4px; font-weight: 700; color: rgba(255,255,255,0.72);">HEUTE ABEND</div>
+      <div style="font-family: Staatliches, sans-serif; font-size: 42px; line-height: 40px; letter-spacing: 0.5px; margin-top: 8px; color: #FFF6EA;">AM TISCH<br>MITZÄHLEN</div>
+      <div style="font-size: 14px; color: rgba(255,246,234,0.82); margin-top: 9px; max-width: 220px; line-height: 19px;">Handy hinstellen, Kamera an &mdash; die App führt Cups, Serien und den Sieger.</div>
+      <div style="margin-top: 15px; display: inline-flex; align-items: center; gap: 9px; height: 46px; padding: 0 22px; border-radius: 3px; background: #16120F;">
+        <span style="font-family: Staatliches, sans-serif; font-size: 18px; letter-spacing: 1.4px; color: #F4EDE0;">SPIEL STARTEN</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M5 12h13M13 6l6 6-6 6" stroke="#F0A830" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- the menu, like a drinks list -->
+  <div style="padding: 20px 22px 0 22px;">
+    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 12px;">
+      <span style="font-family: Staatliches, sans-serif; font-size: 16px; letter-spacing: 2px; color: #F0A830;">ODER OHNE TISCH</span>
+      <div style="flex-grow: 1; height: 1px; background: rgba(244,237,224,0.16);"></div>
+    </div>
+
+    <div style="display: flex; flex-direction: column; gap: 0;">
+
+      <div style="display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid rgba(244,237,224,0.10);">
+        <div style="width: 34px; height: 34px; border-radius: 3px; background: rgba(226,61,46,0.16); display: flex; align-items: center; justify-content: center;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><rect x="4" y="4" width="16" height="16" rx="2.5" stroke="#E23D2E" stroke-width="2"/><rect x="9" y="9" width="6" height="6" rx="1" fill="#E23D2E"/></svg>
+        </div>
+        <div style="flex-grow: 1;">
+          <div style="font-family: Staatliches, sans-serif; font-size: 20px; letter-spacing: 0.6px;">OFFLINE VS. KI</div>
+          <div style="font-size: 12.5px; color: #A89887;">Zuletzt: Mittel</div>
+        </div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="#6E6155" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid rgba(244,237,224,0.10);">
+        <div style="width: 34px; height: 34px; border-radius: 3px; background: rgba(226,61,46,0.16); display: flex; align-items: center; justify-content: center;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="8.5" cy="9" r="3.1" stroke="#E23D2E" stroke-width="2"/><circle cx="16" cy="9" r="3.1" stroke="#E23D2E" stroke-width="2"/><path d="M3 19c0-2.7 2.4-4.2 5.5-4.2M13 19c0-2.7 2.4-4.2 5.5-4.2" stroke="#E23D2E" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div style="flex-grow: 1;">
+          <div style="font-family: Staatliches, sans-serif; font-size: 20px; letter-spacing: 0.6px;">PASS &amp; PLAY</div>
+          <div style="font-size: 12.5px; color: #A89887;">Zwei Spieler, ein Handy</div>
+        </div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="#6E6155" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; padding: 13px 0; border-bottom: 1px solid rgba(244,237,224,0.10);">
+        <div style="width: 34px; height: 34px; border-radius: 3px; background: rgba(226,61,46,0.16); display: flex; align-items: center; justify-content: center;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="8.5" stroke="#E23D2E" stroke-width="2"/><path d="M3.5 12h17M12 3.5c2.5 2.5 2.5 14.5 0 17M12 3.5c-2.5 2.5-2.5 14.5 0 17" stroke="#E23D2E" stroke-width="1.7"/></svg>
+        </div>
+        <div style="flex-grow: 1;">
+          <div style="font-family: Staatliches, sans-serif; font-size: 20px; letter-spacing: 0.6px;">DIVISION RIVALS</div>
+          <div style="font-size: 12.5px; color: #A89887;">Division 10 &middot; 0 von 3 Siegen</div>
+        </div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="#6E6155" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; padding: 13px 0;">
+        <div style="width: 34px; height: 34px; border-radius: 3px; background: rgba(240,168,48,0.16); display: flex; align-items: center; justify-content: center;">
+          <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M7 4h10v6a5 5 0 01-10 0V4z" stroke="#F0A830" stroke-width="2" stroke-linejoin="round"/><path d="M9.5 20h5M12 15v5" stroke="#F0A830" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div style="flex-grow: 1;">
+          <div style="font-family: Staatliches, sans-serif; font-size: 20px; letter-spacing: 0.6px;">TURNIER</div>
+          <div style="font-size: 12.5px; color: #A89887;">Topf: 1200 Coins</div>
+        </div>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="#6E6155" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <!-- lucky shot as a stamped ticket -->
+  <div style="margin: 0 22px 16px 22px; display: flex; align-items: center; gap: 12px; padding: 13px 16px; border-radius: 3px; border: 1.5px dashed rgba(240,168,48,0.5);">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 3l2.6 5.6 6.1.8-4.5 4.2 1.2 6L12 16.8 6.6 19.6l1.2-6L3.3 9.4l6.1-.8L12 3z" fill="#F0A830"/></svg>
+    <div style="flex-grow: 1;">
+      <div style="font-family: Staatliches, sans-serif; font-size: 17px; letter-spacing: 0.8px; color: #F0A830;">LUCKY SHOT</div>
+      <div style="font-size: 12px; color: #A89887;">Ein Wurf, ein goldener Becher</div>
+    </div>
+    <div style="font-family: Staatliches, sans-serif; font-size: 13px; letter-spacing: 1.2px; color: #16120F; background: #F0A830; padding: 4px 10px; border-radius: 2px;">FREI</div>
+  </div>
+
+  <!-- tab bar -->
+  <div style="display: flex; border-top: 1px solid rgba(244,237,224,0.12); background: #100D0B; padding: 9px 0 16px 0;">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="18" height="13" rx="2.6" stroke="#E23D2E" stroke-width="2"/><circle cx="12" cy="13.5" r="3.6" stroke="#E23D2E" stroke-width="2"/><path d="M9 7l1.4-2.5h3.2L15 7" stroke="#E23D2E" stroke-width="2" stroke-linejoin="round"/></svg>
+      <span style="font-family: Staatliches, sans-serif; font-size: 12px; letter-spacing: 1.6px; color: #E23D2E;">TISCH</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+      <svg width="21" height="21" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="7" width="19" height="10" rx="5" stroke="#6E6155" stroke-width="2"/><path d="M7.5 10.5v3M6 12h3M16 11h.01M18 13.5h.01" stroke="#6E6155" stroke-width="2.1" stroke-linecap="round"/></svg>
+      <span style="font-family: Staatliches, sans-serif; font-size: 12px; letter-spacing: 1.6px; color: #6E6155;">ARCADE</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
