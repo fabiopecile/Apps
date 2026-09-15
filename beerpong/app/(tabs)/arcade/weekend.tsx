@@ -12,8 +12,11 @@ import {
   WEEKEND_TIERS,
   WEEKEND_UNLOCK_DIVISION,
   getDivision,
+  weekendAvailability,
   weekendTierFor,
 } from '@/lib/competition';
+import { PERFECT_WEEKEND_CUP, cupDesign } from '@/lib/cupSkins';
+import { CupPreview } from '@/components/arcade/CupPreview';
 import { useBeerpongStore } from '@/lib/store';
 import { divisionName, useLanguage, useT } from '@/lib/i18n';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
@@ -21,6 +24,7 @@ import { colors, fonts, glow, radius, spacing } from '@/theme';
 export default function WeekendScreen() {
   const rivals = useBeerpongStore((s) => s.rivals);
   const weekend = useBeerpongStore((s) => s.weekend);
+  const ownedCupSkins = useBeerpongStore((s) => s.ownedCupSkins);
   const startWeekendRun = useBeerpongStore((s) => s.startWeekendRun);
   const resetWeekendRun = useBeerpongStore((s) => s.resetWeekendRun);
   const t = useT();
@@ -29,6 +33,15 @@ export default function WeekendScreen() {
   const unlocked = rivals.division <= WEEKEND_UNLOCK_DIVISION;
   const projected = weekendTierFor(weekend.wins);
   const remaining = WEEKEND_MATCHES - weekend.played;
+  /**
+   * Worked out once per render from the clock rather than kept in state.
+   *
+   * A stored "is it the weekend" would be wrong the moment somebody leaves the
+   * app open past midnight on Sunday, which is exactly when it matters.
+   */
+  const league = weekendAvailability(weekend, new Date());
+  const perfectDesign = cupDesign(PERFECT_WEEKEND_CUP);
+  const hasPerfectCup = ownedCupSkins.includes(PERFECT_WEEKEND_CUP);
 
   const startRun = () => {
     startWeekendRun();
@@ -68,8 +81,54 @@ export default function WeekendScreen() {
                 style={styles.lockedButton}
               />
             </View>
+          ) : !league.open ? (
+            /* Monday to Thursday. Not a failure state and not dressed as one:
+               the league is an event, and an event you cannot have right now
+               is the reason it is worth having at all. */
+            <View style={styles.closedCard}>
+              <Ionicons name="calendar-outline" size={28} color={colors.reward} />
+              <Text style={styles.closedTitle} selectable={false}>
+                {t('weekend.closed.title')}
+              </Text>
+              <Text style={styles.closedCountdown} selectable={false}>
+                {league.daysAway === 1
+                  ? t('weekend.closed.days1')
+                  : t('weekend.closed.daysN', { days: league.daysAway })}
+              </Text>
+              <Text style={styles.closedBody} selectable={false}>
+                {t('weekend.closed.body')}
+              </Text>
+              <Text style={styles.closedHint} selectable={false}>
+                {t('weekend.closed.meanwhile')}
+              </Text>
+            </View>
+          ) : league.runExpired ? (
+            /* A run left behind in a weekend that has ended. Said plainly,
+               including what was and was not lost — a run that vanishes with
+               no explanation reads as a bug. */
+            <View style={styles.closedCard}>
+              <Ionicons name="hourglass-outline" size={28} color={colors.textSecondary} />
+              <Text style={styles.closedTitle} selectable={false}>
+                {t('weekend.expired.title')}
+              </Text>
+              <Text style={styles.closedBody} selectable={false}>
+                {t('weekend.expired.body')}
+              </Text>
+              <GlowButton
+                label={t('weekend.expired.cta')}
+                size="lg"
+                onPress={startRun}
+                style={styles.runButton}
+              />
+            </View>
           ) : (
             <View style={[styles.runCard, glow('soft', colors.gold)]}>
+              <View style={styles.openChip}>
+                <View style={styles.openDot} />
+                <Text style={styles.openChipText} selectable={false}>
+                  {t('weekend.open.chip')}
+                </Text>
+              </View>
               <Text style={styles.runTitle} selectable={false}>
                 {weekend.active ? t('weekend.runActive') : t('weekend.runNew')}
               </Text>
@@ -151,6 +210,46 @@ export default function WeekendScreen() {
                 </Reveal>
               );
             })}
+
+            {/* Above the coin tiers in worth, below them in the list, because
+                it is the only one that is not coins — and the only one that
+                cannot be had any other way. */}
+            <Reveal index={WEEKEND_TIERS.length} delay={120}>
+              <View
+                style={[
+                  styles.perfectRow,
+                  hasPerfectCup && { borderColor: perfectDesign.accent },
+                ]}
+              >
+                <CupPreview design={perfectDesign} size={44} />
+                <View style={{ flex: 1 }}>
+                  <View style={styles.perfectTitleRow}>
+                    <Text
+                      style={[styles.tierName, { color: perfectDesign.accent }]}
+                      selectable={false}
+                    >
+                      {t('weekend.perfect.label')}
+                    </Text>
+                    <View style={styles.notForSaleChip}>
+                      <Text style={styles.notForSaleText} selectable={false}>
+                        {t('skins.earnedOnly')}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text style={styles.tierMeta} selectable={false}>
+                    {hasPerfectCup
+                      ? t('weekend.perfect.owned', { count: weekend.perfectRuns })
+                      : t('weekend.perfect.reward', {
+                          matches: WEEKEND_MATCHES,
+                          design: perfectDesign.name,
+                        })}
+                  </Text>
+                </View>
+                {hasPerfectCup ? (
+                  <Ionicons name="checkmark-circle" size={22} color={perfectDesign.accent} />
+                ) : null}
+              </View>
+            </Reveal>
           </View>
 
           <View style={styles.historyRow}>
@@ -181,6 +280,91 @@ function RunStat({ label, value, color }: { label: string; value: string; color:
 }
 
 const styles = StyleSheet.create({
+  closedCard: {
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.lg,
+    marginHorizontal: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.borderQuiet,
+    backgroundColor: colors.backgroundCard,
+  },
+  closedTitle: {
+    fontFamily: fonts.headingBlack,
+    fontSize: 20,
+    color: colors.textPrimary,
+    textAlign: 'center',
+  },
+  closedCountdown: {
+    fontFamily: fonts.numeric,
+    fontSize: 26,
+    color: colors.reward,
+  },
+  closedBody: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 13,
+    lineHeight: 19,
+    color: colors.textSecondary,
+    textAlign: 'center',
+  },
+  closedHint: {
+    fontFamily: fonts.bodyRegular,
+    fontSize: 12,
+    lineHeight: 17,
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+  openChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.you,
+    marginBottom: spacing.sm,
+  },
+  openDot: { width: 6, height: 6, borderRadius: 3, backgroundColor: colors.you },
+  openChipText: {
+    fontFamily: fonts.label,
+    fontSize: 11,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: colors.you,
+  },
+  perfectRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    padding: spacing.md,
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.borderQuiet,
+    backgroundColor: colors.backgroundCard,
+    marginTop: spacing.sm,
+  },
+  perfectTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  notForSaleChip: {
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderQuiet,
+  },
+  notForSaleText: {
+    fontFamily: fonts.label,
+    fontSize: 9,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
   container: { flex: 1, backgroundColor: colors.background },
   safe: { flex: 1 },
   header: {

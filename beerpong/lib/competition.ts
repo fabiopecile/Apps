@@ -199,6 +199,104 @@ export const ALL_DIVISIONS: Division[] = Array.from({ length: 10 }, (_, i) =>
 
 export const WEEKEND_MATCHES = 10;
 
+/**
+ * The Weekend League is open Friday, Saturday and Sunday. That is all.
+ *
+ * A mode called Weekend League that could be played on a Tuesday was a name
+ * that meant nothing. Shutting it for four days a week is what turns it into an
+ * event: it is worth more because you cannot have it whenever you like, and
+ * somebody who misses it has something to come back for.
+ *
+ * **Local time, deliberately.** The same reasoning as `weekStartOf` in
+ * `lib/entitlement.ts`: a game that starts at half past midnight on Sunday
+ * belongs to the weekend the player thinks they are in, not to the one UTC has
+ * already moved on from. Nobody playing beer pong at 00:30 accepts being told
+ * it is Monday somewhere.
+ *
+ * Sunday is 0 and Friday is 5 in `getDay()`, so the window is not a contiguous
+ * range and cannot be written as a comparison. That is exactly the kind of
+ * thing that gets "simplified" into a bug later, so it is a set.
+ */
+export const WEEKEND_DAYS: readonly number[] = [5, 6, 0];
+
+export function isWeekendOpen(now: Date): boolean {
+  return WEEKEND_DAYS.includes(now.getDay());
+}
+
+/**
+ * Which weekend it is, as a stable string.
+ *
+ * A run belongs to one weekend and dies with it, so the run has to carry a
+ * label that survives a phone being closed and reopened. It is keyed to the
+ * **Friday** the weekend started on, which is what makes Saturday and Sunday
+ * come out the same — the obvious alternative, keying on the date, would end a
+ * run at midnight on Saturday.
+ */
+export function weekendKeyOf(now: Date): string {
+  const day = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  // Sunday belongs to the Friday two days back; Friday and Saturday to
+  // themselves. Any other day has no weekend and gets the coming Friday, which
+  // no run can ever be started in.
+  const back = day.getDay() === 0 ? 2 : day.getDay() === 6 ? 1 : 0;
+  day.setDate(day.getDate() - back);
+  const month = String(day.getMonth() + 1).padStart(2, '0');
+  const date = String(day.getDate()).padStart(2, '0');
+  return `${day.getFullYear()}-${month}-${date}`;
+}
+
+/**
+ * Whole days until it opens again, counting today as zero when it is open.
+ *
+ * Days rather than hours on purpose: an hours-precise countdown wants a timer
+ * to stay true, and a screen that is open long enough for it to tick is a
+ * screen nobody is looking at. The same call the cup shop's rotation makes.
+ */
+export function daysUntilWeekend(now: Date): number {
+  if (isWeekendOpen(now)) return 0;
+  // Monday is 1 and Friday is 5, so it is simply the gap — the closed days are
+  // the only ones that reach here and they are contiguous.
+  return 5 - now.getDay();
+}
+
+export interface WeekendAvailability {
+  /** Friday, Saturday or Sunday. */
+  open: boolean;
+  /** Whole days until it opens. Zero while it is open. */
+  daysAway: number;
+  /** A run under way that still belongs to the weekend happening now. */
+  runLive: boolean;
+  /**
+   * A run left unfinished in a weekend that has since ended.
+   *
+   * It pays nothing. The per-match coins were already handed over match by
+   * match, so nothing is taken back — what is lost is the finishing bonus,
+   * which was never earned. Settling an unfinished run at whatever tier its
+   * wins reached would be worse than generous, it would be exploitable: three
+   * matches, three wins, collect Silver, repeat next weekend.
+   */
+  runExpired: boolean;
+}
+
+/**
+ * Everything a screen needs to know about the league right now, in one call.
+ *
+ * Pure, and takes the clock as an argument, so a Tuesday can be tested rather
+ * than waited for — the same discipline as `lib/entitlement.ts`.
+ */
+export function weekendAvailability(
+  run: { active: boolean; weekendKey: string },
+  now: Date
+): WeekendAvailability {
+  const open = isWeekendOpen(now);
+  const belongsToNow = open && run.weekendKey === weekendKeyOf(now);
+  return {
+    open,
+    daysAway: daysUntilWeekend(now),
+    runLive: run.active && belongsToNow,
+    runExpired: run.active && !belongsToNow,
+  };
+}
+
 export interface WeekendTier {
   minWins: number;
   nameKey: TranslationKey;
