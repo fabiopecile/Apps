@@ -142,11 +142,30 @@ function Lights() {
     <>
       {/* Three lights, and no more. Each one is work done for every lit pixel
           on screen, and the two point lights that used to sit over the racks
-          bought less than the rim light does. */}
-      <ambientLight intensity={0.42} color="#9fe092" />
-      <directionalLight position={[-2.4, 4.2, 2.6]} intensity={2.6} color="#e6ffd9" />
+          bought less than the rim light does.
+
+          The key light is **white**, and that is a correction rather than a
+          preference. It used to be `#e6ffd9` over a `#9fe092` ambient — a
+          strongly green rig, which was the right call back when a cup was one
+          flat neon colour and the green sold the felt. It is the wrong call now
+          that cups carry textures: multiplied by a green light, the gold
+          Perfect Weekend cup came out pale yellow-green and every country flag
+          lost its reds. A design shown in the shop in its own colours and on
+          the table in somebody else's is the shop lying.
+
+          The green is kept where it belongs — a weak fill and a cold rim — so
+          the table still reads as felt under a lamp. Compared side by side in a
+          real match before choosing. */}
+      <ambientLight intensity={0.5} color="#cfe3c8" />
+      {/* Intensity 1.15, not 2.5. The colour was only half the washout: at 2.5
+          over a 0.5 ambient, every lit face received three times the light it
+          could show, so any colour brighter than mid clipped towards white.
+          Gold went cream; the neon racks went mint. Both are visibly their own
+          colour again at this exposure, and the flat cups did not go dull —
+          they were being over-lit, not lit. */}
+      <directionalLight position={[-2.4, 4.2, 2.6]} intensity={1.15} color="#ffffff" />
       {/* A cold rim from behind, which is what keeps the cups off the felt. */}
-      <directionalLight position={[2.2, 1.8, -3.4]} intensity={1.1} color="#5effa0" />
+      <directionalLight position={[2.2, 1.8, -3.4]} intensity={0.5} color="#5effa0" />
     </>
   );
 }

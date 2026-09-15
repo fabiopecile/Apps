@@ -14,6 +14,7 @@ import {
   WEEKEND_MATCHES,
   WEEKEND_UNLOCK_DIVISION,
   getDivision,
+  weekendAvailability,
 } from '@/lib/competition';
 import {
   ACHIEVEMENTS,
@@ -60,6 +61,8 @@ export default function ArcadeHubScreen() {
    * of small wrongness that makes an app feel like it is not paying attention.
    */
   const played = arcade.totalThrows > 0;
+  /** Whether the league is open today, and whether a run is still alive. */
+  const league = weekendAvailability(weekend, new Date());
 
   // How many rewards are sitting there unclaimed — shown on the tasks card.
   const today = todayKey();
@@ -189,25 +192,32 @@ export default function ArcadeHubScreen() {
               />
             ) : null}
 
-            {/* Last in the section, because it is the one you cannot have. */}
+            {/* Last in the section, because most days it is the one you
+                cannot have. Two different reasons for that, and they are not
+                the same thing to a player: not good enough yet (climb), and
+                not today (come back Friday). */}
             <ModeRow
               icon="calendar"
               title={t('hub.weekend.title')}
               subtitle={
-                weekendUnlocked
-                  ? weekend.active
-                    ? t('hub.weekend.running', {
-                        played: weekend.played,
-                        matches: WEEKEND_MATCHES,
-                        wins: weekend.wins,
-                      })
-                    : t('hub.weekend.idle', { matches: WEEKEND_MATCHES })
-                  : t('hub.weekend.locked', { division: WEEKEND_UNLOCK_DIVISION })
+                !weekendUnlocked
+                  ? t('hub.weekend.locked', { division: WEEKEND_UNLOCK_DIVISION })
+                  : !league.open
+                    ? league.daysAway === 1
+                      ? t('hub.weekend.closed1')
+                      : t('hub.weekend.closedN', { days: league.daysAway })
+                    : league.runLive
+                      ? t('hub.weekend.running', {
+                          played: weekend.played,
+                          matches: WEEKEND_MATCHES,
+                          wins: weekend.wins,
+                        })
+                      : t('hub.weekend.idle', { matches: WEEKEND_MATCHES })
               }
               href="/(tabs)/arcade/weekend"
               accent={colors.reward}
               index={5}
-              locked={!weekendUnlocked}
+              locked={!weekendUnlocked || !league.open}
             />
           </View>
 

@@ -12,8 +12,9 @@ import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
 import { BallArt } from '@/components/arcade/BallArt';
 import { CupPreview } from '@/components/arcade/CupPreview';
-import { COIN_CUP_DESIGNS } from '@/lib/cupSkins';
+import { COIN_CUP_DESIGNS, EARNED_CUP_DESIGNS } from '@/lib/cupSkins';
 import { hoursUntilRotation, weeklyOffer, weeksUntilOffered } from '@/lib/cupShop';
+import { WEEKEND_MATCHES } from '@/lib/competition';
 import { useFeedback } from '@/lib/feedback';
 import { SKINS, type SkinType } from '@/lib/skins';
 import { useBeerpongStore } from '@/lib/store';
@@ -279,11 +280,83 @@ function CupShelf() {
           );
         })}
       </View>
+
+      {/* Its own section, below the collection and clearly apart from it.
+          Putting it in the grid would make it look like the twelfth pattern
+          that happens to be locked — the whole point is that it is not on the
+          same shelf, because no amount of coins reaches it. */}
+      <SectionLabel>{t('skins.earned')}</SectionLabel>
+      <View style={styles.cupRow}>
+        {EARNED_CUP_DESIGNS.map((design) => {
+          const isOwned = owned.includes(design.id);
+          return (
+            <View key={design.id} style={styles.earnedCardWrap}>
+              <Card
+                style={[styles.cupCard, !isOwned && styles.cupCardDim]}
+                highlighted={equipped === design.id}
+              >
+                <View style={[styles.cupSwatch, { borderColor: colors.borderFaint }]}>
+                  <CupPreview design={design} size={42} />
+                </View>
+                <Text style={styles.skinName}>{design.name}</Text>
+                <View style={styles.notForSaleChip}>
+                  <Text style={styles.notForSaleText} selectable={false}>
+                    {t('skins.earnedOnly')}
+                  </Text>
+                </View>
+                {isOwned ? (
+                  equipped === design.id ? (
+                    <View style={styles.equippedBadge}>
+                      <Ionicons name="checkmark-circle" size={14} color={colors.neon} />
+                      <Text style={styles.equippedText}>{t('skins.active')}</Text>
+                    </View>
+                  ) : (
+                    <GlowButton
+                      label={t('skins.equip')}
+                      variant="outline"
+                      size="sm"
+                      onPress={() => {
+                        feedback.tap();
+                        equipCupSkin(design.id);
+                      }}
+                    />
+                  )
+                ) : (
+                  <Text style={styles.soon}>
+                    {t('skins.earnHow.perfect', { matches: WEEKEND_MATCHES })}
+                  </Text>
+                )}
+              </Card>
+            </View>
+          );
+        })}
+      </View>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
+  /** Wider than a collection tile: it carries a sentence, not a countdown. */
+  earnedCardWrap: {
+    width: '100%',
+    marginBottom: spacing.sm,
+  },
+  notForSaleChip: {
+    alignSelf: 'center',
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.borderFaint,
+    marginTop: 2,
+  },
+  notForSaleText: {
+    fontFamily: fonts.label,
+    fontSize: 9,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    color: colors.textMuted,
+  },
   container: { flex: 1, backgroundColor: colors.background },
   safe: { flex: 1 },
   header: {

@@ -2,7 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { DEFAULT_BALL_SKIN, DEFAULT_TABLE_SKIN, SKINS } from './skins';
-import { DEFAULT_CUP_SKIN } from './cupSkins';
+import { DEFAULT_CUP_SKIN, PERFECT_WEEKEND_CUP } from './cupSkins';
 import { coinPrice, weeklyOffer } from './cupShop';
 import { LEAGUE_OPPONENTS } from './opponents';
 import {
@@ -49,6 +49,8 @@ import {
   TOP_DIVISION,
   WEEKEND_MATCHES,
   getDivision,
+  weekendAvailability,
+  weekendKeyOf,
   weekendTierFor,
   type AiDifficulty,
 } from './competition';
@@ -122,6 +124,20 @@ interface WeekendState {
   wins: number;
   bestWins: number;
   runsCompleted: number;
+  /**
+   * The weekend this run belongs to, as `weekendKeyOf` writes it.
+   *
+   * A run dies with its weekend. Without this the app could not tell a run
+   * paused on Sunday evening from one resumed the following Wednesday, and the
+   * whole point of a weekend league is that it is a weekend.
+   *
+   * Empty on a save from before the window existed, which reads as "no run",
+   * and that is the right answer for those: they were started in a world where
+   * any day counted.
+   */
+  weekendKey: string;
+  /** Perfect runs finished, all {@link WEEKEND_MATCHES} of them won. */
+  perfectRuns: number;
 }
 
 export interface RivalsOutcome {
@@ -142,6 +158,21 @@ export interface WeekendOutcome {
   finished: boolean;
   coins: number;
   tierKey?: TranslationKey;
+  /**
+   * The cup design a flawless run just handed over, if this was one.
+   *
+   * Carried out of the store rather than left for the screen to work out, so
+   * there is one place that decides what a perfect run is. A screen that
+   * recomputed `wins === 10` would be a second definition waiting to disagree.
+   */
+  awardedCupId?: string;
+  /**
+   * The run's weekend had ended, so nothing was counted.
+   *
+   * Distinct from a loss: the player did not fail, the window closed under
+   * them, and the screen owes them that difference in words.
+   */
+  expired?: boolean;
 }
 
 export interface DailyProgress {
@@ -912,36 +943,97 @@ export const useBeerpongStore = create<BeerpongStore>()(
           };
         }),
 
-      weekend: { active: false, played: 0, wins: 0, bestWins: 0, runsCompleted: 0 },
+      weekend: {
+        active: false,
+        played: 0,
+        wins: 0,
+        bestWins: 0,
+        runsCompleted: 0,
+        weekendKey: '',
+        perfectRuns: 0,
+      },
 
       startWeekendRun: () =>
-        set((s) => ({ weekend: { ...s.weekend, active: true, played: 0, wins: 0 } })),
+        set((s) => ({
+          weekend: {
+            ...s.weekend,
+            active: true,
+            played: 0,
+            wins: 0,
+            // Stamped at the start rather than checked at the end: the run
+            // belongs to the weekend it began in, even if the player is still
+            // going at one in the morning.
+            weekendKey: weekendKeyOf(new Date()),
+          },
+        })),
 
       recordWeekendMatch: (won) => {
         const previous = get().weekend;
+        /**
+         * The rule enforced here rather than on a screen.
+         *
+         * The reachable hole otherwise: a run started at 23:50 on Sunday, and
+         * the player keeps tapping "next match" past midnight. Every screen
+         * guards its own buttons, but a run that stayed countable after its
+         * weekend ended could be walked to a perfect ten on a Monday — which
+         * would hand out the one cup design that is supposed to be unbuyable.
+         *
+         * So a dead run counts nothing: no coins, no XP, no progress. The
+         * outcome says `expired` and the screen explains it.
+         */
+        if (!weekendAvailability(previous, new Date()).runLive) {
+          return {
+            won,
+            played: previous.played,
+            wins: previous.wins,
+            finished: false,
+            coins: 0,
+            expired: true,
+          };
+        }
         const played = previous.played + 1;
         const wins = previous.wins + (won ? 1 : 0);
         const finished = played >= WEEKEND_MATCHES;
         const tier = finished ? weekendTierFor(wins) : undefined;
         const coins = (won ? 60 : 15) + (tier ? tier.coins : 0);
+        /**
+         * Every match of the run won.
+         *
+         * Checked against `WEEKEND_MATCHES` rather than a literal ten, and
+         * against `played` too: a run that somehow reached ten wins in eleven
+         * matches is not perfect, and neither is one where both numbers drifted.
+         */
+        const perfect = finished && wins === WEEKEND_MATCHES && played === WEEKEND_MATCHES;
+        const alreadyOwned = get().ownedCupSkins.includes(PERFECT_WEEKEND_CUP);
+        const awardedCupId = perfect && !alreadyOwned ? PERFECT_WEEKEND_CUP : undefined;
 
         set((s) => ({
           weekend: {
+            ...s.weekend,
             active: !finished,
             played,
             wins,
             bestWins: Math.max(s.weekend.bestWins, wins),
             runsCompleted: s.weekend.runsCompleted + (finished ? 1 : 0),
+            perfectRuns: s.weekend.perfectRuns + (perfect ? 1 : 0),
           },
+          // The design is handed over once and then kept. A second perfect run
+          // still counts in `perfectRuns` — it is an achievement worth a
+          // number even when there is nothing left to unlock.
+          ownedCupSkins: awardedCupId
+            ? [...s.ownedCupSkins, awardedCupId]
+            : s.ownedCupSkins,
           coins: s.coins + coins,
           arcade: { ...s.arcade, careerXP: s.arcade.careerXP + (won ? 80 : 20) },
         }));
 
-        return { won, played, wins, finished, coins, tierKey: tier?.nameKey };
+        return { won, played, wins, finished, coins, tierKey: tier?.nameKey, awardedCupId };
       },
 
       resetWeekendRun: () =>
-        set((s) => ({ weekend: { ...s.weekend, active: false, played: 0, wins: 0 } })),
+        set((s) => ({
+          weekend: { ...s.weekend, active: false, played: 0, wins: 0, weekendKey: '' },
+        })),
     }),
     {
       name: STORAGE_KEY,

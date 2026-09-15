@@ -4,7 +4,7 @@ import { BALLS_PER_TURN } from './turnRules';
 import { OVERTIME_CUP_COUNT } from './arcadeLayout';
 import { CUP_BUNDLE_CENTS, CUP_PRICE_CENTS } from './catalogue';
 import { DEFAULT_PRICE_CENTS } from './licence';
-import { COIN_CUP_DESIGNS, PAID_CUP_DESIGNS } from './cupSkins';
+import { COIN_CUP_DESIGNS, PAID_CUP_DESIGNS, PERFECT_WEEKEND_CUP, cupDesign } from './cupSkins';
 import { WEEKLY_OFFER_SIZE } from './cupShop';
 import { KNOCKOUT_SIZES, KNOCKOUT_STAKES } from './knockout';
 import { GHOST_MIN_THROWS } from './ghosts';
@@ -56,6 +56,9 @@ export interface GuideChapter {
   summary: { de: string; en: string };
   items: GuideItem[];
 }
+
+/** The earned cup's own name, so the manual cannot drift from the design. */
+const PERFECT_WEEKEND_CUP_NAME = cupDesign(PERFECT_WEEKEND_CUP).name;
 
 const euro = (cents: number) => `${(cents / 100).toFixed(2).replace('.', ',')} €`;
 
@@ -519,8 +522,16 @@ export const GUIDE: GuideChapter[] = [
         de: 'Weekend League',
         en: 'Weekend league',
         body: {
-          de: `Ab Division ${WEEKEND_UNLOCK_DIVISION} freigeschaltet: ein Lauf über ${WEEKEND_MATCHES} Spiele, bei dem die Anzahl der Siege eine Stufe und eine Belohnung ergibt. Läuft gegen den Computer — online wäre ein Lauf, der abbricht, sobald mal niemand da ist, und das ist genau die Mechanik, die den Modus trägt.`,
-          en: `Unlocked from division ${WEEKEND_UNLOCK_DIVISION}: a run of ${WEEKEND_MATCHES} matches where the number of wins gives you a tier and a reward. Played against the computer — online it would be a run that breaks the moment nobody is around, and that run is the whole point of the mode.`,
+          de: `**Nur von Freitag bis Sonntag.** Ab Division ${WEEKEND_UNLOCK_DIVISION} freigeschaltet: ein Lauf über ${WEEKEND_MATCHES} Spiele, bei dem die Anzahl der Siege eine Stufe und eine Belohnung ergibt. Von Montag bis Donnerstag ist zu — deshalb heißt er Weekend League, und deshalb ist er etwas wert. Ein Lauf gehört zu dem Wochenende, an dem du ihn angefangen hast: Ist es um, ist der Lauf weg. Die Coins aus den einzelnen Spielen behältst du, nur der Abschluss-Bonus fällt aus. Gespielt wird gegen den Computer — online wäre ein Lauf, der abbricht, sobald mal niemand da ist, und das ist genau die Mechanik, die den Modus trägt.`,
+          en: `**Friday to Sunday only.** Unlocked from division ${WEEKEND_UNLOCK_DIVISION}: a run of ${WEEKEND_MATCHES} matches where the number of wins gives you a tier and a reward. Monday to Thursday it is shut — that is what the name means, and what makes it worth something. A run belongs to the weekend you started it in: once that is over, the run is gone. You keep the coins from the individual games; only the finishing bonus is lost. Played against the computer — online it would be a run that breaks the moment nobody is around, and that run is the whole point of the mode.`,
+        },
+      },
+      {
+        de: `Makellos: alle ${WEEKEND_MATCHES} gewinnen`,
+        en: `Flawless: win all ${WEEKEND_MATCHES}`,
+        body: {
+          de: `Gewinnst du in einem Lauf **jedes** Spiel, bekommst du das Becher-Design „${PERFECT_WEEKEND_CUP_NAME}“. Das ist das einzige Design in der App, das es weder für Coins noch für Geld gibt — es steht unter **Skins → Becher** ganz unten unter „Nur erspielbar“. Schaffst du es ein zweites Mal, zählt das mit, freizuschalten gibt es dann aber nichts mehr.`,
+          en: `Win **every** match of a run and you get the “${PERFECT_WEEKEND_CUP_NAME}” cup design. It is the only design in the app available neither for coins nor for money — it sits under **Skins → Cups** at the bottom, under “Earned only”. Do it twice and the second one counts, but there is nothing left to unlock.`,
         },
       },
       {
