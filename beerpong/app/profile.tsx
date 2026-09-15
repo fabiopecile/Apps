@@ -60,23 +60,25 @@ export default function ProfileScreen() {
 
           <SectionLabel>{t('profile.cameraTracker')}</SectionLabel>
           <Card style={styles.modeCard}>
-            <ModeRow label={t('profile.roundsPlayed')} value={`${store.camera.gamesPlayed}`} />
-            <ModeRow label={t('profile.cupsTracked')} value={`${store.camera.totalCupsHit}`} />
-            <ModeRow label={t('profile.bestStreak')} value={`${store.camera.bestStreak}`} />
+            <StatRow label={t('profile.roundsPlayed')} value={`${store.camera.gamesPlayed}`} />
+            <StatRow label={t('profile.cupsTracked')} value={`${store.camera.totalCupsHit}`} />
+            <StatRow label={t('profile.bestStreak')} value={`${store.camera.bestStreak}`} />
           </Card>
 
           <SectionLabel>{t('profile.arcade')}</SectionLabel>
           <Card style={styles.modeCard}>
-            <ModeRow label={t('profile.totalThrows')} value={`${store.arcade.totalThrows}`} />
-            <ModeRow label={t('profile.accuracy')} value={`${accuracy}%`} />
-            <ModeRow
+            <StatRow label={t('profile.totalThrows')} value={`${store.arcade.totalThrows}`} />
+            <StatRow label={t('profile.accuracy')} value={`${accuracy}%`} />
+            <StatRow
               label={t('profile.record')}
               value={t('profile.recordValue', {
                 wins: store.arcade.wins,
                 losses: store.arcade.losses,
               })}
             />
-            <ModeRow label={t('common.coins')} value={`${store.coins}`} />
+            {/* The one row here that is a reward rather than a statistic, so
+                the one row that is gold. */}
+            <StatRow label={t('common.coins')} value={`${store.coins}`} accent={colors.reward} />
           </Card>
 
           <SectionLabel>{t('profile.settings')}</SectionLabel>
@@ -203,11 +205,27 @@ function StatCard({ label, value, index }: { label: string; value: number; index
   );
 }
 
-function ModeRow({ label, value }: { label: string; value: string }) {
+/**
+ * One line of a statistics card.
+ *
+ * Named `StatRow` rather than `ModeRow` since `components/ui/ModeRow.tsx`
+ * exists: two components with the same name and different props in one codebase
+ * is a trap for whoever next adds an import to this file.
+ */
+function StatRow({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  /** Only for a value that is a reward rather than a count. */
+  accent?: string;
+}) {
   return (
     <View style={styles.modeRow}>
       <Text style={styles.modeLabel}>{label}</Text>
-      <Text style={styles.modeValue}>{value}</Text>
+      <Text style={[styles.modeValue, accent ? { color: accent } : null]}>{value}</Text>
     </View>
   );
 }

@@ -126,6 +126,16 @@ export default function SkinsScreen() {
                   <GlowButton
                     label={t('skins.buy', { cost: item.cost })}
                     variant={canAfford ? 'filled' : 'ghost'}
+                    // A price is gold, never green. Green is the app's word
+                    // for "you" and "go", and a price you cannot afford
+                    // rendered in it was the palette saying the opposite of
+                    // the truth.
+                    //
+                    // Gold in BOTH states, though: `locked` grey under the
+                    // disabled 40% opacity came out unreadable, and a price
+                    // you cannot afford yet is exactly the number you want to
+                    // read. The dimming alone carries "not yet".
+                    accent={colors.reward}
                     size="sm"
                     disabled={!canAfford}
                     onPress={() => buySkin(item.id)}
@@ -214,6 +224,7 @@ function CupShelf() {
                   <GlowButton
                     label={t('skins.buy', { cost })}
                     variant={coins >= cost ? 'filled' : 'ghost'}
+                    accent={colors.reward}
                     size="sm"
                     disabled={coins < cost}
                     onPress={() => {

@@ -52,10 +52,16 @@ export default function OfflineScreen() {
               <Reveal key={id} index={position}>
               <PressableScale
                 onPress={() => start(id)}
+                // The difficulty colour is genuinely a scale here — green to
+                // purple is the ladder — so it stays on the title and the bar.
+                // What it no longer does is paint a bright border round all
+                // four cards at once: four equally loud cards is a list with no
+                // answer in it. The one you played last carries the border and
+                // the lift, because that is the one you probably came back for.
                 style={[
                   styles.difficultyCard,
-                  { borderColor: preset.color },
-                  selected && glow('soft', preset.color),
+                  { borderColor: selected ? preset.color : colors.borderQuiet },
+                  selected && glow('lift', preset.color),
                 ]}
               >
                 <View style={styles.difficultyHead}>

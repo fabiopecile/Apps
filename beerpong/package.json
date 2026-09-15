@@ -54,7 +54,7 @@
     "web": "expo start --web",
     "test:vision": "node tools/test_cup_vision.mjs",
     "test:throw": "node tools/test_throw_physics.mjs",
-    "test": "npm run test:vision && npm run test:throw && npm run test:turns && npm run test:rack && npm run test:sales && npm run test:legal && npm run test:free && npm run test:online && npm run test:lucky && npm run test:stats && npm run test:cups && npm run test:guide && npm run test:knockout && npm run test:ghosts && npm run test:qr && npm run test:licence && npm run test:party && npm run test:savecode && npm run test:room && npm run test:shop && npm run test:save",
+    "test": "npm run test:vision && npm run test:throw && npm run test:turns && npm run test:rack && npm run test:sales && npm run test:legal && npm run test:design && npm run test:free && npm run test:online && npm run test:lucky && npm run test:stats && npm run test:cups && npm run test:guide && npm run test:knockout && npm run test:ghosts && npm run test:qr && npm run test:licence && npm run test:party && npm run test:savecode && npm run test:room && npm run test:shop && npm run test:save",
     "test:turns": "node tools/test_turn_rules.mjs",
     "test:free": "node tools/test_entitlement.mjs",
     "test:online": "node tools/test_online_protocol.mjs",
@@ -78,7 +78,8 @@
     "test:reel": "node tools/test_reel.mjs",
     "test:rack": "node tools/test_rack_colour.mjs",
     "test:sales": "node tools/test_sales.mjs",
-    "test:legal": "node tools/test_legal.mjs"
+    "test:legal": "node tools/test_legal.mjs",
+    "test:design": "node tools/test_design.mjs"
   },
   "private": true
 }

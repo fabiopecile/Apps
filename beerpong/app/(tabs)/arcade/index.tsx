@@ -1,11 +1,10 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, type Href } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { GridBackground } from '@/components/ui/GridBackground';
-import { PressableScale } from '@/components/ui/PressableScale';
-import { Reveal } from '@/components/ui/Reveal';
+import { HeroCard } from '@/components/ui/HeroCard';
+import { ModeRow } from '@/components/ui/ModeRow';
 import { CountUp } from '@/components/ui/CountUp';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ProgressBar } from '@/components/ui/ProgressBar';
@@ -28,9 +27,8 @@ import { opponentById, roundKey } from '@/lib/knockout';
 import { ONLINE_AVAILABLE } from '@/lib/onlineConfig';
 import { SALES_ENABLED } from '@/lib/sales';
 import { selectCareerProgress, useBeerpongStore } from '@/lib/store';
-import { useFeedback } from '@/lib/feedback';
 import { divisionName, useLanguage, useT } from '@/lib/i18n';
-import { colors, fonts, glow, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing } from '@/theme';
 
 export default function ArcadeHubScreen() {
   const arcade = useBeerpongStore((s) => s.arcade);
@@ -54,6 +52,14 @@ export default function ArcadeHubScreen() {
   const division = getDivision(rivals.division);
   const weekendUnlocked = rivals.division <= WEEKEND_UNLOCK_DIVISION;
   const preset = AI_PRESETS[aiDifficulty];
+  /**
+   * Whether the hero card says "carry on" or "get started".
+   *
+   * Counted from throws rather than wins: somebody who has played and lost is
+   * still somebody who has played, and greeting them as a newcomer is the kind
+   * of small wrongness that makes an app feel like it is not paying attention.
+   */
+  const played = arcade.totalThrows > 0;
 
   // How many rewards are sitting there unclaimed — shown on the tasks card.
   const today = todayKey();
@@ -99,39 +105,50 @@ export default function ArcadeHubScreen() {
             <ProgressBar progress={progress} />
           </View>
 
-          <View style={styles.section}>
-            <SectionLabel>{t('hub.modes')}</SectionLabel>
-
-            <ModeCard
-              icon="hardware-chip"
+          {/* The one loud thing on this screen, and the answer to the question
+              somebody actually opened the app with. Everything below is a row
+              of the same height with a hairline border — see the rationing
+              rule in `theme/glow.ts`. */}
+          <View style={styles.heroWrap}>
+            <HeroCard
+              eyebrow={played ? t('hub.hero.eyebrow') : t('hub.hero.firstEyebrow')}
               title={t('hub.offline.title')}
-              subtitle={t('hub.offline.subtitle', { last: t(preset.labelKey) })}
-              accent={colors.neon}
+              subtitle={
+                played
+                  ? t('hub.hero.lastPlayed', { last: t(preset.labelKey) })
+                  : t('hub.hero.firstSubtitle')
+              }
+              action={t('hub.hero.action')}
               href="/(tabs)/arcade/offline"
-              index={0}
             />
+          </View>
 
-            <ModeCard
+          <View style={styles.section}>
+            <SectionLabel>{t('hub.others')}</SectionLabel>
+
+            <ModeRow
               icon="people"
               title={t('hub.passplay.title')}
               subtitle={t('hub.passplay.subtitle')}
-              accent={colors.gold}
               href="/(tabs)/arcade/passplay"
-              index={1}
+              index={0}
             />
 
-            <ModeCard
+            <ModeRow
               icon="wifi"
               title={t('hub.arcadeOnline.title')}
               subtitle={
                 ONLINE_AVAILABLE ? t('hub.arcadeOnline.subtitle') : t('hub.arcadeOnline.off')
               }
-              accent={ONLINE_AVAILABLE ? colors.neon : colors.textMuted}
               href="/(tabs)/arcade/online"
-              index={2}
+              // Not locked — there is nothing to unlock, the address is simply
+              // absent from this build. Grey says "not for you yet", which
+              // would be a lie.
+              accent={ONLINE_AVAILABLE ? colors.you : colors.locked}
+              index={1}
             />
 
-            <ModeCard
+            <ModeRow
               icon="globe"
               title={t('hub.rivals.title')}
               subtitle={t('hub.rivals.subtitle', {
@@ -139,12 +156,41 @@ export default function ArcadeHubScreen() {
                 wins: rivals.divisionWins,
                 target: division.winsToPromote,
               })}
-              accent={division.color}
               href="/(tabs)/arcade/rivals"
-              index={3}
+              index={2}
             />
 
-            <ModeCard
+            <ModeRow
+              icon="trophy"
+              title={t('knockout.title')}
+              subtitle={
+                knockout
+                  ? t('knockout.next', {
+                      round: t(`knockout.round.${roundKey(knockout.teams, knockout.round)}`),
+                      name: opponentById(knockout.opponentIds[knockout.round - 1]).nickname,
+                    })
+                  : t('knockout.tagline')
+              }
+              href="/(tabs)/arcade/knockout"
+              accent={colors.reward}
+              index={3}
+              badge={knockout ? 1 : undefined}
+            />
+
+            {/* Only once there is somebody to play. An empty list dressed up as
+                a mode is a promise the app has not kept yet. */}
+            {ghosts.length > 0 ? (
+              <ModeRow
+                icon="footsteps"
+                title={t('ghost.title')}
+                subtitle={t('ghost.hubSubtitle', { count: ghosts.length })}
+                href="/(tabs)/arcade/ghosts"
+                index={4}
+              />
+            ) : null}
+
+            {/* Last in the section, because it is the one you cannot have. */}
+            <ModeRow
               icon="calendar"
               title={t('hub.weekend.title')}
               subtitle={
@@ -158,66 +204,28 @@ export default function ArcadeHubScreen() {
                     : t('hub.weekend.idle', { matches: WEEKEND_MATCHES })
                   : t('hub.weekend.locked', { division: WEEKEND_UNLOCK_DIVISION })
               }
-              accent={weekendUnlocked ? colors.gold : colors.textMuted}
               href="/(tabs)/arcade/weekend"
-              index={4}
+              accent={colors.reward}
+              index={5}
               locked={!weekendUnlocked}
             />
-
-            <ModeCard
-              icon="trophy"
-              title={t('knockout.title')}
-              subtitle={
-                knockout
-                  ? t('knockout.next', {
-                      round: t(`knockout.round.${roundKey(knockout.teams, knockout.round)}`),
-                      name: opponentById(knockout.opponentIds[knockout.round - 1]).nickname,
-                    })
-                  : t('knockout.tagline')
-              }
-              accent={knockout ? colors.gold : colors.neonAlt}
-              href="/(tabs)/arcade/knockout"
-              index={5}
-              badge={knockout ? 1 : undefined}
-            />
-
-            {/* Only once there is somebody to play. An empty list dressed up as
-                a mode is a promise the app has not kept yet. */}
-            {ghosts.length > 0 ? (
-              <ModeCard
-                icon="people"
-                title={t('ghost.title')}
-                subtitle={t('ghost.hubSubtitle', { count: ghosts.length })}
-                accent={colors.neonAlt}
-                href="/(tabs)/arcade/ghosts"
-                index={5}
-              />
-            ) : null}
           </View>
 
           <View style={styles.section}>
             <SectionLabel>{t('hub.progress')}</SectionLabel>
-            {/* Sits above the tasks card on purpose: it is the one thing here
-                that expires today. */}
-            <ModeCard
+            {/* First in its section on purpose: it is the one thing here that
+                expires today. Gold only while it is actually claimable — a
+                reward colour on a spent reward is the palette lying. */}
+            <ModeRow
               icon="star"
               title={t('lucky.hubTitle')}
               subtitle={luckyReady ? t('lucky.hubReady') : t('lucky.hubDone')}
-              accent={luckyReady ? colors.gold : colors.textMuted}
               href="/(tabs)/arcade/lucky"
-              index={4}
+              accent={luckyReady ? colors.reward : colors.locked}
+              index={0}
               badge={luckyReady ? 1 : undefined}
             />
-            <ModeCard
-              icon="stats-chart"
-              title={t('stats.hubTitle')}
-              subtitle={t('stats.hubSubtitle')}
-              accent={colors.neonAlt}
-              href="/(tabs)/arcade/stats"
-              index={5}
-              compact
-            />
-            <ModeCard
+            <ModeRow
               icon="checkmark-done"
               title={t('hub.challenges.title')}
               subtitle={
@@ -227,10 +235,17 @@ export default function ArcadeHubScreen() {
                     })
                   : t('hub.challenges.subtitle')
               }
-              accent={claimable > 0 ? colors.gold : colors.neon}
               href="/(tabs)/arcade/challenges"
-              index={4}
+              accent={claimable > 0 ? colors.reward : colors.you}
+              index={1}
               badge={claimable > 0 ? claimable : undefined}
+            />
+            <ModeRow
+              icon="stats-chart"
+              title={t('stats.hubTitle')}
+              subtitle={t('stats.hubSubtitle')}
+              href="/(tabs)/arcade/stats"
+              index={2}
             />
           </View>
 
@@ -240,24 +255,22 @@ export default function ArcadeHubScreen() {
                 this tile leads nowhere worth going — Skins → Becher already
                 holds every design that can be earned, and equips them. */}
             {SALES_ENABLED ? (
-              <ModeCard
+              <ModeRow
                 icon="flag"
                 title={t('hub.cups.title')}
                 subtitle={t('hub.cups.subtitle')}
-                accent={colors.gold}
                 href="/(tabs)/arcade/cups"
-                index={4}
+                accent={colors.reward}
+                index={0}
               />
             ) : null}
 
-            <ModeCard
+            <ModeRow
               icon="color-palette"
               title={t('hub.skins.title')}
               subtitle={t('hub.skins.subtitle')}
-              accent={colors.neonAlt}
               href="/(tabs)/arcade/skins"
-              index={5}
-              compact
+              index={1}
             />
           </View>
 
@@ -269,73 +282,6 @@ export default function ArcadeHubScreen() {
         </ScrollView>
       </SafeAreaView>
     </View>
-  );
-}
-
-function ModeCard({
-  icon,
-  title,
-  subtitle,
-  accent,
-  href,
-  locked,
-  compact,
-  badge,
-  index = 0,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  subtitle: string;
-  accent: string;
-  href: Href;
-  locked?: boolean;
-  compact?: boolean;
-  badge?: number;
-  index?: number;
-}) {
-  const feedback = useFeedback();
-  return (
-    <Reveal index={index}>
-    <PressableScale
-      onPress={() => {
-        feedback.tap();
-        router.push(href);
-      }}
-      style={[
-        styles.modeCard,
-        compact && styles.modeCardCompact,
-        { borderColor: locked ? colors.borderFaint : accent },
-        !locked && glow('soft', accent),
-      ]}
-    >
-      <View style={[styles.modeIcon, { borderColor: locked ? colors.borderFaint : accent }]}>
-        <Ionicons
-          name={locked ? 'lock-closed' : icon}
-          size={compact ? 18 : 22}
-          color={locked ? colors.textMuted : accent}
-        />
-      </View>
-      <View style={styles.modeText}>
-        <Text
-          style={[styles.modeTitle, locked && { color: colors.textSecondary }]}
-          selectable={false}
-        >
-          {title}
-        </Text>
-        <Text style={styles.modeSubtitle} selectable={false}>
-          {subtitle}
-        </Text>
-      </View>
-      {badge ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText} selectable={false}>
-            {badge}
-          </Text>
-        </View>
-      ) : null}
-      <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
-    </PressableScale>
-    </Reveal>
   );
 }
 
@@ -360,6 +306,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     marginTop: spacing.sm,
   },
+  heroWrap: {
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.lg,
+  },
   section: {
     paddingHorizontal: spacing.lg,
     marginTop: spacing.xl,
@@ -379,57 +329,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.numeric,
     color: colors.gold,
     fontSize: 13,
-  },
-  modeCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    borderRadius: radius.lg,
-    borderWidth: 1.5,
-    backgroundColor: colors.backgroundCard,
-    marginBottom: spacing.sm,
-  },
-  modeCardCompact: {
-    paddingVertical: spacing.sm,
-  },
-  modeCardPressed: {
-    opacity: 0.7,
-  },
-  modeIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    borderWidth: 1.5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.backgroundElevated,
-  },
-  modeText: { flex: 1 },
-  modeTitle: {
-    fontFamily: fonts.headingBlack,
-    fontSize: 18,
-    color: colors.textPrimary,
-  },
-  modeSubtitle: {
-    fontFamily: fonts.bodyRegular,
-    fontSize: 12,
-    color: colors.textSecondary,
-    marginTop: 2,
-  },
-  badge: {
-    minWidth: 22,
-    height: 22,
-    borderRadius: 11,
-    paddingHorizontal: 6,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.gold,
-  },
-  badgeText: {
-    fontFamily: fonts.numeric,
-    fontSize: 13,
-    color: colors.background,
   },
   statsRow: {
     flexDirection: 'row',
