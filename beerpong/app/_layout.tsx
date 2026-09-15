@@ -91,6 +91,10 @@ export default function RootLayout() {
       >
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="guide" />
+        {/* Pushed rather than presented as a modal: it is linked from inside
+            the profile and from the purchase confirmation, both of which are
+            already modals, and a modal on a modal loses its back gesture. */}
+        <Stack.Screen name="legal" />
         {/* Opened by scanning a code at somebody's table. Outside the tabs on
             purpose: whoever lands here wants a number, not an app. */}
         <Stack.Screen name="party/[code]" />

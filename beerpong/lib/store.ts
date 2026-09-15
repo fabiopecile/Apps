@@ -11,6 +11,7 @@ import {
   registerTrackedGame,
   type TrackerUse,
 } from './entitlement';
+import { trackerUnlimited } from './sales';
 import {
   EMPTY_LUCKY,
   playLucky,
@@ -477,8 +478,11 @@ export const useBeerpongStore = create<BeerpongStore>()(
       beginTrackedGame: () => {
         const now = new Date();
         const { trackerUse, pro } = get();
-        if (!canTrackGame(trackerUse, now, pro)) return false;
-        set({ trackerUse: registerTrackedGame(trackerUse, now, pro) });
+        // `trackerUnlimited` rather than `pro`: with nothing for sale there is
+        // no limit to enforce, because there would be no way past it.
+        const unlimited = trackerUnlimited(pro);
+        if (!canTrackGame(trackerUse, now, unlimited)) return false;
+        set({ trackerUse: registerTrackedGame(trackerUse, now, unlimited) });
         return true;
       },
 

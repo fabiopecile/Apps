@@ -51,6 +51,8 @@ for (const name of [
   'languages',
   'opponentAi',
   'progression',
+  'legal',
+  'sales',
 ]) {
   try {
     load(name);
@@ -60,6 +62,8 @@ for (const name of [
   }
 }
 const { GUIDE, GUIDE_ITEM_COUNT } = await import(load('guide'));
+/** Which of the two manuals this build assembled. See `lib/sales.ts`. */
+const sales = await import(load('sales'));
 
 let passed = 0;
 const check = (name, fn) => {
@@ -164,7 +168,6 @@ check('it covers every part of the app', () => {
     'lucky shot',
     'coins',
     'spielstand',
-    'stripe',
     'becher-design',
     'turnier',
     'einsatz',
@@ -175,6 +178,20 @@ check('it covers every part of the app', () => {
     'sprache',
   ]) {
     assert.ok(all.includes(topic), `nothing in the guide mentions "${topic}"`);
+  }
+
+  // Paying is only a topic in a build that takes money. In a free one the
+  // opposite has to hold, and it is the more important half: a manual that
+  // still talks about Stripe and €4,99 in an app with no shop is describing
+  // somebody else's app. Both directions are asserted in tools/test_sales.mjs,
+  // which can build the guide either way; here we check the one this build
+  // actually assembled.
+  if (sales.SALES_ENABLED) {
+    assert.ok(all.includes('stripe'), 'the paid guide never mentions Stripe');
+  } else {
+    for (const word of ['stripe', 'widerruf', '4,99', '1,99']) {
+      assert.ok(!all.includes(word), `the free guide still mentions "${word}"`);
+    }
   }
 });
 
