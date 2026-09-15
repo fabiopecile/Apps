@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Saira+Condensed:wght@700;800;900&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #2F6BFF; } a:hover { color: #6A96FF; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0E1013; font-family: Archivo, sans-serif; color: #EDF0F4; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- broadcast score strip pinned above the feed -->
+  <div style="background: #14171C; border-bottom: 1px solid #22262E;">
+    <div style="display: flex; align-items: stretch;">
+      <div style="flex-grow: 1; display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-left: 3px solid #2F6BFF;">
+        <div style="flex-grow: 1;">
+          <div style="font-size: 12px; font-weight: 600; letter-spacing: 0.2px;">Team Blau</div>
+          <div style="font-size: 10.5px; color: #8A94A3; margin-top: 1px;">Serie 2</div>
+        </div>
+        <div style="font-family: 'Saira Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 30px;">4</div>
+      </div>
+      <div style="width: 1px; background: #22262E;"></div>
+      <div style="flex-grow: 1; display: flex; align-items: center; gap: 10px; padding: 12px 14px;">
+        <div style="font-family: 'Saira Condensed', sans-serif; font-weight: 900; font-size: 34px; line-height: 30px; color: #8A94A3;">2</div>
+        <div style="flex-grow: 1; text-align: right;">
+          <div style="font-size: 12px; font-weight: 600;">Team Rot</div>
+          <div style="font-size: 10.5px; color: #8A94A3; margin-top: 1px;">Serie 0</div>
+        </div>
+        <div style="width: 3px; align-self: stretch; background: #E4574C; border-radius: 1px;"></div>
+      </div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 8px; padding: 7px 14px; background: #1A1F27; border-top: 1px solid #22262E;">
+      <div style="width: 6px; height: 6px; border-radius: 3px; background: #E4574C;"></div>
+      <span style="font-size: 10.5px; letter-spacing: 1.4px; color: #E4574C; font-weight: 700;">LIVE</span>
+      <div style="flex-grow: 1;"></div>
+      <span style="font-size: 11px; color: #8A94A3;">Runde 3 &middot; Wurf 2 von 2</span>
+    </div>
+  </div>
+
+  <!-- feed -->
+  <div style="position: relative; height: 380px; background: linear-gradient(175deg, #1A2028 0%, #0E1013 100%); overflow: hidden;">
+    <div style="position: absolute; inset: 0; background-image: radial-gradient(62% 40% at 50% 58%, rgba(47,107,255,0.20) 0%, rgba(14,16,19,0) 72%);"></div>
+    <svg style="position: relative; display: block; margin: 34px auto 0 auto;" width="250" height="210" viewBox="0 0 250 210" fill="none">
+      <ellipse cx="125" cy="186" rx="100" ry="15" fill="#2F6BFF" opacity="0.10"/>
+      <g stroke="#5A6474" stroke-width="2">
+        <ellipse cx="72" cy="52" rx="20" ry="7"/><ellipse cx="125" cy="52" rx="20" ry="7"/><ellipse cx="178" cy="52" rx="20" ry="7"/>
+      </g>
+      <g stroke="#5A6474" stroke-width="2">
+        <ellipse cx="98" cy="96" rx="21" ry="7.4"/><ellipse cx="152" cy="96" rx="21" ry="7.4"/>
+      </g>
+      <g>
+        <ellipse cx="125" cy="142" rx="23" ry="8" fill="rgba(47,107,255,0.22)" stroke="#2F6BFF" stroke-width="3"/>
+        <rect x="88" y="105" width="74" height="74" rx="4" fill="none" stroke="#2F6BFF" stroke-width="1.4" stroke-dasharray="10 7" opacity="0.6"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- the decision -->
+  <div style="flex-grow: 1; background: #14171C; border-top: 1px solid #22262E; padding: 18px; display: flex; flex-direction: column; gap: 14px;">
+    <div style="display: flex; align-items: baseline; gap: 9px;">
+      <div style="font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 24px; line-height: 24px;">Becher weg?</div>
+      <div style="font-size: 12px; color: #8A94A3;">vordere Reihe, Mitte</div>
+    </div>
+
+    <div style="display: flex; gap: 9px;">
+      <div style="flex-grow: 1; height: 58px; border-radius: 5px; background: #2F6BFF; display: flex; align-items: center; justify-content: center; gap: 9px;">
+        <svg width="19" height="19" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 17px; letter-spacing: 1.2px; color: #FFFFFF;">TREFFER</span>
+      </div>
+      <div style="width: 112px; height: 58px; border-radius: 5px; background: #1C212A; border: 1px solid #2A3039; display: flex; align-items: center; justify-content: center; gap: 7px;">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#8A94A3" stroke-width="2.6" stroke-linecap="round"/></svg>
+        <span style="font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 1px; color: #8A94A3;">NEIN</span>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#4A5261" stroke-width="1.8"/><path d="M12 7.5v5.5M12 16h.01" stroke="#4A5261" stroke-width="2" stroke-linecap="round"/></svg>
+      <span style="font-size: 11.5px; color: #4A5261;">Die Kamera fragt nach &mdash; sie entscheidet nicht.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

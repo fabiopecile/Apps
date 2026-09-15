@@ -1,0 +1,45 @@
+{
+  "artboards": [
+    { "file": "Jetzt.dc.html", "x": 0, "y": 0, "w": 390, "h": 844, "title": "Jetzt" },
+
+    { "file": "Main.dc.html", "x": 560, "y": 0, "w": 390, "h": 844, "title": "A · Arcade" },
+    { "file": "ATracker.dc.html", "x": 560, "y": 1010, "w": 390, "h": 844, "title": "A · Kamera" },
+
+    { "file": "BHub.dc.html", "x": 1080, "y": 0, "w": 390, "h": 844, "title": "B · Arcade" },
+    { "file": "BTracker.dc.html", "x": 1080, "y": 1010, "w": 390, "h": 844, "title": "B · Kamera" },
+
+    { "file": "CHub.dc.html", "x": 1600, "y": 0, "w": 390, "h": 844, "title": "C · Arcade" },
+    { "file": "CTracker.dc.html", "x": 1600, "y": 1010, "w": 390, "h": 844, "title": "C · Kamera" }
+  ],
+  "annotations": [
+    {
+      "id": "wie",
+      "x": 0,
+      "y": -300,
+      "w": 390,
+      "text": "Drei Richtungen, jede mit denselben zwei Bildschirmen: dem Arcade-Hub (oben) und dem Kamera-Tracker (unten).\n\nSag mir einfach A, B oder C — dann baue ich die Richtung in die echte App ein. Einzelne Sachen mischen geht auch: „C, aber die Becher-Grafik aus A“."
+    },
+    {
+      "id": "dir-a",
+      "x": 560,
+      "y": -300,
+      "w": 390,
+      "text": "A · AUFGERÄUMT\n\nDieselbe DNA wie heute — dunkel, Neongrün, dieselben Schriften —, aber mit Rangordnung. Genau EIN Element pro Bildschirm leuchtet: das, was du als Nächstes tun willst. Alles andere wird flach und ruhig.\n\nFarbe bekommt eine Bedeutung statt Deko zu sein: Grün = du, Rot = Gegner, Gold = Belohnung, Grau = gesperrt.\n\nDAFÜR: kleinstes Risiko, größter Gewinn pro Aufwand. Der Rest der App passt sofort dazu.\nDAGEGEN: gibt der App noch immer kein eigenes Gesicht — sie bleibt eine von vielen Neon-Apps."
+    },
+    {
+      "id": "dir-b",
+      "x": 1080,
+      "y": -300,
+      "w": 390,
+      "text": "B · ROTER BECHER\n\nDer rote Becher wird die Marke. Warme Farben statt Sci-Fi: Becherrot, Bierbernstein, Creme auf fast schwarzem Braun. Plakat-Schrift, harte Kanten, kein Leuchten — eher Bar-Aushang als Raumschiff.\n\nDer Hub wird zur Getränkekarte, das Spiel zum Aushang für heute Abend.\n\nDAFÜR: unverwechselbar, und man sieht nach einer Sekunde, worum es geht. Passt zum Anlass — Party, nicht Konsole.\nDAGEGEN: das Arcade-Spiel verliert etwas vom Spielhallen-Gefühl, und Creme auf Dunkel knallt am dunklen Tisch weniger als Neon."
+    },
+    {
+      "id": "dir-c",
+      "x": 1600,
+      "y": -300,
+      "w": 390,
+      "text": "C · SPORTÜBERTRAGUNG\n\nWie eine Sport-App: strenge Raster, klare Tabellen, Anzeigetafel-Ziffern, ein einziger blauer Akzent. Kein einziges Leuchten — Tiefe kommt aus Kanten und Flächen.\n\nOben ein „Als Nächstes“-Panel wie vor einem Spiel, unten die Modi als kompakte Liste statt als sechs Kacheln. Die Form-Anzeige (S-S-N-S) gibt es heute schon als Daten — hier wird sie sichtbar.\n\nDAFÜR: wirkt am erwachsensten, und es skaliert am besten auf Divisionen, Ligen und Statistiken. Beim Kamera-Tracker steht der Spielstand oben fest — am Tisch von Weitem lesbar.\nDAGEGEN: kühl. Aus dem Trinkspiel wird ein bisschen Kicker-Tabelle."
+    }
+  ],
+  "launch": { "view": "canvas" }
+}
