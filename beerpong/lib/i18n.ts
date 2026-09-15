@@ -719,6 +719,18 @@ const STRINGS = {
   'hub.title': { de: 'ARCADE', en: 'ARCADE' },
   'hub.careerLevel': { de: 'Career Level {level}', en: 'Career level {level}' },
   'hub.modes': { de: 'Spielmodi', en: 'Game modes' },
+  // The hero card at the top. "Weiterspielen" rather than "Spielen" because it
+  // names the mode you last chose — a generic verb over the first item in a
+  // list is just a list with a bigger first row.
+  'hub.hero.eyebrow': { de: 'Weiterspielen', en: 'Carry on' },
+  'hub.hero.firstEyebrow': { de: 'Loslegen', en: 'Get started' },
+  'hub.hero.action': { de: 'Werfen', en: 'Throw' },
+  'hub.hero.firstSubtitle': {
+    de: 'Ein Rack, ein Gegner — such dir die Schwierigkeit aus',
+    en: 'One rack, one opponent — pick your difficulty',
+  },
+  'hub.hero.lastPlayed': { de: 'Zuletzt: {last}', en: 'Last: {last}' },
+  'hub.others': { de: 'Gegen andere', en: 'Against others' },
   'hub.offline.title': { de: 'Offline vs. KI', en: 'Offline vs. AI' },
   'hub.offline.subtitle': {
     de: 'Zuletzt: {last} · Einfach, Mittel oder Schwer',

@@ -1,8 +1,13 @@
 # Design-Entwürfe
 
+> **Entschieden: Richtung A („Aufgeräumt").** Sie ist in der App umgesetzt —
+> siehe unten „Was daraus geworden ist". Die Dateien hier bleiben liegen, weil
+> sie festhalten, wogegen entschieden wurde, und weil B und C beim nächsten Mal
+> wieder auf dem Tisch liegen.
+
 Drei Richtungen, wie die App aussehen könnte — als Bildschirm-Entwürfe, nicht
 als Code. Nichts hiervon läuft in der App; es ist das Material, über das
-entschieden wird, bevor jemand `theme/` anfasst.
+entschieden wurde, bevor jemand `theme/` angefasst hat.
 
 Jede `.dc.html` ist ein Bildschirm. `canvas.json` legt fest, wo sie
 nebeneinander liegen und was in den Notizzetteln steht.
@@ -26,11 +31,18 @@ Befehl neu gebaut. Das geht nur in einer Sitzung, in der die `design`-Fähigkeit
 zur Verfügung steht; dort ist der Befehl `seed-canvas.mjs` mit allen
 `.dc.html`-Dateien, `jetzt.jpg` und `canvas.json`.
 
-## Wenn eine Richtung gewählt ist
+## Was daraus geworden ist
 
-Dann wandert sie von hier in die App: `theme/colors.ts` und
-`theme/typography.ts` bekommen die neuen Werte, die Schriften kommen als Paket
-dazu (die Entwürfe ziehen sie von Google Fonts, was in der App nicht geht), und
-die Bildschirme werden nachgezogen. Diese Dateien bleiben liegen — als
-Nachweis, wogegen entschieden wurde, und weil die zwei nicht gewählten
-Richtungen beim nächsten Mal wieder auf dem Tisch liegen.
+Richtung A steckt jetzt in der App. Die Schriften blieben, wie sie waren — A
+behält bewusst die DNA von vorher. Geändert hat sich das System darunter:
+
+| Datei | Was sie jetzt tut |
+|---|---|
+| `theme/glow.ts` | Das Leuchten ist rationiert: **höchstens ein `hero` pro Bildschirm**. Die alten Stufen wurden leiser gestellt statt umbenannt, damit die drei Dutzend vorhandenen Aufrufe sofort ruhig sind. |
+| `theme/colors.ts` | Farbe hat eine Bedeutung: `you`, `rival`, `reward`, `locked`. Kein Bildschirm sucht sich mehr eine Farbe nach Stimmung aus. |
+| `components/ui/GlowButton.tsx` | Knöpfe leuchten nicht mehr. Eine volle Neonfläche auf fast Schwarz ist laut genug. |
+| `components/ui/GridBackground.tsx` | Das Drahtgitter ist weg, stattdessen eine Lampe über dem Tisch. |
+| `components/ui/HeroCard.tsx` | Das eine laute Element — die Antwort auf „was mache ich jetzt". |
+| `components/ui/ModeRow.tsx` | Alles andere: gleiche Höhe, gleiche Haarlinie, Akzent nur auf dem Symbol. |
+| `components/ui/CupRack.tsx` | Drei Becher. Das Einzige auf dem Hub, das „Beerpong" sagt. |
+| `tools/test_design.mjs` | Hält die Regeln fest, damit sie nicht in einem Jahr Karte für Karte zurückkriechen. |
