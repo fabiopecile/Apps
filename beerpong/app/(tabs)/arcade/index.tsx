@@ -26,6 +26,7 @@ import {
 import { canPlayLucky } from '@/lib/luckyShot';
 import { opponentById, roundKey } from '@/lib/knockout';
 import { ONLINE_AVAILABLE } from '@/lib/onlineConfig';
+import { SALES_ENABLED } from '@/lib/sales';
 import { selectCareerProgress, useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { divisionName, useLanguage, useT } from '@/lib/i18n';
@@ -235,14 +236,19 @@ export default function ArcadeHubScreen() {
 
           <View style={styles.section}>
             <SectionLabel>{t('hub.collection')}</SectionLabel>
-            <ModeCard
-              icon="flag"
-              title={t('hub.cups.title')}
-              subtitle={t('hub.cups.subtitle')}
-              accent={colors.gold}
-              href="/(tabs)/arcade/cups"
-              index={4}
-            />
+            {/* The country flags are the paid ones, so with nothing for sale
+                this tile leads nowhere worth going — Skins → Becher already
+                holds every design that can be earned, and equips them. */}
+            {SALES_ENABLED ? (
+              <ModeCard
+                icon="flag"
+                title={t('hub.cups.title')}
+                subtitle={t('hub.cups.subtitle')}
+                accent={colors.gold}
+                href="/(tabs)/arcade/cups"
+                index={4}
+              />
+            ) : null}
 
             <ModeCard
               icon="color-palette"

@@ -948,6 +948,33 @@ Impressum, Widerrufsbelehrung (bei digitalen Inhalten mit Verzicht auf das
 Widerrufsrecht), Umsatzsteuer und ihre Schwellenwerte, AGB. Das ist eine Frage
 für einen Steuerberater und ggf. einen Anwalt, nicht für diese README.
 
+Der Code kann dabei genau zwei Dinge tun, und beide tut er jetzt.
+
+**Er kann den Verkauf ganz weglassen.** Das ist die Voreinstellung: ohne die
+Variable `SALES=on` ist in dieser App nichts zu kaufen — kein Preis, kein Shop,
+keine Bezahlseite. Die Kamera zählt dann sogar *ohne* Wochenlimit mit, weil ein
+Limit, an dem man nur mit einem Kauf vorbeikommt, ohne Shop eine Sackgasse
+wäre. In diesem Zustand fällt die ganze Liste oben weg, und die App lässt sich
+heute veröffentlichen.
+
+**Er kann sich weigern, ohne Impressum Geld zu nehmen.** Der Schalter allein
+reicht nicht: Solange der Block `OPERATOR` in `lib/legal.ts` leer ist, bleibt
+der Shop zu, und der Pro-Bildschirm sagt, welche Zeile fehlt. Die Sperre hängt
+an den Daten, nicht an einem zweiten Flag — ein Flag kann wahr sein, während die
+Adresse leer ist, und genau das ist der Fehler, der teuer wird.
+
+Die vier Texte selbst (Impressum, Datenschutz, Widerruf, AGB, jeweils deutsch
+und englisch) stehen fertig in `lib/legal.ts` und bauen sich aus diesem einen
+Block zusammen. Sie sind nicht anwaltlich geprüft, und sie behaupten das auch
+nirgends. Was sie sind: auf diese App zugeschnitten statt aus einer Vorlage
+kopiert — die Datenschutzerklärung erklärt keine Cookies und kein Google
+Analytics, weil es beides hier nicht gibt, und die Preise in den AGB kommen aus
+dem Katalog, können also nicht veralten.
+
+Die ganze Anleitung dazu — was auszufüllen ist, was beim Gewerbeamt und beim
+Finanzamt zu erledigen ist, und in welcher Reihenfolge — steht in
+[RECHTLICHES.md](RECHTLICHES.md).
+
 ## Was frei ist, und wofür jemand später zahlen würde
 
 Das Arcade-Spiel ist ein Spiel, und es gibt hundert davon umsonst. Dafür zahlt

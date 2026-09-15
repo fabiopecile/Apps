@@ -17,6 +17,7 @@ import {
   LUCKY_MAX_STREAK,
   LUCKY_STREAK_BONUS,
 } from './luckyShot';
+import { SALES_ENABLED } from './sales';
 
 /**
  * The manual: what every part of the app does, in full.
@@ -57,6 +58,121 @@ export interface GuideChapter {
 }
 
 const euro = (cents: number) => `${(cents / 100).toFixed(2).replace('.', ',')} €`;
+
+/**
+ * What the coin shop says about the country flags next door.
+ *
+ * Empty in a build with no shop: the flags are not merely unbought there, they
+ * are not in it, so pointing at them would send somebody looking for a screen
+ * that does not exist.
+ */
+const FLAGS_NOTE = SALES_ENABLED
+  ? {
+      de: ' Die **Länderflaggen** sind etwas anderes und gibt es weiterhin nur im Becher-Shop für echtes Geld.',
+      en: ' The **country flags** are a separate thing and stay in the cup shop, for money.',
+    }
+  : { de: '', en: '' };
+
+/**
+ * The chapter about money, in the version of the app that takes some.
+ *
+ * Swapped out wholesale rather than edited sentence by sentence when selling is
+ * off, because a manual that half describes a shop is worse than either: the
+ * reader cannot tell which half is true of the app in their hand. See
+ * `lib/sales.ts`.
+ */
+const MONEY_CHAPTER_PAID: GuideChapter = {
+  id: 'money',
+  icon: 'card',
+  de: 'Was Geld kostet — und was nicht',
+  en: 'What costs money — and what does not',
+  summary: {
+    de: 'Zwei Sachen, beide einmalig, beide ohne Spielvorteil.',
+    en: 'Two things, both one-off, neither a game advantage.',
+  },
+  items: [
+    {
+      de: `Pro: ${euro(DEFAULT_PRICE_CENTS)} einmalig`,
+      en: `Pro: ${euro(DEFAULT_PRICE_CENTS)} once`,
+      body: {
+        de: `Hebt das Wochenlimit für die automatische Kamera-Erkennung auf. Das ist alles, was es tut — kein Abo, keine Folgekosten. Von Hand zählen, Arcade, Online und Turniere waren und bleiben kostenlos.`,
+        en: `Lifts the weekly limit on automatic camera detection. That is all it does — no subscription, no running costs. Counting by hand, arcade, online and tournaments were and stay free.`,
+      },
+    },
+    {
+      de: `Becher-Designs: ${euro(CUP_PRICE_CENTS)} je Land`,
+      en: `Cup designs: ${euro(CUP_PRICE_CENTS)} per country`,
+      body: {
+        de: `${PAID_CUP_DESIGNS.length} Länder-Flaggen für deine Becher im Arcade-Spiel, alle zusammen ${euro(CUP_BUNDLE_CENTS)}. Sie ändern **nichts** am Spiel: kein Vorteil, keine besseren Chancen, nur das Aussehen. Im Online-Spiel sieht die andere Seite sie.`,
+        en: `${PAID_CUP_DESIGNS.length} country flags for your cups in the arcade game, or all of them for ${euro(CUP_BUNDLE_CENTS)}. They change **nothing** about the game: no advantage, no better odds, only the look. The other table sees them in an online game.`,
+      },
+    },
+    {
+      de: 'Dein Code ist die Quittung',
+      en: 'Your code is the receipt',
+      body: {
+        de: 'Nach dem Kauf bekommst du einen Code der Form BP-XXXX-XXXX-XXXX. Notiere ihn. Weil es keine Konten gibt, ist er der einzige Weg, den Kauf auf ein neues Handy zu bekommen — dort unter „Ich habe schon einen Code" eintippen.',
+        en: 'After buying you get a code shaped BP-XXXX-XXXX-XXXX. Write it down. With no accounts it is the only way to move the purchase to a new phone — type it in there under "I already have a code".',
+      },
+    },
+    {
+      de: 'Ein Code gilt für genau eine Sache',
+      en: 'A code opens one thing',
+      body: {
+        de: `Ein Code für Österreich schaltet Österreich frei — nicht Deutschland, nicht das Paket und nicht die Kamera. Das ist mit Absicht so gebaut, sonst würde ein ${euro(CUP_PRICE_CENTS)}-Code die ${euro(DEFAULT_PRICE_CENTS)}-Funktion öffnen.`,
+        en: `A code for Austria unlocks Austria — not Germany, not the bundle and not the camera. Built that way on purpose, or a ${euro(CUP_PRICE_CENTS)} code would open the ${euro(DEFAULT_PRICE_CENTS)} feature.`,
+      },
+    },
+    {
+      de: 'Bezahlt wird bei Stripe',
+      en: 'Payment happens at Stripe',
+      body: {
+        de: 'Der Kauf läuft über die Bezahlseite von Stripe. Die App sieht deine Kartendaten nie, und es gibt in der App nichts, wo sie gespeichert wären.',
+        en: 'The purchase runs through Stripe’s own page. The app never sees your card details, and there is nowhere in the app they would be stored.',
+      },
+    },
+  ],
+};
+
+/** The same chapter in a build with no shop in it. Shorter, because it is. */
+const MONEY_CHAPTER_FREE: GuideChapter = {
+  id: 'money',
+  icon: 'card',
+  de: 'Was das alles kostet',
+  en: 'What all this costs',
+  summary: {
+    de: 'Nichts. Und das ist die ganze Antwort.',
+    en: 'Nothing. That is the whole answer.',
+  },
+  items: [
+    {
+      de: 'Nichts kostet etwas',
+      en: 'Nothing costs anything',
+      body: {
+        de: 'Diese Version hat keinen Shop. Die automatische Kamera-Erkennung läuft ohne Wochenlimit, das ganze Arcade-Spiel mit allen Modi, der Online-Modus, die Turniere, die Party-Anzeigetafel und die Highlights sind dabei. Es gibt nichts zu kaufen, nichts freizuschalten und kein Abo.',
+        en: 'This version has no shop. Automatic camera detection runs with no weekly limit, and the whole arcade game with every mode, online play, tournaments, the party scoreboard and the highlights are all included. There is nothing to buy, nothing to unlock and no subscription.',
+      },
+    },
+    {
+      de: 'Keine Werbung, kein Tracking',
+      en: 'No advertising, no tracking',
+      body: {
+        de: 'Es ist auch nicht so, dass du stattdessen mit deinen Daten zahlst. Die App hat keine Werbung, keine Analyse-Werkzeuge und keine Konten. Was du spielst, bleibt auf deinem Gerät; nach außen geht nur, was du selbst startest — ein Online-Spiel, eine Anzeigetafel oder eine Sicherung.',
+        en: 'Nor is this the kind of free where you pay with your data instead. The app has no advertising, no analytics and no accounts. What you play stays on your device; the only things that leave it are the ones you start yourself — an online game, a scoreboard or a backup.',
+      },
+    },
+    {
+      de: `Becher-Designs gibt es für Coins`,
+      en: `Cup designs cost coins`,
+      body: {
+        de: `${COIN_CUP_DESIGNS.length} Designs bekommst du für Coins, die du dir erspielst — jede Woche sind ${WEEKLY_OFFER_SIZE} davon im Angebot. Sie ändern **nichts** am Spiel: kein Vorteil, keine besseren Chancen, nur das Aussehen.`,
+        en: `${COIN_CUP_DESIGNS.length} designs are bought with coins you earn by playing, and ${WEEKLY_OFFER_SIZE} of them are on offer each week. They change **nothing** about the game: no advantage, no better odds, only the look.`,
+      },
+    },
+  ],
+};
+
+const MONEY_CHAPTER = SALES_ENABLED ? MONEY_CHAPTER_PAID : MONEY_CHAPTER_FREE;
 
 export const GUIDE: GuideChapter[] = [
   // ---------------------------------------------------------------- basics
@@ -204,14 +320,23 @@ export const GUIDE: GuideChapter[] = [
           en: 'Automatic detection only runs in the browser, or in the app started from the home screen. An installed Android build has no access to individual camera frames — and says so on screen.',
         },
       },
-      {
-        de: `Kostenlos: ${FREE_TRACKED_GAMES_PER_WEEK} Spiele pro Woche`,
-        en: `Free: ${FREE_TRACKED_GAMES_PER_WEEK} games a week`,
-        body: {
-          de: `Die automatische Erkennung gibt es ${FREE_TRACKED_GAMES_PER_WEEK}× pro Woche gratis, der Zähler beginnt montags neu. Von Hand mitzählen ist immer und unbegrenzt kostenlos, genauso das ganze Arcade-Spiel, der Online-Modus und die Turniere.`,
-          en: `Automatic detection is free ${FREE_TRACKED_GAMES_PER_WEEK} times a week, and the counter starts again on Monday. Counting by hand is always free and unlimited, as are the whole arcade game, online play and tournaments.`,
-        },
-      },
+      SALES_ENABLED
+        ? {
+            de: `Kostenlos: ${FREE_TRACKED_GAMES_PER_WEEK} Spiele pro Woche`,
+            en: `Free: ${FREE_TRACKED_GAMES_PER_WEEK} games a week`,
+            body: {
+              de: `Die automatische Erkennung gibt es ${FREE_TRACKED_GAMES_PER_WEEK}× pro Woche gratis, der Zähler beginnt montags neu. Von Hand mitzählen ist immer und unbegrenzt kostenlos, genauso das ganze Arcade-Spiel, der Online-Modus und die Turniere.`,
+              en: `Automatic detection is free ${FREE_TRACKED_GAMES_PER_WEEK} times a week, and the counter starts again on Monday. Counting by hand is always free and unlimited, as are the whole arcade game, online play and tournaments.`,
+            },
+          }
+        : {
+            de: 'Kostenlos, ohne Limit',
+            en: 'Free, with no limit',
+            body: {
+              de: 'Die automatische Erkennung kostet nichts und ist nicht begrenzt — so oft ihr wollt, jede Woche. Von Hand mitzählen, das ganze Arcade-Spiel, der Online-Modus und die Turniere ebenso.',
+              en: 'Automatic detection costs nothing and is not capped — as often as you like, every week. The same goes for counting by hand, the whole arcade game, online play and tournaments.',
+            },
+          },
     ],
   },
 
@@ -472,8 +597,8 @@ export const GUIDE: GuideChapter[] = [
         de: 'Becher-Designs der Woche',
         en: 'The week’s cup designs',
         body: {
-          de: `Unter **Skins → Becher** stehen jede Woche ${WEEKLY_OFFER_SIZE} Becher-Designs für Coins zum Kauf. Insgesamt gibt es ${COIN_CUP_DESIGNS.length}, jedes ist alle ${COIN_CUP_DESIGNS.length / WEEKLY_OFFER_SIZE} Wochen einmal dran — was du diese Woche nicht kaufst, kommt wieder. Unter dem Angebot siehst du die ganze Sammlung mit dem Hinweis, wann das jeweilige Design das nächste Mal im Angebot ist. Gewechselt wird in der Nacht auf Montag, und zwar für alle gleichzeitig: Zwei Leute am selben Tisch sehen immer dasselbe Angebot. Das sind Muster — Carbon, Camo, Sonnenuntergang. Die **Länderflaggen** sind etwas anderes und gibt es weiterhin nur im Becher-Shop für echtes Geld.`,
-          en: `Under **Skins → Cups**, ${WEEKLY_OFFER_SIZE} cup designs are on offer for coins each week. There are ${COIN_CUP_DESIGNS.length} in all and each comes round once every ${COIN_CUP_DESIGNS.length / WEEKLY_OFFER_SIZE} weeks, so one you skip this week is not gone. Below the offer is the whole collection, each with when it is next up. It changes overnight on Monday, and for everybody at once: two people at the same table always see the same three. These are patterns — carbon, camouflage, sunset. The **country flags** are a separate thing and stay in the cup shop, for money.`,
+          de: `Unter **Skins → Becher** stehen jede Woche ${WEEKLY_OFFER_SIZE} Becher-Designs für Coins zum Kauf. Insgesamt gibt es ${COIN_CUP_DESIGNS.length}, jedes ist alle ${COIN_CUP_DESIGNS.length / WEEKLY_OFFER_SIZE} Wochen einmal dran — was du diese Woche nicht kaufst, kommt wieder. Unter dem Angebot siehst du die ganze Sammlung mit dem Hinweis, wann das jeweilige Design das nächste Mal im Angebot ist. Gewechselt wird in der Nacht auf Montag, und zwar für alle gleichzeitig: Zwei Leute am selben Tisch sehen immer dasselbe Angebot. Das sind Muster — Carbon, Camo, Sonnenuntergang.${FLAGS_NOTE.de}`,
+          en: `Under **Skins → Cups**, ${WEEKLY_OFFER_SIZE} cup designs are on offer for coins each week. There are ${COIN_CUP_DESIGNS.length} in all and each comes round once every ${COIN_CUP_DESIGNS.length / WEEKLY_OFFER_SIZE} weeks, so one you skip this week is not gone. Below the offer is the whole collection, each with when it is next up. It changes overnight on Monday, and for everybody at once: two people at the same table always see the same three. These are patterns — carbon, camouflage, sunset.${FLAGS_NOTE.en}`,
         },
       },
       {
@@ -504,58 +629,7 @@ export const GUIDE: GuideChapter[] = [
   },
 
   // -------------------------------------------------------------- payments
-  {
-    id: 'money',
-    icon: 'card',
-    de: 'Was Geld kostet — und was nicht',
-    en: 'What costs money — and what does not',
-    summary: {
-      de: 'Zwei Sachen, beide einmalig, beide ohne Spielvorteil.',
-      en: 'Two things, both one-off, neither a game advantage.',
-    },
-    items: [
-      {
-        de: `Pro: ${euro(DEFAULT_PRICE_CENTS)} einmalig`,
-        en: `Pro: ${euro(DEFAULT_PRICE_CENTS)} once`,
-        body: {
-          de: `Hebt das Wochenlimit für die automatische Kamera-Erkennung auf. Das ist alles, was es tut — kein Abo, keine Folgekosten. Von Hand zählen, Arcade, Online und Turniere waren und bleiben kostenlos.`,
-          en: `Lifts the weekly limit on automatic camera detection. That is all it does — no subscription, no running costs. Counting by hand, arcade, online and tournaments were and stay free.`,
-        },
-      },
-      {
-        de: `Becher-Designs: ${euro(CUP_PRICE_CENTS)} je Land`,
-        en: `Cup designs: ${euro(CUP_PRICE_CENTS)} per country`,
-        body: {
-          de: `${PAID_CUP_DESIGNS.length} Länder-Flaggen für deine Becher im Arcade-Spiel, alle zusammen ${euro(CUP_BUNDLE_CENTS)}. Sie ändern **nichts** am Spiel: kein Vorteil, keine besseren Chancen, nur das Aussehen. Im Online-Spiel sieht die andere Seite sie.`,
-          en: `${PAID_CUP_DESIGNS.length} country flags for your cups in the arcade game, or all of them for ${euro(CUP_BUNDLE_CENTS)}. They change **nothing** about the game: no advantage, no better odds, only the look. The other table sees them in an online game.`,
-        },
-      },
-      {
-        de: 'Dein Code ist die Quittung',
-        en: 'Your code is the receipt',
-        body: {
-          de: 'Nach dem Kauf bekommst du einen Code der Form BP-XXXX-XXXX-XXXX. Notiere ihn. Weil es keine Konten gibt, ist er der einzige Weg, den Kauf auf ein neues Handy zu bekommen — dort unter „Ich habe schon einen Code" eintippen.',
-          en: 'After buying you get a code shaped BP-XXXX-XXXX-XXXX. Write it down. With no accounts it is the only way to move the purchase to a new phone — type it in there under "I already have a code".',
-        },
-      },
-      {
-        de: 'Ein Code gilt für genau eine Sache',
-        en: 'A code opens one thing',
-        body: {
-          de: `Ein Code für Österreich schaltet Österreich frei — nicht Deutschland, nicht das Paket und nicht die Kamera. Das ist mit Absicht so gebaut, sonst würde ein ${euro(CUP_PRICE_CENTS)}-Code die ${euro(DEFAULT_PRICE_CENTS)}-Funktion öffnen.`,
-          en: `A code for Austria unlocks Austria — not Germany, not the bundle and not the camera. Built that way on purpose, or a ${euro(CUP_PRICE_CENTS)} code would open the ${euro(DEFAULT_PRICE_CENTS)} feature.`,
-        },
-      },
-      {
-        de: 'Bezahlt wird bei Stripe',
-        en: 'Payment happens at Stripe',
-        body: {
-          de: 'Der Kauf läuft über die Bezahlseite von Stripe. Die App sieht deine Kartendaten nie, und es gibt in der App nichts, wo sie gespeichert wären.',
-          en: 'The purchase runs through Stripe’s own page. The app never sees your card details, and there is nowhere in the app they would be stored.',
-        },
-      },
-    ],
-  },
+  MONEY_CHAPTER,
 
   // ------------------------------------------------------------- save code
   {

@@ -12,6 +12,7 @@ import { NeonSwitch } from '@/components/ui/NeonSwitch';
 import { BackupCard } from '@/components/ui/BackupCard';
 import { selectCombinedStats, selectCareerProgress, useBeerpongStore } from '@/lib/store';
 import { LANGUAGES, useT } from '@/lib/i18n';
+import { LEGAL_AVAILABLE, SALES_ENABLED } from '@/lib/sales';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 export default function ProfileScreen() {
@@ -122,7 +123,9 @@ export default function ProfileScreen() {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.proTitle}>{t('profile.guide')}</Text>
-              <Text style={styles.proSubtitle}>{t('profile.guideBody')}</Text>
+              <Text style={styles.proSubtitle}>
+                {t(SALES_ENABLED ? 'profile.guideBody' : 'profile.guideBodyFree')}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
@@ -130,20 +133,57 @@ export default function ProfileScreen() {
           <SectionLabel>{t('backup.title')}</SectionLabel>
           <BackupCard />
 
-          <SectionLabel>{t('profile.pro')}</SectionLabel>
+          {/* Same row either way, because the screen behind it is worth
+              reaching either way — it is what the app does and what it costs.
+              Only the words change, and with nothing for sale they stop
+              promising a purchase. */}
+          <SectionLabel>{SALES_ENABLED ? t('profile.pro') : t('free.allFree.title')}</SectionLabel>
           <Pressable
             onPress={() => router.push('/pro')}
             style={({ pressed }) => [styles.proCard, pressed && { opacity: 0.75 }]}
           >
             <View style={styles.proIcon}>
-              <Ionicons name="sparkles" size={20} color={colors.gold} />
+              <Ionicons name={SALES_ENABLED ? 'sparkles' : 'gift'} size={20} color={colors.gold} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.proTitle}>{t('pro.title')}</Text>
-              <Text style={styles.proSubtitle}>{t('pro.teaser')}</Text>
+              <Text style={styles.proTitle}>
+                {SALES_ENABLED ? t('pro.title') : t('free.allFree.title')}
+              </Text>
+              <Text style={styles.proSubtitle}>
+                {SALES_ENABLED ? t('pro.teaser') : t('free.allFree.teaser')}
+              </Text>
             </View>
             <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </Pressable>
+
+          {/* Absent until somebody has filled `OPERATOR` in `lib/legal.ts` —
+              a Rechtliches page reading "[dein Name]" is worse than none. */}
+          {LEGAL_AVAILABLE ? (
+            <>
+              <SectionLabel>{t('legal.title')}</SectionLabel>
+              <Pressable
+                onPress={() => router.push('/legal')}
+                style={({ pressed }) => [
+                  styles.proCard,
+                  styles.legalCard,
+                  pressed && { opacity: 0.75 },
+                ]}
+              >
+                <View style={[styles.proIcon, { borderColor: colors.textSecondary }]}>
+                  <Ionicons name="shield-checkmark" size={20} color={colors.textSecondary} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.proTitle, { color: colors.textPrimary }]}>
+                    {t('legal.title')}
+                  </Text>
+                  <Text style={styles.proSubtitle}>
+                    {SALES_ENABLED ? t('legal.teaser') : t('legal.privacyOnlyTeaser')}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+              </Pressable>
+            </>
+          ) : null}
 
           <Text style={styles.footer}>Beerpong Companion & Arcade · v1.0.0</Text>
         </ScrollView>
@@ -334,6 +374,13 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headingBlack,
     fontSize: 17,
     color: colors.gold,
+  },
+  /** Paperwork, not an offer — so it does not glow gold like one. */
+  legalCard: {
+    borderColor: colors.borderFaint,
+    borderWidth: 1,
+    shadowOpacity: 0,
+    elevation: 0,
   },
   proSubtitle: {
     fontFamily: fonts.bodyRegular,

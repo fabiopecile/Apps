@@ -23,6 +23,7 @@ import {
 } from '@/lib/highlights';
 import { useT } from '@/lib/i18n';
 import { FREE_TRACKED_GAMES_PER_WEEK, trackedGamesLeft } from '@/lib/entitlement';
+import { trackerUnlimited } from '@/lib/sales';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
@@ -88,7 +89,7 @@ export function AutoDetect({
   const setHighlightsEnabled = useBeerpongStore((s) => s.setHighlightsEnabled);
   const pro = useBeerpongStore((s) => s.pro);
   const trackerUse = useBeerpongStore((s) => s.trackerUse);
-  const gamesLeft = trackedGamesLeft(trackerUse, new Date(), pro);
+  const gamesLeft = trackedGamesLeft(trackerUse, new Date(), trackerUnlimited(pro));
   const router = useRouter();
   /** Which rack is being lined up: 0 first, then 1. */
   const [aligning, setAligning] = useState<TeamIndex>(0);
