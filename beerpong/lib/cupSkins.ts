@@ -366,13 +366,54 @@ export const COIN_CUP_DESIGNS: CupDesign[] = [
 ];
 
 /**
+ * Designs that cannot be bought at any price.
+ *
+ * A third category, and the only one that means something. The country flags
+ * cost money and the patterns cost coins, so both are ultimately a matter of
+ * spending enough — which makes them decoration. These are the ones somebody
+ * can only have by having done the thing, and that is the whole point: a cup
+ * nobody can buy is a cup that says something about the person holding it.
+ *
+ * Deliberately **no `coins` field**. That absence is what keeps them out of the
+ * weekly rotation (`weeklyOffer` walks `COIN_CUP_DESIGNS`) and out of the money
+ * catalogue (`PAID_CUP_DESIGNS` is derived from the countries), so there is no
+ * route by which one of these ends up with a price on it by accident. A test
+ * holds the three lists apart.
+ */
+export const EARNED_CUP_DESIGNS: CupDesign[] = [
+  {
+    id: 'cup-perfect',
+    name: 'Perfect Weekend',
+    flag: '👑',
+    accent: '#FFE27A',
+    /**
+     * Gold on near-black, split down the middle rather than faded.
+     *
+     * It has to be unmistakable at the far end of a table and unmistakably
+     * *not* `cup-champion`, which is the 3200-coin gold fade — a reward that
+     * looks like something buyable is not a reward. A hard edge reads as
+     * deliberate where a gradient reads as pretty.
+     */
+    pattern: {
+      kind: 'stripes',
+      direction: 'vertical',
+      colours: ['#0A0A0A', '#FFD23D', '#0A0A0A', '#FFE27A'],
+      weights: [3, 1, 3, 1],
+    },
+  },
+];
+
+/** The design a flawless Weekend League run hands over. */
+export const PERFECT_WEEKEND_CUP = 'cup-perfect';
+
+/**
  * Every design there is, however it was come by.
  *
  * The renderer and `equipCupSkin` look designs up here; the *shops* never do.
  * `PAID_CUP_DESIGNS` below stays derived from the countries alone, which is
  * what keeps a coin design out of the catalogue and off Stripe.
  */
-const ALL_CUP_DESIGNS = [...CUP_DESIGNS, ...COIN_CUP_DESIGNS];
+const ALL_CUP_DESIGNS = [...CUP_DESIGNS, ...COIN_CUP_DESIGNS, ...EARNED_CUP_DESIGNS];
 
 export function cupDesign(id: string): CupDesign {
   return ALL_CUP_DESIGNS.find((design) => design.id === id) ?? CUP_DESIGNS[0];
