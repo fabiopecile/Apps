@@ -1,0 +1,152 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700&family=Saira+Condensed:wght@700;800;900&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #2F6BFF; } a:hover { color: #6A96FF; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #0E1013; font-family: Archivo, sans-serif; color: #EDF0F4; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- header bar, flat, like a broadcast strip -->
+  <div style="background: #14171C; border-bottom: 1px solid #22262E; padding: 16px 18px;">
+    <div style="display: flex; align-items: center; gap: 12px;">
+      <div style="flex-grow: 1;">
+        <div style="font-family: 'Saira Condensed', sans-serif; font-weight: 900; font-size: 24px; line-height: 24px; letter-spacing: 0.4px; text-transform: uppercase;">Arcade</div>
+        <div style="font-size: 12px; color: #8A94A3; margin-top: 3px;">Level 1 &middot; 40 XP bis Level 2</div>
+      </div>
+      <div style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 11px; border-radius: 4px; background: #1C212A; border: 1px solid #2A3039;">
+        <span style="font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 15px; color: #EDF0F4;">100</span>
+        <span style="font-size: 10px; letter-spacing: 1px; color: #8A94A3; font-weight: 600;">COINS</span>
+      </div>
+      <div style="width: 30px; height: 30px; border-radius: 4px; background: #1C212A; border: 1px solid #2A3039; display: flex; align-items: center; justify-content: center;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8" r="3.6" stroke="#8A94A3" stroke-width="2"/><path d="M5 20c0-3.6 3.1-5.6 7-5.6s7 2 7 5.6" stroke="#8A94A3" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+    </div>
+    <!-- xp bar, hairline -->
+    <div style="height: 3px; border-radius: 2px; background: #22262E; margin-top: 12px; overflow: hidden;">
+      <div style="width: 22%; height: 3px; background: #2F6BFF;"></div>
+    </div>
+  </div>
+
+  <!-- next fixture: the broadcast "up next" card -->
+  <div style="margin: 14px 18px 0 18px; border-radius: 6px; background: #14171C; border: 1px solid #22262E; overflow: hidden;">
+    <div style="display: flex; align-items: center; gap: 8px; padding: 9px 14px; background: #1A1F27; border-bottom: 1px solid #22262E;">
+      <div style="width: 3px; height: 12px; background: #2F6BFF; border-radius: 1px;"></div>
+      <span style="font-size: 10.5px; letter-spacing: 1.6px; color: #8A94A3; font-weight: 700;">ALS NÄCHSTES</span>
+      <div style="flex-grow: 1;"></div>
+      <span style="font-size: 11px; color: #8A94A3;">Division 10</span>
+    </div>
+    <div style="padding: 16px 14px;">
+      <div style="display: flex; align-items: center;">
+        <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <div style="width: 40px; height: 40px; border-radius: 4px; background: #1C212A; border-left: 3px solid #2F6BFF; display: flex; align-items: center; justify-content: center;">
+            <span style="font-family: 'Saira Condensed', sans-serif; font-weight: 900; font-size: 18px; color: #2F6BFF;">DU</span>
+          </div>
+          <span style="font-size: 12px; color: #EDF0F4; font-weight: 600;">Spieler</span>
+          <span style="font-size: 11px; color: #8A94A3;">0 S &middot; 0 N</span>
+        </div>
+        <div style="font-family: 'Saira Condensed', sans-serif; font-weight: 900; font-size: 19px; color: #4A5261; letter-spacing: 1px;">VS</div>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 7px;">
+          <div style="width: 40px; height: 40px; border-radius: 4px; background: #1C212A; border-left: 3px solid #E4574C; display: flex; align-items: center; justify-content: center;">
+            <span style="font-family: 'Saira Condensed', sans-serif; font-weight: 900; font-size: 18px; color: #E4574C;">KI</span>
+          </div>
+          <span style="font-size: 12px; color: #EDF0F4; font-weight: 600;">Mittel</span>
+          <span style="font-size: 11px; color: #8A94A3;">45% Quote</span>
+        </div>
+      </div>
+      <div style="margin-top: 15px; height: 46px; border-radius: 5px; background: #2F6BFF; display: flex; align-items: center; justify-content: center;">
+        <span style="font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 16px; letter-spacing: 1.4px; color: #FFFFFF;">SPIEL STARTEN</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- modes as a compact table, not cards -->
+  <div style="margin: 18px 18px 0 18px;">
+    <div style="display: flex; align-items: center; gap: 8px; padding-bottom: 9px; border-bottom: 1px solid #22262E;">
+      <span style="font-size: 10.5px; letter-spacing: 1.6px; color: #8A94A3; font-weight: 700;">ALLE MODI</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid #1B1F26;">
+      <div style="width: 3px; height: 26px; background: #2F6BFF; border-radius: 1px;"></div>
+      <div style="flex-grow: 1;">
+        <div style="font-size: 14.5px; font-weight: 600;">Pass &amp; Play</div>
+        <div style="font-size: 11.5px; color: #8A94A3; margin-top: 1px;">Zwei Spieler, ein Handy</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M9 5l7 7-7 7" stroke="#4A5261" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid #1B1F26;">
+      <div style="width: 3px; height: 26px; background: #2F6BFF; border-radius: 1px;"></div>
+      <div style="flex-grow: 1;">
+        <div style="font-size: 14.5px; font-weight: 600;">Division Rivals</div>
+        <div style="font-size: 11.5px; color: #8A94A3; margin-top: 1px;">0 von 3 Siegen bis Aufstieg</div>
+      </div>
+      <div style="display: flex; gap: 3px;">
+        <div style="width: 16px; height: 4px; border-radius: 2px; background: #22262E;"></div>
+        <div style="width: 16px; height: 4px; border-radius: 2px; background: #22262E;"></div>
+        <div style="width: 16px; height: 4px; border-radius: 2px; background: #22262E;"></div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; padding: 13px 0; border-bottom: 1px solid #1B1F26;">
+      <div style="width: 3px; height: 26px; background: #E8B93C; border-radius: 1px;"></div>
+      <div style="flex-grow: 1;">
+        <div style="font-size: 14.5px; font-weight: 600;">Turnier</div>
+        <div style="font-size: 11.5px; color: #8A94A3; margin-top: 1px;">8 Teams &middot; Einsatz 200</div>
+      </div>
+      <span style="font-family: 'Saira Condensed', sans-serif; font-weight: 800; font-size: 15px; color: #E8B93C;">1200</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 12px; padding: 13px 0;">
+      <div style="width: 3px; height: 26px; background: #22262E; border-radius: 1px;"></div>
+      <div style="flex-grow: 1;">
+        <div style="font-size: 14.5px; font-weight: 600; color: #4A5261;">Weekend League</div>
+        <div style="font-size: 11.5px; color: #4A5261; margin-top: 1px;">Ab Division 8</div>
+      </div>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><rect x="5" y="11" width="14" height="9" rx="2" stroke="#4A5261" stroke-width="1.9"/><path d="M8.5 11V8a3.5 3.5 0 017 0v3" stroke="#4A5261" stroke-width="1.9"/></svg>
+    </div>
+  </div>
+
+  <!-- form: the thing a sports app would actually show -->
+  <div style="margin: 14px 18px 0 18px; padding: 13px 14px; border-radius: 6px; background: #14171C; border: 1px solid #22262E; display: flex; align-items: center; gap: 12px;">
+    <div style="flex-grow: 1;">
+      <div style="font-size: 10.5px; letter-spacing: 1.6px; color: #8A94A3; font-weight: 700;">FORM</div>
+      <div style="display: flex; gap: 4px; margin-top: 8px;">
+        <div style="width: 20px; height: 20px; border-radius: 3px; background: #1E7A47; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #C9F2DA;">S</div>
+        <div style="width: 20px; height: 20px; border-radius: 3px; background: #1E7A47; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #C9F2DA;">S</div>
+        <div style="width: 20px; height: 20px; border-radius: 3px; background: #7A2A26; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #F5C9C6;">N</div>
+        <div style="width: 20px; height: 20px; border-radius: 3px; background: #1E7A47; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; color: #C9F2DA;">S</div>
+        <div style="width: 20px; height: 20px; border-radius: 3px; background: #22262E;"></div>
+      </div>
+    </div>
+    <div style="text-align: right;">
+      <div style="font-family: 'Saira Condensed', sans-serif; font-weight: 900; font-size: 30px; line-height: 28px;">62<span style="font-size: 16px; color: #8A94A3;">%</span></div>
+      <div style="font-size: 11px; color: #8A94A3;">Trefferquote</div>
+    </div>
+  </div>
+
+  <div style="flex-grow: 1;"></div>
+
+  <div style="display: flex; background: #14171C; border-top: 1px solid #22262E; padding: 9px 0 16px 0;">
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="3" y="7" width="18" height="13" rx="2.6" stroke="#8A94A3" stroke-width="1.9"/><circle cx="12" cy="13.5" r="3.6" stroke="#8A94A3" stroke-width="1.9"/><path d="M9 7l1.4-2.5h3.2L15 7" stroke="#8A94A3" stroke-width="1.9" stroke-linejoin="round"/></svg>
+      <span style="font-size: 10.5px; letter-spacing: 0.8px; color: #8A94A3; font-weight: 600;">Kamera</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><rect x="2.5" y="7" width="19" height="10" rx="5" stroke="#2F6BFF" stroke-width="1.9"/><path d="M7.5 10.5v3M6 12h3M16 11h.01M18 13.5h.01" stroke="#2F6BFF" stroke-width="2" stroke-linecap="round"/></svg>
+      <span style="font-size: 10.5px; letter-spacing: 0.8px; color: #2F6BFF; font-weight: 600;">Arcade</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -92,6 +92,11 @@ const STRINGS = {
     de: 'Alles erklärt: Kamera, Arcade, Online, Codes, Preise, Grenzen.',
     en: 'Everything explained: camera, arcade, online, codes, prices, limits.',
   },
+  /** The same line without "Preise", for a build that has none. */
+  'profile.guideBodyFree': {
+    de: 'Alles erklärt: Kamera, Arcade, Online, Coins, Grenzen.',
+    en: 'Everything explained: camera, arcade, online, coins, limits.',
+  },
   'onboarding.start': { de: 'Los geht’s', en: "Let's go" },
   'onboarding.tracker.title': { de: 'Zähl dein echtes Spiel', en: 'Score your real game' },
   'onboarding.tracker.body': {
@@ -284,6 +289,37 @@ const STRINGS = {
     de: 'Das Arcade-Spiel, alle Modi, Coins, Skins und Turniere bleiben vollständig kostenlos. Bezahlt wird nur, wenn die Kamera an einem echten Tisch für euch mitzählt.',
     en: 'The arcade game, every mode, coins, skins and tournaments stay completely free. The only thing money buys is the camera keeping score at a real table.',
   },
+  // What the Pro screen says in a build that sells nothing. Not "coming soon"
+  // and not a price with the button greyed out: this version genuinely has no
+  // shop in it, and saying so plainly is shorter than explaining.
+  'free.allFree.title': { de: 'Alles kostenlos', en: 'All free' },
+  'free.allFree.body': {
+    de: 'In dieser Version kostet nichts etwas. Die Kamera zählt ohne Wochenlimit mit, das ganze Arcade-Spiel, der Online-Modus, die Turniere und alle Becher-Designs, die man sich erspielt, sind dabei. Es gibt keinen Shop, keine Werbung und kein Abo.',
+    en: 'Nothing in this version costs anything. The camera keeps score with no weekly limit, and the whole arcade game, online play, tournaments and every cup design you can earn are included. There is no shop, no advertising and no subscription.',
+  },
+  'free.allFree.teaser': {
+    de: 'Was die App kann — und was es kostet: nichts',
+    en: 'What the app does — and what it costs: nothing',
+  },
+  // The paid build's version of this line ends "…bezahlt wird nur, wenn die
+  // Kamera mitzählt", which directly contradicts the card it sits under in a
+  // build with no shop. Two sentences apart, and readers notice.
+  'free.allFree.everything': {
+    de: 'Das Arcade-Spiel, alle Modi, Coins, Skins, Turniere und die Kamera an einem echten Tisch — alles ohne Limit und ohne Bezahlung.',
+    en: 'The arcade game, every mode, coins, skins, tournaments and the camera at a real table — all of it with no limit and nothing to pay.',
+  },
+  // The card at the foot of the screen. Deliberately not a third restatement
+  // of "everything is free" — the header and the hero have said that twice
+  // already. This answers the question somebody actually has by then: so what
+  // is the catch?
+  'free.allFree.noCatch': {
+    de: 'Und es gibt keinen Haken: keine Werbung, keine Analyse-Werkzeuge, keine Konten. Was du spielst, bleibt auf deinem Gerät.',
+    en: 'And there is no catch: no advertising, no analytics, no accounts. What you play stays on your device.',
+  },
+  'pro.explainBodyFree': {
+    de: 'Heute musst du das Rack einmal von Hand ausrichten, und bei jedem erkannten Becher fragt die App nach. Später soll ein kleines Bilderkennungsmodell direkt auf dem Handy die Becher selbst finden — dann fallen Ausrichten und Nachfragen weg. Alles bleibt auf dem Gerät, es werden keine Videos hochgeladen.',
+    en: 'Today you line the rack up by hand once, and the app asks about every cup it spots. Later a small vision model on the phone should find the cups itself — no lining up, no questions. Everything stays on the device; no video is uploaded.',
+  },
   'free.devTitle': { de: 'Entwickler-Schalter', en: 'Developer switch' },
   'free.devBody': {
     de: 'Solange es nichts zu kaufen gibt, schaltet dieser Schalter das Limit ab. Er verschwindet, sobald es einen echten Kauf gibt.',
@@ -306,6 +342,10 @@ const STRINGS = {
   'shop.whyNoKeysBoth': {
     de: 'STRIPE_SECRET_KEY und LICENCE_SECRET',
     en: 'STRIPE_SECRET_KEY and LICENCE_SECRET',
+  },
+  'shop.whyNoLegal': {
+    de: 'Grund: Der Verkauf wurde eingeschaltet, aber in lib/legal.ts fehlt noch: {missing}. Ohne vollständige Anbieterangaben bleibt der Shop zu — genau dafür ist die Sperre da.',
+    en: 'Reason: selling was switched on, but lib/legal.ts is still missing: {missing}. Without complete provider details the shop stays shut — that is exactly what the block is for.',
   },
 
   // ----------------------------------------------------------- online play
@@ -533,6 +573,58 @@ const STRINGS = {
     de: 'Becher-Designs ändern nichts am Spiel — kein Vorteil, keine besseren Chancen, nur das Aussehen. Bezahlt wird einmal, über Stripe.',
     en: 'Cup designs change nothing about the game — no advantage, no better odds, only the look. Paid once, through Stripe.',
   },
+  // The paid intro and footnote both talk about a code and about Stripe. With
+  // no shop there is neither, and this screen is then only the shelf of what
+  // you already own.
+  'cups.introFree': {
+    de: 'Deine Becher. Designs bekommst du unter Skins → Becher für Coins, die du dir erspielst — hier suchst du aus, welches auf dem Tisch steht.',
+    en: 'Your cups. Designs are earned with coins under Skins → Cups; here you pick which one goes on the table.',
+  },
+  'cups.footnoteFree': {
+    de: 'Becher-Designs ändern nichts am Spiel — kein Vorteil, keine besseren Chancen, nur das Aussehen.',
+    en: 'Cup designs change nothing about the game — no advantage, no better odds, only the look.',
+  },
+  // ------------------------------------------------------------- rechtliches
+  'legal.title': { de: 'Rechtliches', en: 'Legal' },
+  'legal.teaser': {
+    de: 'Impressum, Datenschutz, Widerruf und Bedingungen',
+    en: 'Legal notice, privacy, withdrawal and terms',
+  },
+  'legal.privacyOnlyTeaser': {
+    de: 'Datenschutz — was die App speichert',
+    en: 'Privacy — what the app stores',
+  },
+  'legal.intro': {
+    de: 'Die vollständigen Texte, direkt in der App. Zum Aufklappen antippen.',
+    en: 'The full texts, right here in the app. Tap to open one.',
+  },
+  // Only reachable by typing the address in: nothing links here while the
+  // block in lib/legal.ts is blank. It still has to say something, because an
+  // empty page under the heading "Rechtliches" looks like a broken app rather
+  // than an unconfigured one.
+  'legal.empty': {
+    de: 'Für diese Version sind keine Anbieterangaben hinterlegt. Sie werden gebraucht, sobald etwas verkauft wird — einzutragen im Block OPERATOR in lib/legal.ts.',
+    en: 'No provider details are set for this build. They are needed as soon as anything is sold — fill in the OPERATOR block in lib/legal.ts.',
+  },
+
+  // --------------------------------------------------------- kaufbestätigung
+  'consent.title': { de: 'Vor dem Kauf', en: 'Before you buy' },
+  'consent.what': { de: '{item} · {price} · einmalig', en: '{item} · {price} · one-off' },
+  'consent.terms': {
+    de: 'Ich habe die Nutzungsbedingungen und die Datenschutzerklärung gelesen und bin damit einverstanden.',
+    en: 'I have read the terms of use and the privacy policy and agree to them.',
+  },
+  'consent.waiver': {
+    de: 'Ich verlange ausdrücklich, dass sofort mit der Ausführung begonnen wird. Mir ist bekannt, dass ich mit der vollständigen Freischaltung mein Widerrufsrecht verliere.',
+    en: 'I expressly request that performance begins immediately. I understand that I lose my right of withdrawal once the unlock is complete.',
+  },
+  'consent.why': {
+    de: 'Die Freischaltung passiert sofort nach der Zahlung und lässt sich danach nicht mehr zurücknehmen — deshalb muss beides angehakt sein. Willst du dein Widerrufsrecht behalten, kauf hier bitte nicht: das Spiel selbst ist ohnehin vollständig kostenlos.',
+    en: 'The unlock happens straight after payment and cannot be taken back afterwards — which is why both boxes are needed. If you would rather keep your right of withdrawal, please do not buy: the game itself is free in full anyway.',
+  },
+  'consent.read': { de: 'Texte lesen', en: 'Read the texts' },
+  'consent.continue': { de: 'Weiter zur Bezahlung', en: 'Continue to payment' },
+
   'hub.cups.title': { de: 'Becher-Designs', en: 'Cup designs' },
   'hub.cups.subtitle': {
     de: 'Länder-Becher — spielt unter eurer Flagge',
@@ -627,6 +719,18 @@ const STRINGS = {
   'hub.title': { de: 'ARCADE', en: 'ARCADE' },
   'hub.careerLevel': { de: 'Career Level {level}', en: 'Career level {level}' },
   'hub.modes': { de: 'Spielmodi', en: 'Game modes' },
+  // The hero card at the top. "Weiterspielen" rather than "Spielen" because it
+  // names the mode you last chose — a generic verb over the first item in a
+  // list is just a list with a bigger first row.
+  'hub.hero.eyebrow': { de: 'Weiterspielen', en: 'Carry on' },
+  'hub.hero.firstEyebrow': { de: 'Loslegen', en: 'Get started' },
+  'hub.hero.action': { de: 'Werfen', en: 'Throw' },
+  'hub.hero.firstSubtitle': {
+    de: 'Ein Rack, ein Gegner — such dir die Schwierigkeit aus',
+    en: 'One rack, one opponent — pick your difficulty',
+  },
+  'hub.hero.lastPlayed': { de: 'Zuletzt: {last}', en: 'Last: {last}' },
+  'hub.others': { de: 'Gegen andere', en: 'Against others' },
   'hub.offline.title': { de: 'Offline vs. KI', en: 'Offline vs. AI' },
   'hub.offline.subtitle': {
     de: 'Zuletzt: {last} · Einfach, Mittel oder Schwer',

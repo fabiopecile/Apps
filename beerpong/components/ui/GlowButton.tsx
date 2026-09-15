@@ -4,9 +4,8 @@ import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming,
 } from 'react-native-reanimated';
-import { colors, fonts, glow, radius, spacing } from '@/theme';
+import { colors, fonts, radius, spacing } from '@/theme';
 import { useFeedback } from '@/lib/feedback';
 
 interface GlowButtonProps {
@@ -35,25 +34,21 @@ export function GlowButton({
 }: GlowButtonProps) {
   const feedback = useFeedback();
   const scale = useSharedValue(1);
-  const glowValue = useSharedValue(0.6);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
     opacity: disabled ? 0.4 : 1,
   }));
 
-  const pulseStyle = useAnimatedStyle(() => ({
-    shadowOpacity: glowValue.value,
-  }));
-
+  // The press is still felt — it is the squash that reads as a button going
+  // down, not the halo brightening. That was measured by covering one and then
+  // the other with a finger.
   const handlePressIn = () => {
     scale.value = withSpring(0.94, { damping: 14, stiffness: 260 });
-    glowValue.value = withTiming(1, { duration: 120 });
   };
 
   const handlePressOut = () => {
     scale.value = withSpring(1, { damping: 12, stiffness: 220 });
-    glowValue.value = withTiming(0.6, { duration: 220 });
   };
 
   const handlePress = () => {
@@ -82,9 +77,11 @@ export function GlowButton({
       style={[
         styles.base,
         variantStyle,
-        variant !== 'ghost' ? glow('medium', accent) : undefined,
+        // No halo, on any variant. A solid neon fill on a near-black screen is
+        // already the loudest thing on it — the glow on top was the app
+        // competing with itself, and with every other button beside it. See
+        // the rationing rule in `theme/glow.ts`.
         { paddingVertical: paddingV },
-        pulseStyle,
         animatedStyle,
         style,
       ]}

@@ -2,6 +2,7 @@ import { Platform } from 'react-native';
 
 import { PRO_ITEM } from './catalogue';
 import { ONLINE_AVAILABLE, ONLINE_SERVER_URL } from './onlineConfig';
+import { SALES_ENABLED, SALES_MISSING_FIELDS, SALES_OFF_REASON } from './sales';
 import {
   DEFAULT_CURRENCY,
   DEFAULT_PRICE_CENTS,
@@ -32,6 +33,10 @@ import {
  * up should not have to guess which one they are looking at.
  */
 export type ShopClosedReason =
+  /** This build does not sell anything. See `lib/sales.ts`. */
+  | 'switched-off'
+  /** Selling was asked for, but `OPERATOR` in `lib/legal.ts` is still blank. */
+  | 'no-legal'
   /** No server address was built into this version of the app. */
   | 'no-server'
   /** There is an address, but nothing answered at it. */
@@ -68,6 +73,19 @@ export const SHOP_CLOSED: ShopInfo = {
 };
 
 /**
+ * Shut because this build does not sell anything, which is the default.
+ *
+ * Separate from `SHOP_CLOSED` so the screens can tell "there is no shop in this
+ * version" apart from "there is a shop and it is broken". The first is a
+ * finished free app; the second is somebody's afternoon.
+ */
+export const SHOP_SWITCHED_OFF: ShopInfo = {
+  ...SHOP_CLOSED,
+  closedBecause: SALES_OFF_REASON ?? 'switched-off',
+  missing: SALES_MISSING_FIELDS,
+};
+
+/**
  * Checkout is a redirect, so it only completes on the web.
  *
  * On a phone build the browser opens, the payment goes through and the web app
@@ -78,6 +96,9 @@ export const SHOP_CLOSED: ShopInfo = {
 export const CHECKOUT_REDIRECTS = Platform.OS === 'web';
 
 export async function fetchShop(): Promise<ShopInfo> {
+  // Before the address check, and without a request: a build that sells nothing
+  // has no business asking a payment server anything.
+  if (!SALES_ENABLED) return SHOP_SWITCHED_OFF;
   if (!ONLINE_AVAILABLE) return SHOP_CLOSED;
   try {
     const response = await fetch(`${ONLINE_SERVER_URL}/shop`);
@@ -117,7 +138,7 @@ export async function startCheckout(
   path: string,
   item: string = PRO_ITEM
 ): Promise<{ url: string; sessionId: string } | null> {
-  if (!ONLINE_AVAILABLE) return null;
+  if (!SALES_ENABLED || !ONLINE_AVAILABLE) return null;
   try {
     const response = await fetch(`${ONLINE_SERVER_URL}/checkout`, {
       method: 'POST',
@@ -139,6 +160,12 @@ export async function startCheckout(
  * Comes back with *what* was bought as well, because the app cannot know: the
  * browser has been away at Stripe and all it brought home is a session id. The
  * server reads the item off the session rather than off the address bar.
+ *
+ * Deliberately *not* gated on `SALES_ENABLED`, unlike the two above. This one
+ * and `verifyLicence` only ever hand back something already paid for, and a
+ * build that stops selling should not also stop somebody restoring a purchase
+ * they made while it did. Nothing points at them in a free build, so they sit
+ * dormant rather than dead — which is the cheaper of the two mistakes.
  */
 export async function claimLicence(
   sessionId: string

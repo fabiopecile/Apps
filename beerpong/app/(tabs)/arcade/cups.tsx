@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { GridBackground } from '@/components/ui/GridBackground';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
+import { PurchaseConsent } from '@/components/ui/PurchaseConsent';
 import { CupPreview } from '@/components/arcade/CupPreview';
 import {
   CUP_BUNDLE_ITEM,
@@ -37,6 +38,7 @@ import {
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { useLanguage, useT } from '@/lib/i18n';
+import { SALES_ENABLED } from '@/lib/sales';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 /**
@@ -67,6 +69,8 @@ export default function CupShopScreen() {
   const [note, setNote] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [restoreOpen, setRestoreOpen] = useState(false);
+  /** The item the confirmation is currently open for, or null. */
+  const [pending, setPending] = useState<string | null>(null);
 
   useEffect(() => {
     let alive = true;
@@ -105,9 +109,24 @@ export default function CupShopScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paid]);
 
+  /**
+   * Opens the confirmation and remembers which design it is for. The purchase
+   * itself is `checkout` below, and nothing reaches it without both ticks —
+   * see `components/ui/PurchaseConsent.tsx` for why that matters here.
+   */
   const buy = useCallback(
-    async (item: string) => {
+    (item: string) => {
       feedback.tap();
+      setProblem(null);
+      setNote(null);
+      setPending(item);
+    },
+    [feedback]
+  );
+
+  const checkout = useCallback(
+    async (item: string) => {
+      setPending(null);
       setProblem(null);
       setNote(null);
       setBusy(item);
@@ -124,7 +143,7 @@ export default function CupShopScreen() {
       Linking.openURL(session.url);
       setRestoreOpen(true);
     },
-    [feedback, t]
+    [t]
   );
 
   /**
@@ -159,6 +178,18 @@ export default function CupShopScreen() {
   const bundlePrice = priceOf(CUP_BUNDLE_ITEM);
   const hasAll = PAID_CUP_DESIGNS.every((design) => owned.includes(design.id));
 
+  /**
+   * What the confirmation calls the thing being bought.
+   *
+   * Named rather than "1 Artikel": somebody agreeing to lose a right of
+   * withdrawal should be able to see, in that same box, which purchase they are
+   * agreeing about.
+   */
+  const pendingDesign = PAID_CUP_DESIGNS.find((design) => itemForDesign(design.id) === pending);
+  const pendingName = pendingDesign
+    ? `${pendingDesign.flag} ${pendingDesign.name}`
+    : t('cups.bundleTitle');
+
   return (
     <View style={styles.container}>
       <GridBackground />
@@ -172,7 +203,7 @@ export default function CupShopScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-          <Text style={styles.intro}>{t('cups.intro')}</Text>
+          <Text style={styles.intro}>{t(SALES_ENABLED ? 'cups.intro' : 'cups.introFree')}</Text>
 
           {note ? <Text style={styles.note}>{note}</Text> : null}
           {problem ? <Text style={styles.problem}>{problem}</Text> : null}
@@ -205,7 +236,13 @@ export default function CupShopScreen() {
             })}
           </View>
 
-          {hasAll ? null : (
+          {/* With selling switched off the country flags are not shown at all,
+              rather than shown greyed out. They are not "coming soon" and they
+              are not free — they are simply not part of this build, and a row
+              of unbuyable things is an advert for a shop that does not exist.
+              The coin designs next door are untouched: those were always the
+              way to get a different cup without paying. */}
+          {!SALES_ENABLED || hasAll ? null : (
             <>
               <SectionLabel>{t('cups.forSale')}</SectionLabel>
               {!shop.enabled ? <Text style={styles.closed}>{t('cups.closed')}</Text> : null}
@@ -287,8 +324,18 @@ export default function CupShopScreen() {
             )
           ) : null}
 
-          <Text style={styles.footnote}>{t('cups.footnote')}</Text>
+          <Text style={styles.footnote}>
+            {t(SALES_ENABLED ? 'cups.footnote' : 'cups.footnoteFree')}
+          </Text>
         </ScrollView>
+
+        <PurchaseConsent
+          visible={pending != null}
+          item={pendingName}
+          price={pending ? priceOf(pending) : ''}
+          onCancel={() => setPending(null)}
+          onConfirm={() => pending && checkout(pending)}
+        />
       </SafeAreaView>
     </View>
   );

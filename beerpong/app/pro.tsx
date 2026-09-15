@@ -17,10 +17,18 @@ import { GridBackground } from '@/components/ui/GridBackground';
 import { Reveal } from '@/components/ui/Reveal';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
+import { PurchaseConsent } from '@/components/ui/PurchaseConsent';
 import { useBeerpongStore } from '@/lib/store';
 import { useFeedback } from '@/lib/feedback';
 import { useT, type TranslationKey } from '@/lib/i18n';
 import { FREE_TRACKED_GAMES_PER_WEEK, trackedGamesLeft } from '@/lib/entitlement';
+import {
+  LEGAL_AVAILABLE,
+  SALES_ENABLED,
+  SALES_MISSING_FIELDS,
+  SALES_OFF_REASON,
+  trackerUnlimited,
+} from '@/lib/sales';
 import { formatPrice, looksLikeLicence, normaliseLicence, prettyLicence } from '@/lib/licence';
 import { PRO_ITEM } from '@/lib/catalogue';
 import {
@@ -40,12 +48,27 @@ const FEATURES: {
   icon: keyof typeof Ionicons.glyphMap;
   titleKey: TranslationKey;
   bodyKey: TranslationKey;
+  /** False for anything that only makes sense next to a price. */
+  free?: boolean;
 }[] = [
   // Things that do not exist yet. Online play, highlight clips and the save
   // backup all came off this list when they were built — all three are free —
   // and nothing goes back on it just because it would look good above a price.
-  { icon: 'scan', titleKey: 'pro.feature.detect.title', bodyKey: 'pro.feature.detect.body' },
-  { icon: 'stats-chart', titleKey: 'pro.feature.stats.title', bodyKey: 'pro.feature.stats.body' },
+  {
+    icon: 'scan',
+    titleKey: 'pro.feature.detect.title',
+    bodyKey: 'pro.feature.detect.body',
+    free: true,
+  },
+  {
+    icon: 'stats-chart',
+    titleKey: 'pro.feature.stats.title',
+    bodyKey: 'pro.feature.stats.body',
+    free: true,
+  },
+  // "Exklusive Bälle und Tische, die es nicht für Coins gibt" describes a paid
+  // tier. In a build with no shop there is nothing for it to be exclusive to,
+  // so it would be promising a purchase that cannot be made.
   { icon: 'color-palette', titleKey: 'pro.feature.skins.title', bodyKey: 'pro.feature.skins.body' },
 ];
 
@@ -69,8 +92,9 @@ export default function ProScreen() {
   const [problem, setProblem] = useState<string | null>(null);
   const [code, setCode] = useState('');
   const [restoreOpen, setRestoreOpen] = useState(false);
+  const [consentOpen, setConsentOpen] = useState(false);
 
-  const left = trackedGamesLeft(trackerUse, new Date(), pro);
+  const left = trackedGamesLeft(trackerUse, new Date(), trackerUnlimited(pro));
   const price = formatPrice(shop.amount, shop.currency, language === 'de' ? 'de-DE' : 'en-GB');
 
   useEffect(() => {
@@ -112,8 +136,19 @@ export default function ProScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [paid]);
 
-  const buy = useCallback(async () => {
+  /**
+   * The buy button only opens the confirmation. `checkout` below is what
+   * actually leaves for Stripe, and nothing else calls it — so there is no path
+   * to a payment that skipped the withdrawal waiver.
+   */
+  const buy = useCallback(() => {
     feedback.tap();
+    setProblem(null);
+    setConsentOpen(true);
+  }, [feedback]);
+
+  const checkout = useCallback(async () => {
+    setConsentOpen(false);
     setProblem(null);
     setBusy('starting');
     const session = await startCheckout('/pro');
@@ -132,7 +167,7 @@ export default function ProScreen() {
     // code brings it back here. Better than a deep link that half works.
     Linking.openURL(session.url);
     setRestoreOpen(true);
-  }, [feedback, t]);
+  }, [t]);
 
   const restore = useCallback(async () => {
     feedback.tap();
@@ -155,7 +190,9 @@ export default function ProScreen() {
       <GridBackground />
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>{t('pro.title')}</Text>
+          <Text style={styles.headerTitle}>
+            {SALES_ENABLED ? t('pro.title') : t('free.allFree.title')}
+          </Text>
           <Pressable onPress={() => router.back()} hitSlop={10} style={styles.closeButton}>
             <Ionicons name="close" size={22} color={colors.textSecondary} />
           </Pressable>
@@ -166,11 +203,17 @@ export default function ProScreen() {
             <View style={styles.heroIcon}>
               <Ionicons name="sparkles" size={30} color={colors.gold} />
             </View>
+            {/* The hero keeps its own title in both builds — the header above
+                already says "Alles kostenlos", and saying it twice in one
+                screenful reads as a slogan rather than a fact. */}
             <Text style={styles.heroTitle}>{t('pro.heroTitle')}</Text>
-            <Text style={styles.heroBody}>{t('pro.heroBody')}</Text>
-            {/* Only while there is nothing to buy. Next to a price it would
-                simply be untrue. */}
-            {!shop.enabled && !licence ? (
+            <Text style={styles.heroBody}>
+              {SALES_ENABLED ? t('pro.heroBody') : t('free.allFree.body')}
+            </Text>
+            {/* "In development" is about a shop that exists and is not open
+                yet. A build with no shop in it is not in development, it is
+                finished — so this only appears when something is for sale. */}
+            {SALES_ENABLED && !shop.enabled && !licence ? (
               <View style={styles.soonChip}>
                 <Text style={styles.soonText} selectable={false}>
                   {t('pro.inDevelopment')}
@@ -200,14 +243,16 @@ export default function ProScreen() {
                 {t('free.resets', { total: FREE_TRACKED_GAMES_PER_WEEK })}
               </Text>
             )}
-            <Text style={styles.explainBody}>{t('free.arcadeFree')}</Text>
+            <Text style={styles.explainBody}>
+              {SALES_ENABLED ? t('free.arcadeFree') : t('free.allFree.everything')}
+            </Text>
           </View>
 
           <SectionLabel>{t('pro.whatsInside')}</SectionLabel>
           {shop.enabled || licence ? (
             <Text style={[styles.explainBody, styles.plannedNote]}>{t('shop.plannedNote')}</Text>
           ) : null}
-          {FEATURES.map((feature, position) => (
+          {FEATURES.filter((feature) => SALES_ENABLED || feature.free).map((feature, position) => (
             <Reveal key={feature.titleKey} index={position} delay={120}>
             <View style={styles.featureRow}>
               <View style={styles.featureIcon}>
@@ -224,15 +269,46 @@ export default function ProScreen() {
           <SectionLabel>{t('pro.howItWorks')}</SectionLabel>
           <View style={styles.explainCard}>
             <Text style={styles.explainTitle}>{t('pro.explainDetectTitle')}</Text>
-            <Text style={styles.explainBody}>{t('pro.explainBody')}</Text>
+            <Text style={styles.explainBody}>
+              {t(SALES_ENABLED ? 'pro.explainBody' : 'pro.explainBodyFree')}
+            </Text>
           </View>
           <View style={styles.explainCard}>
             <Text style={styles.explainTitle}>{t('pro.explainOnlineTitle')}</Text>
             <Text style={styles.explainBody}>{t('pro.explainOnlineBody')}</Text>
           </View>
 
-          {/* Already bought: the code, and nothing to sell. */}
-          {licence ? (
+          {/* Nothing is for sale in this build, so there is no price, no
+              waiting list and no developer switch — the limit those existed
+              around is not there either. Just what you get, which is all of
+              it. */}
+          {!SALES_ENABLED ? (
+            <View style={[styles.buyCard, { borderColor: colors.neon }, glow('soft')]}>
+              <Ionicons name="gift" size={30} color={colors.neon} />
+              <Text style={styles.buyTitle}>{t('free.allFree.title')}</Text>
+              <Text style={styles.explainBody}>{t('free.allFree.noCatch')}</Text>
+              {/* Only when somebody switched selling on and it did not take.
+                  Invisible in an ordinary free build, where there is nothing
+                  to diagnose. */}
+              {SALES_OFF_REASON === 'no-legal' ? (
+                <Text style={styles.devWhy}>
+                  {t('shop.whyNoLegal', { missing: SALES_MISSING_FIELDS.join(', ') })}
+                </Text>
+              ) : null}
+              {LEGAL_AVAILABLE ? (
+                <GlowButton
+                  label={t('legal.title')}
+                  variant="outline"
+                  size="sm"
+                  onPress={() => {
+                    feedback.tap();
+                    router.push('/legal');
+                  }}
+                />
+              ) : null}
+            </View>
+          ) : /* Already bought: the code, and nothing to sell. */
+          licence ? (
             <View style={[styles.buyCard, { borderColor: colors.neon }, glow('soft')]}>
               <Ionicons name="checkmark-circle" size={30} color={colors.neon} />
               <Text style={styles.buyTitle}>{t('shop.owned')}</Text>
@@ -291,7 +367,7 @@ export default function ProScreen() {
 
           {/* A code from another phone. Folded away, because most people
               arriving here have not got one. */}
-          {!licence && shop.enabled ? (
+          {SALES_ENABLED && !licence && shop.enabled ? (
             restoreOpen ? (
               <View style={styles.restoreCard}>
                 <TextInput
@@ -322,7 +398,7 @@ export default function ProScreen() {
           {/* Only while nothing is actually for sale. A limit with no way past
               it would lock people out of a feature nobody can buy yet — and the
               moment there is a way past it, this has no business existing. */}
-          {!shop.enabled && !licence ? (
+          {SALES_ENABLED && !shop.enabled && !licence ? (
             <View style={styles.devCard}>
               <Text style={styles.devTitle}>{t('free.devTitle')}</Text>
               <Text style={styles.explainBody}>{t('free.devBody')}</Text>
@@ -354,6 +430,14 @@ export default function ProScreen() {
             </View>
           ) : null}
         </ScrollView>
+
+        <PurchaseConsent
+          visible={consentOpen}
+          item={t('pro.title')}
+          price={price}
+          onCancel={() => setConsentOpen(false)}
+          onConfirm={checkout}
+        />
       </SafeAreaView>
     </View>
   );
