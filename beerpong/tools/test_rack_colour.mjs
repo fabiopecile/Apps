@@ -58,10 +58,26 @@ console.log('the two racks');
 check('the player colour here is still the one the theme uses', () => {
   // This file hard-codes it, so it has to be the same one — otherwise the
   // whole check drifts quietly out of being about anything.
+  //
+  // Read through `you` rather than `neon`: the theme grew semantic tokens, and
+  // `you` is now the name for "the player's colour", which is exactly what
+  // this test is about. Both spellings may point at a const rather than a
+  // literal, so one level of indirection is followed.
   const theme = readFileSync(new URL('../theme/colors.ts', import.meta.url), 'utf8');
-  const neon = theme.match(/neon:\s*'(#[0-9A-Fa-f]{6})'/);
-  assert.ok(neon, 'could not find the neon colour in the theme');
-  assert.equal(neon[1].toUpperCase(), PLAYER);
+  const resolve = (token) => {
+    const entry = theme.match(new RegExp(`^\\s+${token}: (.+?),\\s*$`, 'm'));
+    if (!entry) return null;
+    const value = entry[1].trim();
+    if (/^'#[0-9A-Fa-f]{6}'$/.test(value)) return value.slice(1, -1);
+    const constant = theme.match(new RegExp(`^const ${value} = '(#[0-9A-Fa-f]{6})';`, 'm'));
+    return constant ? constant[1] : null;
+  };
+  const you = resolve('you');
+  assert.ok(you, 'could not find the player colour in the theme');
+  assert.equal(you.toUpperCase(), PLAYER);
+  // And the two names still agree, so nothing is painted "the player's green"
+  // by one route and something else by the other.
+  assert.equal(resolve('neon')?.toUpperCase(), PLAYER);
 });
 
 check('no difficulty leaves both racks the same colour', () => {

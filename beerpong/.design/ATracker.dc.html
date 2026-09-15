@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Barlow+Semi+Condensed:wght@400;500;600&family=Barlow+Condensed:wght@600;700;900&display=swap">
+  <style>
+    body { margin: 0; }
+    a { color: #39FF14; } a:hover { color: #7CFF5E; }
+  </style>
+</helmet>
+
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #080A08; font-family: 'Barlow Semi Condensed', sans-serif; color: #F2F5F2; display: flex; flex-direction: column; overflow: hidden;">
+
+  <!-- live camera feed area -->
+  <div style="position: relative; height: 460px; background: linear-gradient(175deg, #1A2418 0%, #0F150E 100%); overflow: hidden;">
+    <div style="position: absolute; inset: 0; background-image: radial-gradient(70% 45% at 50% 62%, rgba(46, 88, 36, 0.55) 0%, rgba(8,10,8,0) 70%);"></div>
+
+    <!-- top chrome over the feed -->
+    <div style="position: relative; display: flex; align-items: center; gap: 10px; padding: 18px 18px 0 18px;">
+      <div style="display: flex; align-items: center; gap: 7px; height: 30px; padding: 0 12px; border-radius: 15px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,59,78,0.5);">
+        <div style="width: 7px; height: 7px; border-radius: 4px; background: #FF3B4E;"></div>
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 12px; letter-spacing: 1.4px; color: #FF3B4E;">LIVE</span>
+      </div>
+      <div style="flex-grow: 1;"></div>
+      <div style="height: 30px; padding: 0 12px; border-radius: 15px; background: rgba(0,0,0,0.55); border: 1px solid rgba(255,255,255,0.14); display: flex; align-items: center;">
+        <span style="font-size: 12px; color: #C6CCC6;">Runde 3</span>
+      </div>
+    </div>
+
+    <!-- the rack the camera is watching -->
+    <svg style="position: relative; display: block; margin: 26px auto 0 auto;" width="250" height="220" viewBox="0 0 250 220" fill="none">
+      <ellipse cx="125" cy="196" rx="104" ry="17" fill="#39FF14" opacity="0.07"/>
+      <!-- back row -->
+      <g stroke="#39FF14" stroke-width="2" opacity="0.5">
+        <ellipse cx="72" cy="60" rx="20" ry="7"/><ellipse cx="125" cy="60" rx="20" ry="7"/><ellipse cx="178" cy="60" rx="20" ry="7"/>
+      </g>
+      <g stroke="#39FF14" stroke-width="2" opacity="0.7">
+        <ellipse cx="98" cy="104" rx="21" ry="7.4"/><ellipse cx="152" cy="104" rx="21" ry="7.4"/>
+      </g>
+      <!-- the one it just saw go -->
+      <g>
+        <ellipse cx="125" cy="150" rx="23" ry="8" fill="rgba(57,255,20,0.16)" stroke="#39FF14" stroke-width="3"/>
+        <circle cx="125" cy="150" r="38" fill="none" stroke="#39FF14" stroke-width="1.6" opacity="0.5"/>
+        <circle cx="125" cy="150" r="52" fill="none" stroke="#39FF14" stroke-width="1.2" opacity="0.22"/>
+      </g>
+    </svg>
+  </div>
+
+  <!-- the prompt: one question, two big answers -->
+  <div style="flex-grow: 1; background: #0C0F0C; border-top: 1px solid rgba(57,255,20,0.25); padding: 20px; display: flex; flex-direction: column; gap: 16px;">
+
+    <div style="display: flex; align-items: baseline; gap: 10px;">
+      <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 26px; line-height: 28px;">Becher weg?</div>
+      <div style="font-size: 13px; color: #8B948B;">vordere Reihe, Mitte</div>
+    </div>
+
+    <div style="display: flex; gap: 10px;">
+      <div style="flex-grow: 1; height: 62px; border-radius: 14px; background: #39FF14; color: #071007; display: flex; align-items: center; justify-content: center; gap: 9px;">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M5 12.5l4.5 4.5L19 7.5" stroke="#071007" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 19px; letter-spacing: 1px;">TREFFER</span>
+      </div>
+      <div style="width: 118px; height: 62px; border-radius: 14px; background: #121712; border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; gap: 8px;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M6 6l12 12M18 6L6 18" stroke="#8B948B" stroke-width="2.6" stroke-linecap="round"/></svg>
+        <span style="font-family: 'Barlow Condensed', sans-serif; font-weight: 700; font-size: 17px; color: #8B948B;">NEIN</span>
+      </div>
+    </div>
+
+    <!-- the score, quiet but always there -->
+    <div style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; background: #121712; border: 1px solid rgba(255,255,255,0.07);">
+      <div style="flex-grow: 1;">
+        <div style="font-size: 11px; letter-spacing: 1.4px; color: #39FF14; font-weight: 600;">TEAM GRÜN</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 40px; line-height: 40px;">4</div>
+        <div style="font-size: 12px; color: #8B948B;">Serie 2</div>
+      </div>
+      <div style="width: 1px; height: 54px; background: rgba(255,255,255,0.09);"></div>
+      <div style="flex-grow: 1; text-align: right;">
+        <div style="font-size: 11px; letter-spacing: 1.4px; color: #FF3B4E; font-weight: 600;">TEAM ROT</div>
+        <div style="font-family: 'Barlow Condensed', sans-serif; font-weight: 900; font-size: 40px; line-height: 40px;">2</div>
+        <div style="font-size: 12px; color: #8B948B;">Serie 0</div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="#565C56" stroke-width="1.8"/><path d="M12 7.5v5.5M12 16h.01" stroke="#565C56" stroke-width="2" stroke-linecap="round"/></svg>
+      <span style="font-size: 12px; color: #565C56;">Die Kamera fragt nach &mdash; sie entscheidet nicht.</span>
+    </div>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

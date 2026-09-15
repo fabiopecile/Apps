@@ -73,6 +73,20 @@ jobs:
           # Eintragen unter Settings -> Secrets and variables -> Actions ->
           # Variables, siehe deploy-server.yml.
           EXPO_PUBLIC_ONLINE_URL: ${{ vars.ONLINE_URL }}
+          # Verkauf an/aus. Leer oder nicht gesetzt = aus, und das ist mit
+          # Absicht die Voreinstellung: eine App, die Geld nimmt, braucht
+          # Impressum, Widerrufsbelehrung und ein angemeldetes Gewerbe, und
+          # nichts davon kann Programmcode erledigen. Ohne Verkauf ist die App
+          # vollständig spielbar — die Kamera sogar ohne Wochenlimit.
+          #
+          # Zum Einschalten sind ZWEI Dinge nötig, beide zusammen:
+          #   1. In beerpong/lib/legal.ts den Block OPERATOR ausfüllen
+          #      (Name, Straße, Ort, E-Mail).
+          #   2. Hier unter Settings -> Secrets and variables -> Actions ->
+          #      Variables eine Variable SALES mit dem Wert "on" anlegen.
+          # Fehlt eins von beidem, bleibt der Shop zu. Die App sagt auf dem
+          # Bildschirm "Alles kostenlos", woran es liegt.
+          EXPO_PUBLIC_SALES: ${{ vars.SALES }}
 
       - name: Jekyll abschalten
         # Ohne diese Datei ignoriert Pages Ordner, die mit _ beginnen — und

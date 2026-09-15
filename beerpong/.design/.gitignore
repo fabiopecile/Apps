@@ -1,0 +1,4 @@
+# The assembled canvas — ~2.5 MB of editor code wrapped around the artboards
+# next to it, rebuilt from them in one command. Keeping it here would put a
+# megabyte-scale binary-ish blob in every clone for something no human reads.
+beerpong-design-richtungen.html
