@@ -1044,6 +1044,52 @@ const STRINGS = {
   'weekend.bestRun': { de: 'Bester Lauf', en: 'Best run' },
   'weekend.runs': { de: 'Läufe', en: 'Runs' },
 
+  // ------------------------------------------------- the Friday–Sunday window
+  'weekend.closed.title': { de: 'Geschlossen bis Freitag', en: 'Closed until Friday' },
+  'weekend.closed.body': {
+    de: 'Die Weekend League gibt es nur von Freitag bis Sonntag. Deshalb heißt sie so — und deshalb ist sie etwas wert.',
+    en: 'The Weekend League runs Friday to Sunday only. That is what the name means — and what makes it worth something.',
+  },
+  'weekend.closed.days1': { de: 'Noch 1 Tag', en: '1 day to go' },
+  'weekend.closed.daysN': { de: 'Noch {days} Tage', en: '{days} days to go' },
+  'weekend.closed.meanwhile': {
+    de: 'Bis dahin: Division Rivals zählt weiter, und der Lucky Shot gibt es jeden Tag.',
+    en: 'Until then: Division Rivals still counts, and there is a Lucky Shot every day.',
+  },
+  'weekend.open.chip': { de: 'Jetzt offen', en: 'Open now' },
+  'hub.weekend.closed1': { de: 'Öffnet morgen', en: 'Opens tomorrow' },
+  'hub.weekend.closedN': { de: 'Öffnet in {days} Tagen', en: 'Opens in {days} days' },
+  'weekend.expired.title': { de: 'Lauf abgelaufen', en: 'Run expired' },
+  'weekend.expired.body': {
+    de: 'Dein Lauf gehörte zu einem Wochenende, das vorbei ist. Die Coins aus den einzelnen Spielen hast du behalten — nur der Abschluss-Bonus ist weg, den du noch nicht erspielt hattest.',
+    en: 'Your run belonged to a weekend that is over. You kept the coins from the individual games — only the finishing bonus is gone, and that had not been earned yet.',
+  },
+  'weekend.expired.cta': { de: 'Neuen Lauf starten', en: 'Start a new run' },
+  'match.weekendExpired': {
+    de: 'Dein Wochenende ist inzwischen vorbei — dieses Spiel zählt nicht mehr für den Lauf. Ab Freitag geht es wieder los.',
+    en: 'Your weekend has ended in the meantime — this game no longer counts towards the run. It opens again on Friday.',
+  },
+
+  // ------------------------------------------------------- the perfect run
+  'weekend.perfect.label': { de: 'Makellos', en: 'Flawless' },
+  'weekend.perfect.reward': {
+    de: 'Alle {matches} gewinnen: Becher-Design „{design}“',
+    en: 'Win all {matches}: the “{design}” cup design',
+  },
+  'weekend.perfect.owned': {
+    de: 'Geschafft — {count}× makellos',
+    en: 'Done — {count}× flawless',
+  },
+  'weekend.perfect.celebrate': {
+    de: 'Makellos! {matches} von {matches}. Das Becher-Design „{design}“ gehört dir — es ist für Coins und für Geld nirgends zu haben.',
+    en: 'Flawless! {matches} out of {matches}. The “{design}” cup design is yours — it is not for sale for coins or for money anywhere.',
+  },
+  'skins.earnedOnly': { de: 'Nicht käuflich', en: 'Not for sale' },
+  'skins.earnHow.perfect': {
+    de: 'Gewinne alle {matches} Spiele einer Weekend League',
+    en: 'Win all {matches} games of a Weekend League run',
+  },
+
   // -------------------------------------------------------------- divisions
   'division.name': { de: 'Division {id} · {rank}', en: 'Division {id} · {rank}' },
   'division.short': { de: 'Division {id}', en: 'Division {id}' },
@@ -1231,6 +1277,7 @@ const STRINGS = {
     en: 'Three designs a week, for coins. All twelve come round once a month, so what you miss this week is not gone. The country flags stay in the cup shop, for money.',
   },
   'skins.collection': { de: 'Deine Sammlung', en: 'Your collection' },
+  'skins.earned': { de: 'Nur erspielbar', en: 'Earned only' },
   'skins.soon': { de: 'In {weeks} Wochen', en: 'In {weeks} weeks' },
   'skins.soonNext': { de: 'Nächste Woche', en: 'Next week' },
   'skins.locked': {

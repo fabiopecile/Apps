@@ -105,7 +105,12 @@ interface Celebration {
   subtitle: string;
   badgeLabel: string;
   color: string;
-  icon?: 'trophy' | 'trending-up';
+  /**
+   * Narrowed by hand rather than left as the whole Ionicons set: these are the
+   * three moments the app celebrates, and a fourth should be a decision rather
+   * than a typo that happens to render.
+   */
+  icon?: 'trophy' | 'trending-up' | 'ribbon';
 }
 
 export default function MatchScreen() {
@@ -503,9 +508,13 @@ export default function MatchScreen() {
     } else if (mode === 'weekend') {
       const result = recordWeekendMatch(won);
       keepRecord();
-      setRunFinished(result.finished);
+      // An expired run ends here rather than showing progress: nothing was
+      // counted, so "5 von 10" would be a number the save does not hold.
+      setRunFinished(result.finished || result.expired === true);
       setResultNote(
-        result.finished
+        result.expired
+          ? t('match.weekendExpired')
+          : result.finished
           ? t('match.weekendDone', { wins: result.wins, matches: WEEKEND_MATCHES })
           : t('match.weekendNote', {
               played: result.played,
@@ -527,6 +536,24 @@ export default function MatchScreen() {
           }),
           badgeLabel: `${result.wins}`,
           color: colors.gold,
+        });
+      }
+      // Its own celebration, after the tier one, because it is a different
+      // kind of thing: the tier is coins, this is the only cup in the app
+      // that cannot be bought. Queued rather than merged so it gets its own
+      // moment instead of becoming a second line of small print.
+      if (result.awardedCupId) {
+        const design = cupDesign(result.awardedCupId);
+        addCelebration({
+          kind: 'trophy',
+          icon: 'ribbon',
+          title: t('weekend.perfect.label'),
+          subtitle: t('weekend.perfect.celebrate', {
+            matches: WEEKEND_MATCHES,
+            design: design.name,
+          }),
+          badgeLabel: design.flag,
+          color: design.accent,
         });
       }
     } else if (mode === 'knockout') {
