@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Beerpong — Aufnahme</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700;900&family=Orbitron:wght@900&display=swap">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { width: 1080px; height: 1920px; overflow: hidden; background: #050705; }
+
+  /* The room. One light from above, the same idea as the app's own felt. */
+  #stage {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(120% 55% at 50% 0%, rgba(30, 62, 24, 0.55) 0%, rgba(5, 7, 5, 0) 62%),
+      radial-gradient(90% 40% at 50% 100%, rgba(20, 44, 16, 0.35) 0%, rgba(5, 7, 5, 0) 60%),
+      #050705;
+  }
+
+  /* The phone. A real 400x844 viewport scaled up, so the app inside lays
+     itself out as a phone rather than as a tablet. */
+  #phone {
+    position: absolute;
+    left: 50%; top: 292px;
+    width: 400px; height: 844px;
+    transform: translateX(-50%) scale(1.62);
+    transform-origin: top center;
+    border-radius: 46px;
+    overflow: hidden;
+    border: 3px solid rgba(255,255,255,0.16);
+    box-shadow: 0 0 90px rgba(57,255,20,0.14), 0 40px 90px rgba(0,0,0,0.75);
+    background: #080A08;
+    opacity: 0;
+    transition: opacity 500ms ease;
+  }
+  #phone.on { opacity: 1; }
+  #app { width: 400px; height: 844px; border: 0; display: block; }
+
+  /* Captions sit above the phone, never on it: the screen is the product and
+     covering it to describe it would be a strange thing to do. */
+  #caption {
+    position: absolute;
+    left: 0; right: 0; top: 96px;
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    opacity: 0;
+    transition: opacity 420ms ease, transform 420ms ease;
+    transform: translateY(14px);
+  }
+  #caption.on { opacity: 1; transform: translateY(0); }
+  #caption .kicker {
+    font-weight: 600; font-size: 30px; letter-spacing: 6px; text-transform: uppercase;
+    color: #39FF14;
+  }
+  #caption .line {
+    font-weight: 900; font-size: 74px; line-height: 78px; color: #F2F5F2;
+    margin-top: 10px; text-shadow: 0 4px 30px rgba(0,0,0,0.8);
+  }
+
+  /* Title and end cards take the whole frame. */
+  .card {
+    position: absolute; inset: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 26px; opacity: 0; transition: opacity 560ms ease; pointer-events: none;
+  }
+  .card.on { opacity: 1; }
+  .word {
+    font-family: Orbitron, sans-serif; font-weight: 900;
+    font-size: 116px; letter-spacing: 6px; color: #F2F5F2;
+  }
+  .word em { font-style: normal; color: #39FF14; }
+  .sub {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 40px; letter-spacing: 3px; text-transform: uppercase; color: #8B948B;
+  }
+  .rule { width: 180px; height: 4px; background: #39FF14; border-radius: 2px; }
+  .claims {
+    font-family: 'Barlow Condensed', sans-serif; font-weight: 700;
+    font-size: 46px; line-height: 64px; color: #F2F5F2; text-align: center;
+  }
+  .claims span { color: #39FF14; }
+
+  /* The cup mark, drawn rather than fetched — nothing loads from outside. */
+  svg.rack { display: block; }
+</style>
+</head>
+<body>
+<div id="stage"></div>
+
+<!-- `allow` is load-bearing: without it a cross-origin iframe is refused the
+     camera by permissions policy, and the tracker scene films a black
+     rectangle where the table should be. -->
+<div id="phone"><iframe id="app" src="about:blank" allow="camera; microphone"></iframe></div>
+
+<div id="caption"><div class="kicker"></div><div class="line"></div></div>
+
+<div class="card" id="title">
+  <svg class="rack" width="300" height="240" viewBox="0 0 96 82" fill="none">
+    <ellipse cx="48" cy="76" rx="40" ry="6" fill="#39FF14" opacity="0.10"/>
+    <path d="M36 14 L40 42 L56 42 L60 14 Z" fill="#1C2A18" stroke="#E23D2E" stroke-width="2.2"/>
+    <ellipse cx="48" cy="14" rx="12" ry="4" fill="#0E140C" stroke="#E23D2E" stroke-width="2.2"/>
+    <path d="M24 36 L28 66 L46 66 L50 36 Z" fill="#1C2A18" stroke="#E23D2E" stroke-width="2.4"/>
+    <ellipse cx="37" cy="36" rx="13" ry="4.4" fill="#0E140C" stroke="#E23D2E" stroke-width="2.4"/>
+    <path d="M46 36 L50 66 L68 66 L72 36 Z" fill="#1C2A18" stroke="#E23D2E" stroke-width="2.4"/>
+    <ellipse cx="59" cy="36" rx="13" ry="4.4" fill="#0E140C" stroke="#E23D2E" stroke-width="2.4"/>
+  </svg>
+  <div class="word">BEER<em>PONG</em></div>
+  <div class="rule"></div>
+  <div class="sub">Companion &amp; Arcade</div>
+</div>
+
+<div class="card" id="end">
+  <div class="word">BEER<em>PONG</em></div>
+  <div class="rule"></div>
+  <div class="claims">
+    <span>Kostenlos.</span> Keine Werbung.<br>
+    Kein Konto. Keine Installation.
+  </div>
+  <div class="sub" style="margin-top: 12px">Im Browser öffnen &amp; loslegen</div>
+</div>
+
+<script>
+  // Driven entirely from the recording script — every state change is an
+  // explicit call, so the video's timing is the script's timing and not a
+  // race between animations.
+  const phone = document.getElementById('phone');
+  const app = document.getElementById('app');
+  const cap = document.getElementById('caption');
+
+  window.promo = {
+    go(url) { app.src = url; },
+    showPhone(on) { phone.classList.toggle('on', on); },
+    caption(kicker, line) {
+      if (!kicker && !line) { cap.classList.remove('on'); return; }
+      cap.querySelector('.kicker').textContent = kicker;
+      cap.querySelector('.line').textContent = line;
+      cap.classList.add('on');
+    },
+    card(which, on) { document.getElementById(which).classList.toggle('on', on); },
+  };
+</script>
+</body>
+</html>
