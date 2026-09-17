@@ -8,6 +8,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useAmbientEnabled } from '@/lib/ambient';
 import { colors, glow, radius } from '@/theme';
 
 interface ProgressBarProps {
@@ -28,6 +29,7 @@ export function ProgressBar({
 }: ProgressBarProps) {
   const width = useSharedValue(0);
   const sweep = useSharedValue(0);
+  const motionOk = useAmbientEnabled();
 
   const clamped = Math.max(0, Math.min(1, progress));
 
@@ -36,7 +38,9 @@ export function ProgressBar({
   }, [clamped, width]);
 
   useEffect(() => {
-    if (!shimmer || clamped <= 0.02) return;
+    // The bar still fills and still reads; only the highlight travelling
+    // along it stops.
+    if (!shimmer || clamped <= 0.02 || !motionOk) return;
     sweep.value = 0;
     sweep.value = withRepeat(
       withTiming(1, { duration: 1900, easing: Easing.inOut(Easing.quad) }),

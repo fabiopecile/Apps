@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { CoinChip } from '@/components/ui/CoinChip';
 import { GridBackground } from '@/components/ui/GridBackground';
 import { GlowButton } from '@/components/ui/GlowButton';
-import { CountUp } from '@/components/ui/CountUp';
 import { ParticleBurst, type ParticleBurstHandle } from '@/components/ui/ParticleBurst';
 import { FlashOverlay, type FlashOverlayHandle } from '@/components/ui/FlashOverlay';
 import { CelebrationOverlay } from '@/components/arcade/CelebrationOverlay';
@@ -110,10 +110,7 @@ export default function LuckyShotScreen() {
           <Text style={styles.title} selectable={false}>
             {t('lucky.title')}
           </Text>
-          <View style={styles.coinChip}>
-            <Ionicons name="logo-bitcoin" size={13} color={colors.gold} />
-            <CountUp value={coins} style={styles.coinText} />
-          </View>
+          <CoinChip coins={coins} />
         </View>
 
         {available && !thrown ? (
@@ -252,21 +249,6 @@ const styles = StyleSheet.create({
   title: {
     fontFamily: fonts.headingBlack,
     fontSize: 19,
-    color: colors.gold,
-  },
-  coinChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.gold,
-  },
-  coinText: {
-    fontFamily: fonts.numeric,
-    fontSize: 13,
     color: colors.gold,
   },
   prizeRow: {
