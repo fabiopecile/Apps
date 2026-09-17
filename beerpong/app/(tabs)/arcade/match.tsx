@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { CoinChip } from '@/components/ui/CoinChip';
 import { GridBackground } from '@/components/ui/GridBackground';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { Confetti } from '@/components/ui/Confetti';
@@ -70,6 +71,7 @@ const SCREEN_POINTS_PER_TABLE_POINT = 1;
 import { SKINS } from '@/lib/skins';
 import { cupDesign } from '@/lib/cupSkins';
 import { selectCareerLevel, useBeerpongStore } from '@/lib/store';
+import { useAmbientEnabled } from '@/lib/ambient';
 import { useFeedback } from '@/lib/feedback';
 import { divisionName, translate, useLanguage, useT, type TranslationKey as MatchKey } from '@/lib/i18n';
 import { colors, fonts, spacing, radius } from '@/theme';
@@ -354,6 +356,7 @@ export default function MatchScreen() {
   // The hint breathes while you are on the clock, and sits still otherwise —
   // it is the only thing on screen telling you the game is waiting for you.
   const hintPulse = useSharedValue(0);
+  const motionOk = useAmbientEnabled();
   const hintStyle = useAnimatedStyle(() => ({
     opacity: 0.72 + hintPulse.value * 0.28,
     transform: [{ scale: 0.99 + hintPulse.value * 0.02 }],
@@ -859,6 +862,14 @@ export default function MatchScreen() {
 
   useEffect(() => {
     if (playerTurn && !handOver) {
+      // Held bright and still for anyone who has asked their phone to stop
+      // animating. This hint is the line that says whose turn it is, so the one
+      // thing it must not do is become less readable — and 1 is the top of its
+      // own opacity range, not a dimmed version of it.
+      if (!motionOk) {
+        hintPulse.value = withTiming(1, { duration: 220 });
+        return;
+      }
       hintPulse.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 780, easing: Easing.inOut(Easing.ease) }),
@@ -869,7 +880,7 @@ export default function MatchScreen() {
     } else {
       hintPulse.value = withTiming(0, { duration: 220 });
     }
-  }, [playerTurn, handOver, hintPulse]);
+  }, [playerTurn, handOver, hintPulse, motionOk]);
   const turnStatus =
     roundResult != null
       ? ''
@@ -908,12 +919,7 @@ export default function MatchScreen() {
               </Text>
             ) : null}
           </View>
-          <View style={styles.coinChip}>
-            <Ionicons name="logo-bitcoin" size={13} color={colors.gold} />
-            <Text style={styles.coinText} selectable={false}>
-              {coins}
-            </Text>
-          </View>
+          <CoinChip coins={coins} count={false} quiet />
         </View>
 
         {/* Overtime changes the rack size, so it has to be said out loud —
@@ -1330,22 +1336,6 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.textSecondary,
     marginTop: 2,
-  },
-  coinChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.backgroundElevated,
-  },
-  coinText: {
-    fontFamily: fonts.numeric,
-    color: colors.gold,
-    fontSize: 12,
   },
   scoreRow: {
     flexDirection: 'row',

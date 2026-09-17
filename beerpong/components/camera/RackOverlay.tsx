@@ -10,6 +10,7 @@ import Animated, {
 import { useEffect } from 'react';
 
 import { rackLayout } from '@/lib/cupVision';
+import { useAmbientEnabled } from '@/lib/ambient';
 import { colors, fonts } from '@/theme';
 
 export interface RackFrame {
@@ -130,9 +131,12 @@ export function RackOverlay({
   highlightIndex,
 }: RackOverlayProps) {
   const pulse = useSharedValue(0);
+  const motionOk = useAmbientEnabled();
 
   useEffect(() => {
-    if (mode !== 'aligning' || dim) {
+    // Reduce-motion takes the same path as "not aligning": the ring is drawn
+    // either way, it just stops breathing.
+    if (mode !== 'aligning' || dim || !motionOk) {
       pulse.value = withTiming(0, { duration: 200 });
       return;
     }

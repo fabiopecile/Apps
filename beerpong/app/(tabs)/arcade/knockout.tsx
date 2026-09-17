@@ -4,10 +4,10 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { CoinChip } from '@/components/ui/CoinChip';
 import { GridBackground } from '@/components/ui/GridBackground';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
-import { CountUp } from '@/components/ui/CountUp';
 import {
   KNOCKOUT_SIZES,
   KNOCKOUT_STAKES,
@@ -79,10 +79,7 @@ export default function KnockoutScreen() {
             <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
           </Pressable>
           <Text style={styles.title}>{t('knockout.title')}</Text>
-          <View style={styles.coinChip}>
-            <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
-            <CountUp value={coins} style={styles.coinText} />
-          </View>
+          <CoinChip coins={coins} />
         </View>
 
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -263,18 +260,6 @@ const styles = StyleSheet.create({
     paddingBottom: spacing.md,
   },
   title: { fontFamily: fonts.headingBlack, fontSize: 22, color: colors.textPrimary },
-  coinChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.backgroundElevated,
-  },
-  coinText: { fontFamily: fonts.label, color: colors.gold, fontSize: 13 },
   scroll: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
   card: {
     borderWidth: 1.5,

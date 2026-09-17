@@ -1,11 +1,10 @@
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
 
+import { CoinChip } from '@/components/ui/CoinChip';
 import { GridBackground } from '@/components/ui/GridBackground';
 import { HeroCard } from '@/components/ui/HeroCard';
 import { ModeRow } from '@/components/ui/ModeRow';
-import { CountUp } from '@/components/ui/CountUp';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { SectionLabel } from '@/components/ui/SectionLabel';
@@ -97,10 +96,7 @@ export default function ArcadeHubScreen() {
             title={t('hub.title')}
             subtitle={t('hub.careerLevel', { level })}
             right={
-              <View style={styles.coinChip}>
-                <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
-                <CountUp value={coins} style={styles.coinText} />
-              </View>
+              <CoinChip coins={coins} />
             }
           />
 
@@ -323,22 +319,6 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: spacing.lg,
     marginTop: spacing.xl,
-  },
-  coinChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.backgroundElevated,
-  },
-  coinText: {
-    fontFamily: fonts.numeric,
-    color: colors.gold,
-    fontSize: 13,
   },
   statsRow: {
     flexDirection: 'row',
