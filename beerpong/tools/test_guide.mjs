@@ -158,7 +158,10 @@ check('it covers every part of the app', () => {
   for (const topic of [
     'kamera',
     'arcade',
-    'bounce',
+    // 'bounce' was here until the button was removed from the arcade. The
+    // manual must not explain a control that is not on the screen.
+    // 're-rack' stays: the camera tracker still offers one at a real table,
+    // where it is a house rule rather than a button in a game.
     're-rack',
     'house rules',
     'highlight',
