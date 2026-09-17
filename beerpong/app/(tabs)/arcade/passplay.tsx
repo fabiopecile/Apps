@@ -73,8 +73,6 @@ export default function PassPlayScreen() {
 
           <View style={styles.rulesCard}>
             <Rule icon="hand-left" text={t('passplay.rule.swipe')} />
-            <Rule icon="tennisball" text={t('passplay.rule.bounce')} />
-            <Rule icon="grid" text={t('passplay.rule.reRack')} />
             <Rule icon="swap-horizontal" text={t('passplay.rule.camera')} />
           </View>
 
