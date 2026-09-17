@@ -444,17 +444,13 @@ const STRINGS = {
   'passplay.playerN': { de: 'Spieler {n}', en: 'Player {n}' },
   'passplay.throwsUp': { de: 'wirft nach oben', en: 'throws upwards' },
   'passplay.throwsDown': { de: 'wirft nach unten', en: 'throws downwards' },
+  // Was "the faster your hand as you let go". That stopped being true when the
+  // throw moved to being measured by how far you drag — see ThrowBall, where
+  // the origin of the gesture is kept for exactly this reason. A rules card
+  // that teaches the old control is worse than no rules card.
   'passplay.rule.swipe': {
-    de: 'Ball wie sonst mit dem Finger führen — je schneller die Hand beim Loslassen, desto weiter der Wurf.',
-    en: 'Guide the ball with your finger as usual — the faster your hand as you let go, the further it flies.',
-  },
-  'passplay.rule.bounce': {
-    de: 'Bounce-Wurf: schwerer zu treffen, nimmt dafür zwei Cups.',
-    en: 'Bounce shot: harder to land, but takes two cups.',
-  },
-  'passplay.rule.reRack': {
-    de: 'Ein Re-Rack pro Spieler, wenn nur noch wenige Cups stehen.',
-    en: 'One re-rack per player once only a few cups are left.',
+    de: 'Ball wie sonst mit dem Finger führen — je weiter du zurückziehst, desto weiter der Wurf.',
+    en: 'Guide the ball with your finger as usual — the further you drag back, the further it flies.',
   },
   'passplay.rule.camera': {
     de: 'Nach jedem Wurf wechselt die Ansicht auf die andere Seite.',
@@ -785,12 +781,7 @@ const STRINGS = {
     de: 'Spiel {played}/{matches} · {wins} Siege',
     en: 'Game {played}/{matches} · {wins} wins',
   },
-  'match.bounce': { de: 'Bounce ×2', en: 'Bounce ×2' },
   'match.ballsBack': { de: 'BÄLLE ZURÜCK', en: 'BALLS BACK' },
-  'match.bounceScored': {
-    de: 'Bounce — zwei Becher: der getroffene und der daneben',
-    en: 'Bounce — two cups: the one it went in and its neighbour',
-  },
   'match.yourTurnBall': {
     de: 'Ball {ball} von {of} — beide treffen und du bekommst sie zurück',
     en: 'Ball {ball} of {of} — sink both and you get them back',
@@ -926,10 +917,6 @@ const STRINGS = {
   'match.overtimeHint': {
     de: 'Ausgeglichen! Neue Racks mit {cups} Bechern — jetzt entscheidet es sich.',
     en: 'All square! Fresh racks of {cups} — this is where it is decided.',
-  },
-  'match.bounceArmed': {
-    de: 'Bounce-Wurf scharf — schwerer, aber zwei Cups',
-    en: 'Bounce shot armed — harder, but takes two cups',
   },
   'match.reRack': { de: 'Re-Rack {left}', en: 'Re-rack {left}' },
   'match.missShort': { de: 'Zu kurz — weiter ziehen', en: 'Short — drag further' },
@@ -1316,8 +1303,6 @@ const STRINGS = {
   'daily.throws40': { de: '40 Würfe machen', en: 'Take 40 throws' },
   'daily.wins2': { de: '2 Spiele gewinnen', en: 'Win 2 games' },
   'daily.wins4': { de: '4 Spiele gewinnen', en: 'Win 4 games' },
-  'daily.bounce3': { de: '3 Bounce-Shots treffen', en: 'Land 3 bounce shots' },
-  'daily.bounce1': { de: 'Einen Bounce-Shot treffen', en: 'Land a bounce shot' },
   'daily.tracker10': { de: '10 Cups im Tracker zählen', en: 'Count 10 cups in the tracker' },
 
   // ----------------------------------------------------------- achievements

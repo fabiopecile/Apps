@@ -17,8 +17,6 @@ const CHALLENGE_POOL: DailyChallenge[] = [
   { id: 'throws-40', titleKey: 'daily.throws40', metric: 'throws', target: 40, coins: 70 },
   { id: 'wins-2', titleKey: 'daily.wins2', metric: 'wins', target: 2, coins: 120 },
   { id: 'wins-4', titleKey: 'daily.wins4', metric: 'wins', target: 4, coins: 220 },
-  { id: 'bounce-3', titleKey: 'daily.bounce3', metric: 'bounceHits', target: 3, coins: 160 },
-  { id: 'bounce-1', titleKey: 'daily.bounce1', metric: 'bounceHits', target: 1, coins: 90 },
   { id: 'tracker-10', titleKey: 'daily.tracker10', metric: 'trackerCups', target: 10, coins: 100 },
 ];
 

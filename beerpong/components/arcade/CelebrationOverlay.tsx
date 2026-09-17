@@ -17,6 +17,7 @@ import { Confetti } from '@/components/ui/Confetti';
 import { CoinRain } from '@/components/ui/CoinRain';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { useT } from '@/lib/i18n';
+import { useAmbientEnabled } from '@/lib/ambient';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 const RAY_COUNT = 12;
@@ -67,6 +68,7 @@ export function CelebrationOverlay({
   const pulse = useSharedValue(0);
   /** 0 to 1, driving the rings that expand out of the badge on a level up. */
   const rings = useSharedValue(0);
+  const motionOk = useAmbientEnabled();
 
   const rising = kind === 'promotion' || kind === 'levelUp' || kind === 'trophy';
   const showRays = kind === 'promotion' || kind === 'trophy';
@@ -91,6 +93,21 @@ export function CelebrationOverlay({
     );
     badgeLift.value = withSpring(0, { damping: 12, stiffness: 120 });
 
+    /**
+     * The three endless ones, all of which are skipped for reduce-motion.
+     *
+     * The badge still flies in and the words still arrive — those are one-off
+     * gestures, they end, and stripping them would leave a win looking like an
+     * error dialog. What goes is the part that keeps going: rays turning behind
+     * the trophy, a glow breathing, rings expanding out of the badge for ever.
+     * Spinning rays behind a medal are close to the textbook example of what
+     * the setting is for.
+     *
+     * `pulse` rests at 0 and the styles read `0.25 + pulse * 0.35`, so leaving
+     * it alone keeps the rays lit rather than invisible.
+     */
+    if (!motionOk) return;
+
     if (showRays) {
       raySpin.value = withRepeat(withTiming(360, { duration: 9000, easing: Easing.linear }), -1);
     }
@@ -110,7 +127,7 @@ export function CelebrationOverlay({
         -1
       );
     }
-  }, [kind, showRays, badgeScale, badgeLift, raySpin, pulse, rings]);
+  }, [kind, showRays, motionOk, badgeScale, badgeLift, raySpin, pulse, rings]);
 
   const badgeStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: badgeLift.value }, { scale: badgeScale.value }],

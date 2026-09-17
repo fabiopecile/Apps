@@ -1,0 +1,10 @@
+# Die Rohaufnahme ist ein paar Megabyte webm und lässt sich jederzeit neu
+# aufnehmen; das fertige Video ebenso. Im Repo steht das Rezept, nicht das
+# Ergebnis.
+raw/
+node_modules/
+package.json
+package-lock.json
+*.mp4
+*.png
+*.y4m

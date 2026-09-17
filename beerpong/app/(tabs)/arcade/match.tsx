@@ -12,6 +12,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 
+import { CoinChip } from '@/components/ui/CoinChip';
 import { GridBackground } from '@/components/ui/GridBackground';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { Confetti } from '@/components/ui/Confetti';
@@ -29,7 +30,6 @@ import {
   companionCup,
   generateOpponentRack,
   generatePlayerRack,
-  reRackFlags,
   CUP_COUNT,
   OVERTIME_CUP_COUNT,
   OPPONENT_BALL_Y,
@@ -70,6 +70,7 @@ const SCREEN_POINTS_PER_TABLE_POINT = 1;
 import { SKINS } from '@/lib/skins';
 import { cupDesign } from '@/lib/cupSkins';
 import { selectCareerLevel, useBeerpongStore } from '@/lib/store';
+import { useAmbientEnabled } from '@/lib/ambient';
 import { useFeedback } from '@/lib/feedback';
 import { divisionName, translate, useLanguage, useT, type TranslationKey as MatchKey } from '@/lib/i18n';
 import { colors, fonts, spacing, radius } from '@/theme';
@@ -196,13 +197,11 @@ export default function MatchScreen() {
    * that shot redemption starts it. Naming the side removes the guess.
    */
   const [handOverTo, setHandOverTo] = useState<Turn>('opponent');
-  const [bounceArmed, setBounceArmed] = useState(false);
   /**
    * What went wrong with the last throw. With the swipe deciding everything,
    * "missed" on its own is no help — short and long need opposite corrections.
    */
   const [missNote, setMissNote] = useState<string | null>(null);
-  const [reRacksLeft, setReRacksLeft] = useState<[number, number]>([1, 1]);
   /**
    * Your own throws in this match, and when it started.
    *
@@ -354,6 +353,7 @@ export default function MatchScreen() {
   // The hint breathes while you are on the clock, and sits still otherwise —
   // it is the only thing on screen telling you the game is waiting for you.
   const hintPulse = useSharedValue(0);
+  const motionOk = useAmbientEnabled();
   const hintStyle = useAnimatedStyle(() => ({
     opacity: 0.72 + hintPulse.value * 0.28,
     transform: [{ scale: 0.99 + hintPulse.value * 0.02 }],
@@ -382,8 +382,6 @@ export default function MatchScreen() {
     setResultNote('');
     setTurn('player');
     setHandOver(false);
-    setBounceArmed(false);
-    setReRacksLeft([1, 1]);
     setPlayerTurnState(startTurn());
     setOpponentTurnState(startTurn());
     setTurnNote(null);
@@ -424,21 +422,9 @@ export default function MatchScreen() {
   /** Pass & Play: the next player has taken the phone. */
   const confirmHandOver = () => {
     setHandOver(false);
-    setBounceArmed(false);
     setTurn(handOverTo);
   };
 
-  const doReRack = (side: 0 | 1) => {
-    if (reRacksLeft[side] <= 0) return;
-    feedback.tap();
-    setReRacksLeft((prev) => {
-      const next: [number, number] = [prev[0], prev[1]];
-      next[side] -= 1;
-      return next;
-    });
-    if (side === 0) setOpponentAlive((prev) => reRackFlags(prev));
-    else setPlayerAlive((prev) => reRackFlags(prev));
-  };
 
   const endRound = (outcome: 'win' | 'lose') => {
     clearTimers();
@@ -685,9 +671,6 @@ export default function MatchScreen() {
     // Borrowing the advice line: three cups on the table needs explaining once,
     // and it is replaced by the next throw's own note anyway.
     setMissNote(t('match.overtimeHint', { cups: OVERTIME_CUP_COUNT }));
-    setBounceArmed(false);
-    // A fresh rack each side, so the re-racks come back with them.
-    setReRacksLeft([1, 1]);
     setTurnNote('overtime');
     feedback.streak();
     if (throwsFirst === 'player') {
@@ -752,21 +735,16 @@ export default function MatchScreen() {
       resolvePlayerTurn(false, opponentAlive.filter(Boolean).length);
       return;
     }
-    // A bounce takes the cup it went in and the nearest one still standing, so
-    // say so: two cups going at once is otherwise read as the game counting one
-    // the ball never touched.
-    setMissNote(result.bounce ? t('match.bounceScored') : null);
+    setMissNote(null);
     myCups.current += 1;
     // Where on the rack it fell, for the heatmap. Only your own throws: the
     // point of it is your aim, not theirs.
     statsRecordCup(result.cupIndex);
     feedback.cupHit();
-    if (result.bounce) feedback.streak();
     flashRef.current?.flash(ballSkin.accent, 0.18);
     burst();
     const next = removeCups(opponentAlive, result.cupIndex, result.bounce, opponentCups);
     setOpponentAlive(next);
-    setBounceArmed(false);
     resolvePlayerTurn(true, next.filter((alive) => alive).length);
   };
 
@@ -814,7 +792,6 @@ export default function MatchScreen() {
     burst();
     const next = removeCups(playerAlive, result.cupIndex, result.bounce, playerCups);
     setPlayerAlive(next);
-    setBounceArmed(false);
     resolveOpponentTurn(true, next.filter((alive) => alive).length);
   };
 
@@ -859,6 +836,14 @@ export default function MatchScreen() {
 
   useEffect(() => {
     if (playerTurn && !handOver) {
+      // Held bright and still for anyone who has asked their phone to stop
+      // animating. This hint is the line that says whose turn it is, so the one
+      // thing it must not do is become less readable — and 1 is the top of its
+      // own opacity range, not a dimmed version of it.
+      if (!motionOk) {
+        hintPulse.value = withTiming(1, { duration: 220 });
+        return;
+      }
       hintPulse.value = withRepeat(
         withSequence(
           withTiming(1, { duration: 780, easing: Easing.inOut(Easing.ease) }),
@@ -869,7 +854,7 @@ export default function MatchScreen() {
     } else {
       hintPulse.value = withTiming(0, { duration: 220 });
     }
-  }, [playerTurn, handOver, hintPulse]);
+  }, [playerTurn, handOver, hintPulse, motionOk]);
   const turnStatus =
     roundResult != null
       ? ''
@@ -908,12 +893,7 @@ export default function MatchScreen() {
               </Text>
             ) : null}
           </View>
-          <View style={styles.coinChip}>
-            <Ionicons name="logo-bitcoin" size={13} color={colors.gold} />
-            <Text style={styles.coinText} selectable={false}>
-              {coins}
-            </Text>
-          </View>
+          <CoinChip coins={coins} count={false} quiet />
         </View>
 
         {/* Overtime changes the rack size, so it has to be said out loud —
@@ -987,7 +967,6 @@ export default function MatchScreen() {
             aliveFlags={opponentAlive}
             accent={ballSkin.accent}
             skill={setup.playerSkill}
-            bounce={bounceArmed}
             onResult={handlePlayerResult}
             onRim={feedback.rimOut}
             onLaunch={feedback.whoosh}
@@ -1005,7 +984,6 @@ export default function MatchScreen() {
               accent={colors.gold}
               skill={setup.playerSkill}
               direction="down"
-              bounce={bounceArmed}
               onResult={handleSecondPlayerResult}
               onRim={feedback.rimOut}
               onLaunch={feedback.whoosh}
@@ -1034,57 +1012,6 @@ export default function MatchScreen() {
           <FlashOverlay ref={flashRef} />
         </View>
 
-        <View style={styles.actionRow}>
-          <Pressable
-            onPress={() => {
-              feedback.tap();
-              setBounceArmed((armed) => !armed);
-            }}
-            disabled={roundResult != null || handOver}
-            style={({ pressed }) => [
-              styles.actionButton,
-              bounceArmed && styles.actionButtonActive,
-              pressed && styles.actionButtonPressed,
-            ]}
-          >
-            <Ionicons
-              name="tennisball"
-              size={15}
-              color={bounceArmed ? colors.background : colors.neon}
-            />
-            <Text
-              style={[styles.actionText, bounceArmed && { color: colors.background }]}
-              selectable={false}
-            >
-              {t('match.bounce')}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            onPress={() => doReRack(playerTurn ? 0 : 1)}
-            disabled={roundResult != null || handOver || reRacksLeft[playerTurn ? 0 : 1] <= 0}
-            style={({ pressed }) => [
-              styles.actionButton,
-              reRacksLeft[playerTurn ? 0 : 1] <= 0 && styles.actionButtonDisabled,
-              pressed && styles.actionButtonPressed,
-            ]}
-          >
-            <Ionicons
-              name="grid"
-              size={15}
-              color={reRacksLeft[playerTurn ? 0 : 1] > 0 ? colors.neon : colors.textMuted}
-            />
-            <Text
-              style={[
-                styles.actionText,
-                reRacksLeft[playerTurn ? 0 : 1] <= 0 && { color: colors.textMuted },
-              ]}
-              selectable={false}
-            >
-              {t('match.reRack', { left: reRacksLeft[playerTurn ? 0 : 1] })}
-            </Text>
-          </Pressable>
-        </View>
 
         {/* Two balls a turn, and which of them you are on. Without this the
             rule is invisible: you would just find yourself throwing twice. */}
@@ -1131,7 +1058,7 @@ export default function MatchScreen() {
           style={[styles.hint, { color: playerTurn ? colors.neon : colors.danger }, hintStyle]}
           selectable={false}
         >
-          {bounceArmed ? t('match.bounceArmed') : (missNote ?? turnStatus)}
+          {missNote ?? turnStatus}
         </Animated.Text>
       </SafeAreaView>
 
@@ -1331,22 +1258,6 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: 2,
   },
-  coinChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 5,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.backgroundElevated,
-  },
-  coinText: {
-    fontFamily: fonts.numeric,
-    color: colors.gold,
-    fontSize: 12,
-  },
   scoreRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1472,40 +1383,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     marginTop: spacing.md,
     minHeight: 18,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    marginTop: spacing.md,
-    paddingHorizontal: spacing.lg,
-  },
-  actionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.backgroundElevated,
-  },
-  actionButtonActive: {
-    backgroundColor: colors.neon,
-    borderColor: colors.neon,
-  },
-  actionButtonDisabled: {
-    borderColor: colors.borderFaint,
-  },
-  actionButtonPressed: {
-    opacity: 0.65,
-  },
-  actionText: {
-    fontFamily: fonts.label,
-    fontSize: 12,
-    color: colors.neon,
-    letterSpacing: 0.5,
   },
   handOverOverlay: {
     position: 'absolute',

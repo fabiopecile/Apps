@@ -14,6 +14,7 @@ import Animated, {
 import Svg, { Circle, Defs, RadialGradient, Stop } from 'react-native-svg';
 
 import { LOGO_PARTS } from './LogoMark';
+import { useAmbientEnabled } from '@/lib/ambient';
 import { colors, fonts } from '@/theme';
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
@@ -33,11 +34,16 @@ export function AnimatedSplash() {
   const ball = useSharedValue(0);
   const word = useSharedValue(0);
   const glow = useSharedValue(0);
+  const motionOk = useAmbientEnabled();
 
   useEffect(() => {
     build.value = withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) });
     ball.value = withDelay(400, withTiming(1, { duration: 460, easing: Easing.in(Easing.quad) }));
     word.value = withDelay(560, withTiming(1, { duration: 420, easing: Easing.out(Easing.cubic) }));
+    // The mark builds, the ball drops and the word arrives either way — those
+    // end. Only the glow that would keep breathing afterwards is skipped, and
+    // its resting 0 still leaves the mark at 0.75 opacity rather than dark.
+    if (!motionOk) return;
     glow.value = withDelay(
       860,
       withRepeat(
@@ -48,7 +54,7 @@ export function AnimatedSplash() {
         -1
       )
     );
-  }, [build, ball, word, glow]);
+  }, [build, ball, word, glow, motionOk]);
 
   const markStyle = useAnimatedStyle(() => ({
     opacity: 0.75 + glow.value * 0.25,

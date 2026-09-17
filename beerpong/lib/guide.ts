@@ -441,27 +441,11 @@ export const GUIDE: GuideChapter[] = [
         },
       },
       {
-        de: 'Bounce ×2',
-        en: 'Bounce ×2',
-        body: {
-          de: 'Der Knopf unter dem Tisch macht den nächsten Wurf zum Aufsetzer: Der Ball springt vor dem Rack auf und kommt flach an. Geht er rein, nimmt er **zwei** Becher — den getroffenen und den nächsten, der noch steht. Dafür streut er deutlich weiter: gemessen geht ein gezielter normaler Wurf zu etwa 87 % rein, ein Bounce zu etwa 58 %.',
-          en: 'The button under the table makes the next throw a bounce: the ball lands in front of the rack and comes in low. If it goes in, it takes **two** cups — the one it landed in and the nearest one still standing. In exchange it scatters much more: measured, an aimed normal throw goes in about 87 % of the time, a bounce about 58 %.',
-        },
-      },
-      {
         de: 'Was zählt und was nicht',
         en: 'What counts and what does not',
         body: {
           de: 'Nur ein Ball, der wirklich in den Becher fällt. Streift er den Rand und springt weg, zählt es nicht — das ist seit der letzten Korrektur auch genau so gemessen: Der Fangbereich ist jetzt der gezeichnete Becher und nicht mehr ein Stück größer als er.',
           en: 'Only a ball that really drops into the cup. Clipping the rim and kicking away does not count — and since the last correction that is measured to be true: the catching area is now the drawn cup rather than a bit larger than it.',
-        },
-      },
-      {
-        de: 'Re-Rack',
-        en: 'Re-rack',
-        body: {
-          de: 'Einmal pro Spiel und Seite darfst du die verbliebenen Becher zusammenschieben. Lohnt sich, wenn nur noch verstreute Einzelne stehen.',
-          en: 'Once per game per side you may push the remaining cups together. Worth it when only scattered singles are left.',
         },
       },
     ],

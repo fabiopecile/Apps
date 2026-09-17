@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useEffect } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, withTiming } from 'react-native-reanimated';
+import { useAmbientEnabled } from '@/lib/ambient';
 import { colors, fonts, glow, radius, spacing } from '@/theme';
 
 interface StreakBadgeProps {
@@ -10,10 +11,13 @@ interface StreakBadgeProps {
 
 export function StreakBadge({ streak }: StreakBadgeProps) {
   const pulse = useSharedValue(0);
+  const motionOk = useAmbientEnabled();
   const active = streak >= 2;
 
   useEffect(() => {
-    if (active) {
+    // A streak badge that pulses for ever is the clearest case in the app
+    // for honouring the setting. It stays lit, it stops breathing.
+    if (active && motionOk) {
       pulse.value = withRepeat(withSequence(withTiming(1, { duration: 500 }), withTiming(0, { duration: 500 })), -1);
     } else {
       pulse.value = 0;

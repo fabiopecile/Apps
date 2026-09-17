@@ -125,7 +125,6 @@ export default function ArcadeOnlineMatchScreen() {
   } | null>(null);
   /** Set while our own throw is on its way to the room, so it cannot be taken twice. */
   const [sending, setSending] = useState(false);
-  const [bounceArmed, setBounceArmed] = useState(false);
 
   const bothHere = room.present[0] && room.present[1];
   const winner = match?.winner ?? null;
@@ -217,7 +216,6 @@ export default function ArcadeOnlineMatchScreen() {
       if (!result.rimOut) feedback.miss();
     }
 
-    setBounceArmed(false);
     setSending(true);
     send({ type: 'shot', hit, cups: falling, landing: result.landing, bounce: result.bounce });
   };
@@ -332,7 +330,6 @@ export default function ArcadeOnlineMatchScreen() {
             aliveFlags={shown[theirSeat]}
             accent={ballSkin.accent}
             skill={0.55}
-            bounce={bounceArmed}
             onResult={onMyThrow}
             onRim={feedback.rimOut}
             onLaunch={feedback.whoosh}
@@ -357,32 +354,6 @@ export default function ArcadeOnlineMatchScreen() {
           <FlashOverlay ref={flashRef} />
         </View>
 
-        <View style={styles.actionRow}>
-          <Pressable
-            onPress={() => {
-              feedback.tap();
-              setBounceArmed((armed) => !armed);
-            }}
-            disabled={!canThrow}
-            style={[
-              styles.bounceButton,
-              bounceArmed && styles.bounceOn,
-              !canThrow && styles.bounceOff,
-            ]}
-          >
-            <Ionicons
-              name="tennisball"
-              size={16}
-              color={bounceArmed ? colors.background : colors.textSecondary}
-            />
-            <Text
-              style={[styles.bounceText, bounceArmed && { color: colors.background }]}
-              selectable={false}
-            >
-              {t('match.bounce')}
-            </Text>
-          </Pressable>
-        </View>
 
         {winner != null ? (
           <View style={styles.resultCard}>
@@ -487,25 +458,6 @@ const styles = StyleSheet.create({
   scoreName: { fontFamily: fonts.label, fontSize: 11, letterSpacing: 0.5 },
   scoreCups: { fontFamily: fonts.numeric, fontSize: 20, color: colors.textPrimary },
   balls: { fontFamily: fonts.numeric, fontSize: 13, color: colors.textMuted, minWidth: 34, textAlign: 'center' },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-  },
-  bounceButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.pill,
-    paddingVertical: 8,
-    paddingHorizontal: spacing.md,
-  },
-  bounceOn: { backgroundColor: colors.neon, borderColor: colors.neon },
-  bounceOff: { opacity: 0.4 },
-  bounceText: { fontFamily: fonts.label, fontSize: 12, color: colors.textSecondary },
   resultCard: {
     position: 'absolute',
     left: spacing.lg,

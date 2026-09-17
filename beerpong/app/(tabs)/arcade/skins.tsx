@@ -4,9 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, Stack } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
+import { CoinChip } from '@/components/ui/CoinChip';
 import { GridBackground } from '@/components/ui/GridBackground';
 import { Reveal } from '@/components/ui/Reveal';
-import { CountUp } from '@/components/ui/CountUp';
 import { Card } from '@/components/ui/Card';
 import { GlowButton } from '@/components/ui/GlowButton';
 import { SectionLabel } from '@/components/ui/SectionLabel';
@@ -47,10 +47,7 @@ export default function SkinsScreen() {
             <Ionicons name="chevron-back" size={26} color={colors.textPrimary} />
           </Pressable>
           <Text style={styles.title}>{t('skins.title')}</Text>
-          <View style={styles.coinChip}>
-            <Ionicons name="logo-bitcoin" size={14} color={colors.gold} />
-            <CountUp value={coins} style={styles.coinText} />
-          </View>
+          <CoinChip coins={coins} />
         </View>
 
         <View style={styles.filterRow}>
@@ -370,22 +367,6 @@ const styles = StyleSheet.create({
     fontFamily: fonts.headingBlack,
     fontSize: 22,
     color: colors.textPrimary,
-  },
-  coinChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.backgroundElevated,
-  },
-  coinText: {
-    fontFamily: fonts.label,
-    color: colors.gold,
-    fontSize: 13,
   },
   filterRow: {
     flexDirection: 'row',
