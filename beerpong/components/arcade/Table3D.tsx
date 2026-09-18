@@ -337,9 +337,6 @@ function InstancedCups({
   /** Which way each topples, so a rack does not all fall alike. */
   const tilt = useMemo(() => cups.map(() => (Math.random() < 0.5 ? -1 : 1)), [cups.length]);
 
-  if (fallen.current.length !== cups.length) {
-    fallen.current = cups.map((cup) => (rack.aliveFlags[cup.index] ? 0 : 1));
-  }
 
   /**
    * True until every cup has finished moving, and again whenever one starts.
@@ -354,6 +351,38 @@ function InstancedCups({
    * on an actual phone, which is exactly the shape of mistake this is.
    */
   const settling = useRef(true);
+
+  /**
+   * The rack this component last drew, kept so a *rebuilt* one can be spotted.
+   *
+   * This is load-bearing, and the bug it fixes was ugly. Overtime throws both
+   * racks away and lays fresh ones — ten cups become three — which changes the
+   * `count` these instanced meshes are constructed with, so r3f builds new
+   * meshes underneath. A new `InstancedMesh` starts with identity matrices:
+   * every cup at the world origin, and on this table the world origin is the
+   * middle of the net. The frame loop below would put them right on its next
+   * pass, except that its "nothing is moving, do not upload" guard is still
+   * armed from the rack that had just finished settling — and the new rack has
+   * nothing falling either, so the guard holds and the matrices are never
+   * written at all.
+   *
+   * What that looked like in the game: overtime started, the scoreboard said
+   * three cups a side, and the table showed a single cup sitting on the
+   * halfway line. A single one because all three were stacked on the same
+   * spot. The rack only appeared once something knocked a cup down, because
+   * that finally disagreed with `fallen` and let the loop run.
+   *
+   * Comparing the array identity rather than its length: a rack can be rebuilt
+   * at the same size (a fresh round of the same match), and that case has the
+   * same problem and no change in length to notice it by.
+   */
+  const drawn = useRef(cups);
+  if (drawn.current !== cups || fallen.current.length !== cups.length) {
+    drawn.current = cups;
+    fallen.current = cups.map((cup) => (rack.aliveFlags[cup.index] ? 0 : 1));
+    // Make the loop run once for the new rack, whatever it thinks is moving.
+    settling.current = true;
+  }
 
   useFrame((_, delta) => {
     const body = bodies.current;

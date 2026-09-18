@@ -452,6 +452,10 @@ const STRINGS = {
     de: 'Ball wie sonst mit dem Finger führen — je weiter du zurückziehst, desto weiter der Wurf.',
     en: 'Guide the ball with your finger as usual — the further you drag back, the further it flies.',
   },
+  'passplay.rule.reRack': {
+    de: 'Einmal pro Spiel darf jede Seite ihre eigenen Becher zusammenschieben.',
+    en: 'Once a game each side may push their own cups together.',
+  },
   'passplay.rule.camera': {
     de: 'Nach jedem Wurf wechselt die Ansicht auf die andere Seite.',
     en: 'After each throw the view swings round to the other side.',
@@ -917,6 +921,14 @@ const STRINGS = {
   'match.overtimeHint': {
     de: 'Ausgeglichen! Neue Racks mit {cups} Bechern — jetzt entscheidet es sich.',
     en: 'All square! Fresh racks of {cups} — this is where it is decided.',
+  },
+  // Deliberately not 'match.reRack': that one belongs to the camera tracker,
+  // where a re-rack is a house rule two people agree on at a real table. This
+  // is the arcade button, and its wording has to say *whose* cups move — being
+  // able to rearrange the opponent's was the bug.
+  'match.reRackOwn': {
+    de: 'Eigene Becher zusammenschieben',
+    en: 'Tidy your own cups',
   },
   'match.reRack': { de: 'Re-Rack {left}', en: 'Re-rack {left}' },
   'match.missShort': { de: 'Zu kurz — weiter ziehen', en: 'Short — drag further' },
