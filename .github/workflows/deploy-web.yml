@@ -31,11 +31,19 @@ name: Web-App veröffentlichen
 #   Cloudflare-Dashboard -> Profil -> API Tokens -> das vorhandene Token
 #   bearbeiten -> Permissions -> "Account | Cloudflare Pages | Edit" ergänzen.
 #
-# Der Projektname ist frei wählbar und bestimmt die Adresse. Voreingestellt ist
-# "beerpong", was beerpong.pages.dev ergibt. Ist der Name weltweit schon
-# vergeben, meldet Cloudflare das — dann unter Settings -> Secrets and variables
-# -> Actions -> Variables eine Variable PAGES_PROJECT mit einem anderen Namen
-# anlegen.
+# DIE ADRESSE
+#
+# Der Projektname bestimmt die Adresse, und Namen bei pages.dev sind weltweit
+# eindeutig. "beerpong" ist bereits vergeben — beerpong.pages.dev gehört jemand
+# anderem. Welche Namen noch frei sind, lässt sich vorher nirgends nachschlagen,
+# deshalb probiert der letzte Schritt unten eine Liste durch und nimmt den
+# ersten Namen, der sich anlegen lässt. Er schreibt die fertige Adresse ins
+# Protokoll und in die Zusammenfassung des Laufs.
+#
+# Einmal angelegt, bleibt der Name bestehen und die Adresse ändert sich nicht
+# mehr. Wer einen bestimmten Namen will, legt unter Settings -> Secrets and
+# variables -> Actions -> Variables eine Variable PAGES_PROJECT an; die hat dann
+# Vorrang vor der Liste.
 on:
   push:
     branches: [main]
@@ -125,11 +133,69 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           PROJECT: ${{ vars.PAGES_PROJECT }}
         run: |
-          name="${PROJECT:-beerpong}"
-          echo "Projekt: $name  ->  https://$name.pages.dev"
-          # Beim ersten Lauf gibt es das Projekt noch nicht. Ein zweiter
-          # Anlauf meldet "already exists", und das ist kein Fehler — deshalb
-          # wird die Meldung geschluckt statt den Lauf abzubrechen.
-          npx wrangler pages project create "$name" --production-branch=main \
-            || echo "Projekt besteht bereits — weiter."
+          set -u
+
+          # Namen bei pages.dev sind weltweit eindeutig, und "beerpong" gehört
+          # bereits jemand anderem — beerpong.pages.dev zeigt eine fremde
+          # Seite. Das lässt sich vorher nicht nachschlagen, deshalb sucht
+          # dieser Schritt selbst einen freien Namen, statt den Lauf scheitern
+          # zu lassen und jemanden am Handy raten zu lassen.
+          #
+          # Die Reihenfolge ist die Wunschreihenfolge: der erste Name, der
+          # sich anlegen lässt, gewinnt. Danach existiert er und wird bei
+          # jedem weiteren Lauf wiedergefunden — die Adresse bleibt also
+          # stabil, sobald sie einmal feststeht.
+          candidates="beerpong-arcade beerpong-companion beerpong-app bierpong-arcade beerpong-tracker"
+
+          # Ein selbst gesetzter Name hat Vorrang und wird nicht ersetzt: wer
+          # PAGES_PROJECT einträgt, will genau diese Adresse.
+          if [ -n "${PROJECT}" ]; then
+            candidates="${PROJECT}"
+          fi
+
+          mine="$(npx wrangler pages project list 2>/dev/null || true)"
+          name=""
+
+          # Erster Durchgang: gehört einer der Namen schon uns? Das muss die
+          # GANZE Liste prüfen, bevor irgendetwas angelegt wird. Sonst passiert
+          # Folgendes: beim ersten Lauf war der Wunschname vergeben und die App
+          # landete auf dem zweiten; wird der erste später frei, würde ein
+          # späterer Lauf ihn anlegen und die App wäre plötzlich unter einer
+          # anderen Adresse erreichbar. Eine Adresse, die von selbst umzieht,
+          # ist schlimmer als eine unschöne Adresse.
+          #
+          # Die Wortgrenzen schließen '-' aus, damit 'beerpong' nicht in der
+          # Zeile von 'beerpong-app' anschlägt.
+          for c in $candidates; do
+            if printf '%s' "$mine" | grep -qE "(^|[^A-Za-z0-9_-])${c}([^A-Za-z0-9_-]|$)"; then
+              echo "Projekt '$c' besteht bereits im eigenen Konto — wird weiterverwendet."
+              name="$c"
+              break
+            fi
+          done
+
+          # Zweiter Durchgang: nichts Eigenes gefunden, also einen Namen suchen.
+          if [ -z "$name" ]; then
+            for c in $candidates; do
+              echo "Versuche, Projekt '$c' anzulegen ..."
+              if npx wrangler pages project create "$c" --production-branch=main; then
+                name="$c"
+                break
+              fi
+              echo "  '$c' ist vergeben oder nicht anlegbar — nächster Versuch."
+            done
+          fi
+
+          if [ -z "$name" ]; then
+            echo "::error::Keiner der Namen ließ sich anlegen. Entweder sind alle vergeben — dann unter Settings -> Secrets and variables -> Actions -> Variables eine Variable PAGES_PROJECT mit einem eigenen Wunschnamen anlegen — oder dem CLOUDFLARE_API_TOKEN fehlt das Recht 'Cloudflare Pages: Edit'."
+            exit 1
+          fi
+
           npx wrangler pages deploy dist --project-name="$name" --branch=main
+
+          echo "::notice::Die App steht unter https://${name}.pages.dev"
+          {
+            echo "## Die App ist online"
+            echo ""
+            echo "**https://${name}.pages.dev**"
+          } >> "$GITHUB_STEP_SUMMARY"

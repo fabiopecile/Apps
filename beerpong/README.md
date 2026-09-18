@@ -85,7 +85,7 @@ Die Web-App umgeht das komplett.
 Veröffentlicht wird auf **Cloudflare Pages**, nicht auf GitHub Pages. Der
 Grund ist die Adresse: GitHub stellt jede Seite unter `<kontoname>.github.io`
 bereit, und der Kontoname lässt sich dort nicht weglassen. Cloudflare baut die
-Adresse aus dem Projektnamen — `beerpong.pages.dev` — und verrät damit nichts
+Adresse aus dem Projektnamen — `<projektname>.pages.dev` — und verrät damit nichts
 über den Betreiber.
 
 Zwei angenehme Nebenwirkungen: die Seite liegt im Wurzelverzeichnis statt unter
@@ -106,20 +106,26 @@ selbst hoch und stört sich nicht daran.
    **Pull requests** → *New pull request* → base `main`, compare den
    Arbeitszweig → *Create* → *Merge*. Der Merge startet den Workflow von selbst.
 
-Der Projektname ist frei wählbar und bestimmt die Adresse. Voreingestellt ist
-`beerpong`. Ist der Name bei Cloudflare weltweit schon vergeben, sagt der Lauf
-das — dann unter *Settings → Secrets and variables → Actions → Variables* eine
-Variable `PAGES_PROJECT` mit einem anderen Namen anlegen.
+Der Projektname bestimmt die Adresse, und Namen bei `pages.dev` sind weltweit
+eindeutig — `beerpong` ist bereits vergeben und gehört jemand anderem. Welche
+Namen noch frei sind, lässt sich nirgends nachschlagen, deshalb probiert der
+Workflow eine Liste durch und nimmt den ersten, der sich anlegen lässt. Die
+fertige Adresse steht danach oben in der Zusammenfassung des Laufs.
+
+Einmal angelegt, ändert sich der Name nicht mehr. Wer einen bestimmten will,
+legt unter *Settings → Secrets and variables → Actions → Variables* eine
+Variable `PAGES_PROJECT` an — die hat Vorrang vor der Liste.
 
 > **Ein „Re-run" wiederholt den alten Stand.** Er nimmt die Workflow-Datei aus
 > dem Commit, zu dem der Lauf gehört — eine seitdem gepushte Korrektur ist
 > darin nicht enthalten. Nach einer Änderung am Workflow also einen *neuen*
 > Lauf starten, nicht den alten wiederholen.
 
-Nach ein paar Minuten steht die Adresse im Workflow-Protokoll:
+Nach ein paar Minuten steht die Adresse im Workflow-Protokoll und in der
+Zusammenfassung des Laufs, in der Form:
 
 ```
-https://beerpong.pages.dev/
+https://<projektname>.pages.dev/
 ```
 
 Ab jetzt aktualisiert sich die Seite bei jedem Push auf `main` von allein.
