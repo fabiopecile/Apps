@@ -441,6 +441,14 @@ export const GUIDE: GuideChapter[] = [
         },
       },
       {
+        de: 'Re-Rack',
+        en: 'Re-rack',
+        body: {
+          de: 'Einmal pro Spiel darfst du **deine eigenen** verbliebenen Becher zusammenschieben — nie die des Gegners. Dabei rücken sie nach vorne ans Netz und stehen enger beieinander. Das ist die echte Regel und sie hat zwei Seiten: aus verstreuten Einzelnen wird wieder ein Rack, aber ein Rack, das näher am Werfer steht, ist auch leichter zu treffen.',
+          en: 'Once a game you may push **your own** remaining cups together — never the other side\'s. They move forward towards the net and end up grouped. That is the real rule and it cuts both ways: scattered singles become a rack again, but a rack standing closer to the thrower is also an easier target.',
+        },
+      },
+      {
         de: 'Was zählt und was nicht',
         en: 'What counts and what does not',
         body: {

@@ -30,6 +30,7 @@ import {
   companionCup,
   generateOpponentRack,
   generatePlayerRack,
+  reRackFlags,
   CUP_COUNT,
   OVERTIME_CUP_COUNT,
   OPPONENT_BALL_Y,
@@ -187,6 +188,13 @@ export default function MatchScreen() {
   const [resultNote, setResultNote] = useState('');
   const [runFinished, setRunFinished] = useState(false);
   // Pass & Play: the phone changes hands, so a prompt gates each turn.
+  /**
+   * One re-rack each, per game. Indexed by *whose rack it is* — [you, them] —
+   * which is the whole point of the change: it used to be indexed by which
+   * rack was being shot at, so calling it reached across the table and
+   * rearranged the other side's cups.
+   */
+  const [reRacksLeft, setReRacksLeft] = useState<[number, number]>([1, 1]);
   const [handOver, setHandOver] = useState(false);
   /**
    * Who gets the phone next.
@@ -382,6 +390,7 @@ export default function MatchScreen() {
     setResultNote('');
     setTurn('player');
     setHandOver(false);
+    setReRacksLeft([1, 1]);
     setPlayerTurnState(startTurn());
     setOpponentTurnState(startTurn());
     setTurnNote(null);
@@ -420,6 +429,33 @@ export default function MatchScreen() {
   };
 
   /** Pass & Play: the next player has taken the phone. */
+  /**
+   * Push your own remaining cups together.
+   *
+   * Yours, never theirs. Whoever is throwing owns one side of the table and may
+   * tidy that side only — in Pass & Play that means player two re-racks the far
+   * rack, because at that moment the far rack is the one they are defending.
+   *
+   * Worth being straight about the trade-off, because it is not obvious from the
+   * button: a re-rack pulls the survivors into the slots nearest the net, so
+   * your cups end up closer to whoever is throwing at them and grouped together.
+   * That is the real rule — it is why the shooter calls it at a real table — and
+   * here it is yours to call on yourself. It tidies a scattered rack and makes
+   * it a slightly easier target at the same time.
+   */
+  const doReRack = () => {
+    const side = playerTurn ? 0 : 1;
+    if (reRacksLeft[side] <= 0 || roundResult != null || handOver) return;
+    feedback.tap();
+    setReRacksLeft((prev) => {
+      const next: [number, number] = [prev[0], prev[1]];
+      next[side] -= 1;
+      return next;
+    });
+    if (playerTurn) setPlayerAlive((prev) => reRackFlags(prev));
+    else setOpponentAlive((prev) => reRackFlags(prev));
+  };
+
   const confirmHandOver = () => {
     setHandOver(false);
     setTurn(handOverTo);
@@ -666,6 +702,8 @@ export default function MatchScreen() {
     setOvertime((round) => round + 1);
     setOpponentAlive(Array(OVERTIME_CUP_COUNT).fill(true));
     setPlayerAlive(Array(OVERTIME_CUP_COUNT).fill(true));
+    // Fresh racks, so the re-racks come back with them.
+    setReRacksLeft([1, 1]);
     setPlayerTurnState(startTurn());
     setOpponentTurnState(startTurn());
     // Borrowing the advice line: three cups on the table needs explaining once,
@@ -1012,6 +1050,24 @@ export default function MatchScreen() {
           <FlashOverlay ref={flashRef} />
         </View>
 
+        {/* One control under the table, and it acts on your own cups only.
+            Hidden rather than disabled once it is gone: a permanently greyed
+            button is a piece of furniture that teaches nothing. */}
+        {roundResult == null && !handOver && reRacksLeft[playerTurn ? 0 : 1] > 0 ? (
+          <View style={styles.actionRow}>
+            <Pressable
+              onPress={doReRack}
+              style={({ pressed }) => [styles.actionButton, pressed && styles.actionButtonPressed]}
+              accessibilityRole="button"
+              accessibilityLabel={t('match.reRackOwn')}
+            >
+              <Ionicons name="grid" size={15} color={colors.neon} />
+              <Text style={styles.actionText} selectable={false}>
+                {t('match.reRackOwn')}
+              </Text>
+            </Pressable>
+          </View>
+        ) : null}
 
         {/* Two balls a turn, and which of them you are on. Without this the
             rule is invisible: you would just find yourself throwing twice. */}
@@ -1336,6 +1392,30 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: spacing.sm,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 8,
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.backgroundCard,
+  },
+  actionButtonPressed: { opacity: 0.6 },
+  actionText: {
+    fontFamily: fonts.label,
+    fontSize: 12,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    color: colors.neon,
   },
   ballRow: {
     flexDirection: 'row',
