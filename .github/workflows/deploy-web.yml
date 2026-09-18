@@ -1,8 +1,41 @@
 name: Web-App veröffentlichen
 
-# Baut die Web-Version und stellt sie auf GitHub Pages. Läuft bei jedem Push
+# Baut die Web-Version und stellt sie auf Cloudflare Pages. Läuft bei jedem Push
 # auf main, der die App verändert — und lässt sich unter "Actions" jederzeit
 # von Hand starten.
+#
+# WARUM CLOUDFLARE UND NICHT MEHR GITHUB PAGES
+#
+# GitHub Pages stellt eine Seite immer unter <kontoname>.github.io bereit. Der
+# Kontoname lässt sich dort nicht weglassen, und er ist hier ein echter Name.
+# Cloudflare Pages vergibt stattdessen eine Adresse aus dem Projektnamen,
+# <projekt>.pages.dev, in der nichts über den Betreiber steht.
+#
+# Zwei Dinge sind dadurch anders als vorher:
+#
+#   1. Die Seite liegt jetzt im Wurzelverzeichnis und nicht mehr unter /Apps/.
+#      EXPO_BASE_URL bleibt deshalb leer — siehe app/+html.tsx, das daraus die
+#      Pfade für Manifest, Icons und Service Worker baut.
+#   2. Das Repository darf privat sein. GitHub Pages veröffentlicht im
+#      kostenlosen Tarif nur aus öffentlichen Repositories; hier lädt der
+#      Workflow selbst hoch, und der schert sich nicht darum.
+#
+# EINMALIG EINZURICHTEN
+#
+# Die Zugangsdaten CLOUDFLARE_API_TOKEN und CLOUDFLARE_ACCOUNT_ID sind schon da,
+# sie werden auch vom Online-Server benutzt (siehe deploy-server.yml). ABER: Das
+# Token wurde für Workers ausgestellt und braucht zusätzlich das Recht
+# "Cloudflare Pages: Edit". Ohne das bricht der letzte Schritt mit einem
+# Berechtigungsfehler ab.
+#
+#   Cloudflare-Dashboard -> Profil -> API Tokens -> das vorhandene Token
+#   bearbeiten -> Permissions -> "Account | Cloudflare Pages | Edit" ergänzen.
+#
+# Der Projektname ist frei wählbar und bestimmt die Adresse. Voreingestellt ist
+# "beerpong", was beerpong.pages.dev ergibt. Ist der Name weltweit schon
+# vergeben, meldet Cloudflare das — dann unter Settings -> Secrets and variables
+# -> Actions -> Variables eine Variable PAGES_PROJECT mit einem anderen Namen
+# anlegen.
 on:
   push:
     branches: [main]
@@ -13,8 +46,6 @@ on:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
 
 # Nie zwei Deploys gleichzeitig; ein neuerer Push löst den älteren ab.
 concurrency:
@@ -22,8 +53,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
-    name: Bauen
+  deploy:
+    name: Bauen und veröffentlichen
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -31,43 +62,42 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      # Wie in deploy-server.yml: das Secrets-Kontext lässt sich in einer
+      # job-weiten Bedingung nicht zuverlässig lesen, also einmal nachsehen und
+      # den Rest daran hängen. Ohne Zugangsdaten soll der Lauf einen klaren
+      # Hinweis geben statt mit einem kryptischen Fehler abzubrechen.
+      - name: Zugangsdaten prüfen
+        id: creds
+        env:
+          TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          ACCOUNT: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "$TOKEN" ] && [ -n "$ACCOUNT" ]; then
+            echo "ready=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "ready=no" >> "$GITHUB_OUTPUT"
+            echo "::notice::CLOUDFLARE_API_TOKEN und/oder CLOUDFLARE_ACCOUNT_ID fehlen — die Web-App wird nicht veröffentlicht. Die Anleitung steht oben in dieser Datei."
+          fi
+
       - uses: actions/setup-node@v4
+        if: steps.creds.outputs.ready == 'yes'
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: beerpong/package-lock.json
 
       - name: Pakete installieren
+        if: steps.creds.outputs.ready == 'yes'
         run: npm ci
 
-      # Bricht dieser Schritt mit "Get Pages site failed" ab, ist Pages im
-      # Repository noch nicht eingeschaltet: einmalig unter
-      # Settings -> Pages -> Source auf "GitHub Actions" stellen.
-      #
-      # Das lässt sich NICHT automatisieren. Die Option `enablement: true`
-      # sieht danach aus, verlangt laut eigener Beschreibung aber ein Token
-      # mit `administration:write` — eine Berechtigung, die das Token eines
-      # Workflows grundsätzlich nicht bekommen kann. Sie wurde hier bereits
-      # ausprobiert und wieder entfernt; bitte nicht erneut hinzufügen.
-      - name: Pages konfigurieren
-        id: pages
-        uses: actions/configure-pages@v5
-
-      - name: Basis-Pfad bestimmen
-        id: base
-        # Pages liefert das Repo unter /<repo>/ aus, also muss jeder Asset-Pfad
-        # dieses Präfix tragen. Bei einer eigenen Domain ist der Pfad "/" und
-        # das Präfix muss leer bleiben.
-        run: |
-          path='${{ steps.pages.outputs.base_path }}'
-          if [ "$path" = "/" ]; then path=''; fi
-          echo "value=$path" >> "$GITHUB_OUTPUT"
-          echo "Basis-Pfad: '${path}'"
-
       - name: Web-Version exportieren
+        if: steps.creds.outputs.ready == 'yes'
         run: npx expo export --platform web
         env:
-          EXPO_BASE_URL: ${{ steps.base.outputs.value }}
+          # Leer, weil Cloudflare Pages die Seite im Wurzelverzeichnis
+          # ausliefert. Unter GitHub Pages stand hier /Apps, weil ein
+          # Repository dort in einem Unterordner landet.
+          EXPO_BASE_URL: ''
           # Adresse des Online-Servers. Leer lassen ist in Ordnung: der
           # Online-Bildschirm sagt dann, dass noch keiner eingetragen ist.
           # Eintragen unter Settings -> Secrets and variables -> Actions ->
@@ -88,23 +118,18 @@ jobs:
           # Bildschirm "Alles kostenlos", woran es liegt.
           EXPO_PUBLIC_SALES: ${{ vars.SALES }}
 
-      - name: Jekyll abschalten
-        # Ohne diese Datei ignoriert Pages Ordner, die mit _ beginnen — und
-        # genau da liegt der komplette JavaScript-Code (_expo/).
-        run: touch dist/.nojekyll
-
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: beerpong/dist
-
-  deploy:
-    name: Veröffentlichen
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - name: Auf GitHub Pages stellen
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Nach Cloudflare Pages stellen
+        if: steps.creds.outputs.ready == 'yes'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          PROJECT: ${{ vars.PAGES_PROJECT }}
+        run: |
+          name="${PROJECT:-beerpong}"
+          echo "Projekt: $name  ->  https://$name.pages.dev"
+          # Beim ersten Lauf gibt es das Projekt noch nicht. Ein zweiter
+          # Anlauf meldet "already exists", und das ist kein Fehler — deshalb
+          # wird die Meldung geschluckt statt den Lauf abzubrechen.
+          npx wrangler pages project create "$name" --production-branch=main \
+            || echo "Projekt besteht bereits — weiter."
+          npx wrangler pages deploy dist --project-name="$name" --branch=main

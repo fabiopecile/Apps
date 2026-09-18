@@ -17,8 +17,10 @@ git -v
 ## Projekt holen und starten
 
 ```bash
-git clone https://github.com/fabiopecile/Apps.git
-cd Apps/beerpong
+# <DEIN-KONTO> und <REPO> durch die eigenen Werte ersetzen; bei einem privaten
+# Repository fragt git nach Benutzername und Token.
+git clone https://github.com/<DEIN-KONTO>/<REPO>.git
+cd <REPO>/beerpong
 git checkout claude/beerpong-mobile-app-845mv3
 npm install
 npx expo start
@@ -80,49 +82,44 @@ Das ist der wichtigere Weg, weil er auch auf dem iPhone funktioniert. Es gibt
 verlangt dafür 99 €/Jahr, auch für TestFlight und auch für die EU-Alternativstores.
 Die Web-App umgeht das komplett.
 
-> **Voraussetzung: das Repository muss öffentlich sein.** Bei privaten Repos
-> gibt es GitHub Pages nur mit einem Bezahlplan (GitHub Pro, ca. 4 $/Monat).
-> Umstellen unter **Settings** → ganz unten **Danger Zone** → *Change
-> repository visibility* → **Public**. In diesem Repo liegen nur die App, die
-> beiden Workflows und diese README — keine Schlüssel, Passwörter oder
-> Zugangsdaten, öffentlich ist also unbedenklich.
+Veröffentlicht wird auf **Cloudflare Pages**, nicht auf GitHub Pages. Der
+Grund ist die Adresse: GitHub stellt jede Seite unter `<kontoname>.github.io`
+bereit, und der Kontoname lässt sich dort nicht weglassen. Cloudflare baut die
+Adresse aus dem Projektnamen — `beerpong.pages.dev` — und verrät damit nichts
+über den Betreiber.
+
+Zwei angenehme Nebenwirkungen: die Seite liegt im Wurzelverzeichnis statt unter
+`/Apps/`, und **das Repository darf privat sein**. GitHub Pages veröffentlicht
+im kostenlosen Tarif nur aus öffentlichen Repositories; hier lädt der Workflow
+selbst hoch und stört sich nicht daran.
 
 **Einrichten (nur einmal nötig):**
 
-1. **Pages einschalten.** Direkt zu dieser Adresse gehen — am Handy ist der
-   Weg über die Menüs mühsam, weil „Settings" hinter dem **⋯**-Menü liegt:
+1. **Cloudflare-Zugangsdaten hinterlegen.** `CLOUDFLARE_API_TOKEN` und
+   `CLOUDFLARE_ACCOUNT_ID` liegen schon im Repository, falls der Online-Server
+   eingerichtet wurde (siehe `deploy-server.yml`). Das Token braucht zusätzlich
+   das Recht **Cloudflare Pages: Edit** — im Cloudflare-Dashboard unter
+   *Profil → API Tokens → Token bearbeiten → Permissions* ergänzen. Ohne das
+   bricht der letzte Schritt mit einem Berechtigungsfehler ab.
 
-   ```
-   https://github.com/fabiopecile/Apps/settings/pages
-   ```
+2. **Änderungen nach `main` bringen.** Der Workflow läuft nur von dort:
+   **Pull requests** → *New pull request* → base `main`, compare den
+   Arbeitszweig → *Create* → *Merge*. Der Merge startet den Workflow von selbst.
 
-   Unter *Build and deployment* bei **Source** von „Deploy from a branch" auf
-   **GitHub Actions** umstellen. Mehr ist dort nicht zu tun — es gibt keinen
-   Speichern-Knopf, die Auswahl greift sofort.
-
-2. **Änderungen nach `main` bringen.** Der Workflow läuft nur von dort, und
-   Pages veröffentlicht standardmäßig nur vom Hauptzweig: **Pull requests** →
-   *New pull request* → base `main`, compare `claude/beerpong-mobile-app-845mv3`
-   → *Create* → *Merge*. Der Merge startet den Workflow von selbst.
-
-> **Schritt 1 lässt sich nicht automatisieren.** Die Option `enablement: true`
-> von `actions/configure-pages` sieht danach aus, verlangt laut eigener
-> Beschreibung aber ein Token mit `administration:write` — das kann ein
-> Workflow-Token nicht bekommen. Ohne Schritt 1 bricht jeder Lauf mit
-> **„Get Pages site failed"** ab, bevor überhaupt gebaut wird.
+Der Projektname ist frei wählbar und bestimmt die Adresse. Voreingestellt ist
+`beerpong`. Ist der Name bei Cloudflare weltweit schon vergeben, sagt der Lauf
+das — dann unter *Settings → Secrets and variables → Actions → Variables* eine
+Variable `PAGES_PROJECT` mit einem anderen Namen anlegen.
 
 > **Ein „Re-run" wiederholt den alten Stand.** Er nimmt die Workflow-Datei aus
 > dem Commit, zu dem der Lauf gehört — eine seitdem gepushte Korrektur ist
 > darin nicht enthalten. Nach einer Änderung am Workflow also einen *neuen*
 > Lauf starten, nicht den alten wiederholen.
 
-> Die Warnung „Node.js 20 is deprecated" im Protokoll ist harmlos — sie betrifft
-> GitHubs eigene Actions, nicht diese App, und lässt den Lauf durchgehen.
-
-Nach ein paar Minuten steht die Adresse oben im Workflow-Ergebnis, normalerweise:
+Nach ein paar Minuten steht die Adresse im Workflow-Protokoll:
 
 ```
-https://fabiopecile.github.io/Apps/
+https://beerpong.pages.dev/
 ```
 
 Ab jetzt aktualisiert sich die Seite bei jedem Push auf `main` von allein.
