@@ -911,7 +911,7 @@ export default function MatchScreen() {
 
   return (
     <View style={styles.container}>
-      <GridBackground />
+      <GridBackground still />
       <SafeAreaView style={styles.safe}>
         <View style={styles.header}>
           <Pressable onPress={leaveMatch} hitSlop={10} style={styles.backButton}>

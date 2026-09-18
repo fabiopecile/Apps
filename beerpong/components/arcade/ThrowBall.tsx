@@ -144,8 +144,16 @@ export function ThrowBall({
   };
 
   /**
-   * A real throw: the ball leaves from wherever your finger let go of it, at
-   * the speed your hand was moving.
+   * A real throw: the ball leaves from wherever your finger let go of it, but
+   * it is *aimed* from its mark.
+   *
+   * `start` and `origin` being two different points is the whole of it. The
+   * ball follows the finger up the table, so where it is when released depends
+   * on `grip` below — which is derived from how fast the finger was moving, and
+   * therefore on whether the frames came in evenly. Aiming from `origin`, the
+   * fixed mark, keeps the landing a pure function of where the finger went down
+   * and came up, so a stutter can make the ball look like it is lagging behind
+   * the thumb but can no longer change where the throw goes.
    */
   const throwBall = (dragX: number, dragY: number, fromX: number, fromY: number) => {
     const outcome = resolveThrow({
@@ -157,7 +165,7 @@ export function ThrowBall({
       bounce,
       cups,
       aliveFlags,
-      carry: carriedFrom(fromY),
+      origin: { x: startX, y: startY },
     });
     // Too short to be a throw, so not a turn either. The ball rolls back to
     // its mark instead of staying wherever it was dropped.
@@ -353,10 +361,6 @@ export function ThrowBall({
     flight.settle(startX, startY);
   }
 
-  /** How far the ball has already travelled towards the rack in your hand. */
-  function carriedFrom(fromY: number) {
-    return direction === 'up' ? startY - fromY : fromY - startY;
-  }
 
   return (
     <GestureDetector gesture={pan}>

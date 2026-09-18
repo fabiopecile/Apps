@@ -24,10 +24,15 @@ import { colors } from '@/theme';
  * differently. It is the single change that stops a screen with nothing on it
  * from looking like a screenshot of itself.
  *
+ * `still` turns the movement off for one screen. The match screen sets it: that
+ * is the one place where a frame arriving late is not a cosmetic problem but a
+ * throw going somewhere else, so nothing there is allowed to ask for work every
+ * frame for decoration's sake. It is the same call as the coin chip's `quiet`.
+ *
  * The name stays `GridBackground` because it is imported by every screen in the
  * app, and a rename across twenty files buys nothing a comment cannot say.
  */
-export function GridBackground() {
+export function GridBackground({ still = false }: { still?: boolean } = {}) {
   const drift = useAmbientLoop(AMBIENT.felt, { reverse: true });
   const { width } = useWindowDimensions();
 
@@ -38,10 +43,11 @@ export function GridBackground() {
    * about its centre instead, its top edge climbs out of the frame and the
    * whole thing reads as sliding upward rather than growing.
    */
-  const lamp = useAnimatedStyle(() => ({
-    opacity: 0.86 + drift.value * 0.14,
-    transform: [{ scaleY: 1 + drift.value * 0.08 }],
-  }));
+  const lamp = useAnimatedStyle(() =>
+    still
+      ? { opacity: 1, transform: [{ scaleY: 1 }] }
+      : { opacity: 0.86 + drift.value * 0.14, transform: [{ scaleY: 1 + drift.value * 0.08 }] }
+  );
 
   /**
    * The swing.
@@ -54,7 +60,7 @@ export function GridBackground() {
    * nothing in the browser build.
    */
   const swing = useAnimatedStyle(() => ({
-    transform: [{ translateX: (drift.value - 0.5) * width * 0.42 }],
+    transform: [{ translateX: still ? 0 : (drift.value - 0.5) * width * 0.42 }],
   }));
 
   return (

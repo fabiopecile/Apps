@@ -301,20 +301,35 @@ export function sampleFlight(flight: Flight, t: number): { x: number; y: number;
 /**
  * The parabola this drag would fly.
  *
- * `carry` is how far the ball was already walked towards the rack before being
- * let go. It is taken *off* the range, so the ball lands where the drag says
- * regardless of where it left from. That is what lets the ball follow the
- * finger the whole way — the alternative, holding it back on a leash, is what
- * made the throw feel stuck, and letting it run free without this would turn
- * every drag up the table into free distance.
+ * `start` is where the ball is when it is let go — it follows the finger, so
+ * that is somewhere up the table. `origin` is its resting mark, where the
+ * gesture began. **The landing is measured from `origin`, never from `start`.**
+ *
+ * That distinction is the whole of this function, and getting it wrong is what
+ * made throws land where nobody aimed. The old version took a single *scalar*
+ * carry — how far up the table the ball had been walked — and subtracted it
+ * from the range. For a drag straight up the table that cancels exactly, which
+ * is why it looked right and why the test covering it passed. For a drag with
+ * any sideways component it does not: the sideways part of the walk stayed in
+ * `start` and was then added a second time by the throw vector, so the ball
+ * went wider than it was aimed.
+ *
+ * Worse, how far the ball gets walked depends on `grip` in `ThrowBall`, which
+ * is derived from the measured speed of the finger — and that measurement is
+ * only as good as the frame rate. A stutter mid-swipe changed the grip, which
+ * changed the carry, which moved the landing. The throw was quietly
+ * frame-rate dependent. Measured from the origin it cannot be: the landing is
+ * a pure function of where the finger went down and where it came up.
  */
 export function previewFlight(params: {
+  /** Where the ball is now. The flight is drawn from here. */
   start: Point;
+  /** The ball's resting mark, i.e. where the gesture started. */
+  origin?: Point;
   dragX: number;
   dragY: number;
   direction: 'up' | 'down';
   bounce: boolean;
-  carry?: number;
 }): Flight | null {
   const { start, dragX, dragY, direction, bounce } = params;
   const drag = dragLength(dragX, dragY);
@@ -322,12 +337,13 @@ export function previewFlight(params: {
   // Dragging backwards is not a throw at the rack.
   if (direction === 'up' ? dragY >= 0 : dragY <= 0) return null;
 
-  // Pulling back does not lend distance, so only a forward carry counts.
-  const range = Math.max(0, rangeForDrag(drag) - Math.max(0, params.carry ?? 0));
+  const from = params.origin ?? start;
+  const range = rangeForDrag(drag);
   const landing = {
-    x: start.x + (dragX / drag) * range,
-    y: start.y + (dragY / drag) * range,
+    x: from.x + (dragX / drag) * range,
+    y: from.y + (dragY / drag) * range,
   };
+  // Thrown from where it was let go, aimed from where it started.
   return buildFlight(start, landing, bounce);
 }
 
@@ -493,14 +509,14 @@ export function resolveThrow(params: {
   bounce: boolean;
   cups: CupSpec[];
   aliveFlags: boolean[];
-  carry?: number;
+  /** The ball's resting mark; the landing is measured from here. */
+  origin?: Point;
   random?: () => number;
 }): ThrowOutcome | null {
   const { start, dragX, dragY, direction, skill, bounce, cups, aliveFlags } = params;
   const random = params.random ?? Math.random;
-  const carry = params.carry ?? 0;
 
-  const aimed = previewFlight({ start, dragX, dragY, direction, bounce, carry });
+  const aimed = previewFlight({ start, origin: params.origin, dragX, dragY, direction, bounce });
   if (!aimed) return null;
 
   const aim = assistDistance(start, aimed.landing, cups, aliveFlags);

@@ -194,40 +194,78 @@ check('the flight starts and ends where it should', () => {
 
 check('walking the ball up the table buys no distance', () => {
   // The ball follows the finger all the way, so it can be let go half way up
-  // the table. If that simply added its head start to the range, a short drag
-  // and a soft flick would drop the ball straight into the back row.
+  // the table. Where it happens to be at that moment must not change where the
+  // throw goes — the aim comes from the mark it started on.
   const drag = 140;
   const fromMark = previewFlight({
     start: START,
+    origin: START,
     dragX: 0,
     dragY: -drag,
     direction: 'up',
     bounce: false,
   });
-  const carry = 90;
   const carried = previewFlight({
-    start: { x: START.x, y: START.y - carry },
+    start: { x: START.x, y: START.y - 90 },
+    origin: START,
     dragX: 0,
     dragY: -drag,
     direction: 'up',
     bounce: false,
-    carry,
   });
   assert.ok(fromMark && carried);
   assert.ok(
     Math.abs(carried.landing.y - fromMark.landing.y) < 0.01,
-    `carrying the ball ${carry}pt forward moved the landing to ${carried.landing.y} from ${fromMark.landing.y}`
+    `carrying the ball forward moved the landing to ${carried.landing.y} from ${fromMark.landing.y}`
   );
   // Pulling back is not a run-up either: it must not lend range.
   const pulled = previewFlight({
     start: { x: START.x, y: START.y + 60 },
+    origin: START,
     dragX: 0,
     dragY: -drag,
     direction: 'up',
     bounce: false,
-    carry: -60,
   });
   assert.ok(pulled && pulled.landing.y > fromMark.landing.y - 0.01);
+});
+
+check('a stutter cannot move the landing, in any direction', () => {
+  /**
+   * The bug this exists for.
+   *
+   * How far the ball gets walked up the table before release depends on `grip`
+   * in ThrowBall, and grip is derived from the measured speed of the finger —
+   * so it depends on the frame rate. The old maths took that walk off the range
+   * as a single number, which cancels exactly for a drag straight up the table
+   * and not at all for a diagonal one: the sideways part of the walk stayed in
+   * the release point and the throw vector then added it a second time.
+   *
+   * Reported as "it hangs a little and then the shot goes somewhere". Here the
+   * same drag is released from four different places — every grip a stuttering
+   * frame could produce — and all four have to land on the same spot.
+   */
+  const drag = 150;
+  for (const [dx, dy] of [[0, -drag], [40, -145], [-70, -133], [95, -116]]) {
+    const landings = [0, 0.32, 0.6, 1].map((grip) =>
+      previewFlight({
+        start: { x: START.x + dx * grip, y: START.y + dy * grip },
+        origin: START,
+        dragX: dx,
+        dragY: dy,
+        direction: 'up',
+        bounce: false,
+      })
+    );
+    assert.ok(landings.every(Boolean), 'every one of those is a throw');
+    const first = landings[0].landing;
+    for (const f of landings) {
+      assert.ok(
+        Math.hypot(f.landing.x - first.x, f.landing.y - first.y) < 0.01,
+        `drag ${dx},${dy}: released later the ball lands at ${Math.round(f.landing.x)},${Math.round(f.landing.y)} instead of ${Math.round(first.x)},${Math.round(first.y)}`
+      );
+    }
+  }
 });
 
 check('a bounce shot touches the table on the way, and only once', () => {
